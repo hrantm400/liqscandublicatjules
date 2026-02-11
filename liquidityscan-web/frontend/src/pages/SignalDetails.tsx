@@ -1,0 +1,554 @@
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Signal } from '../types';
+import { fetchCandles } from '../services/candles';
+import { fetchSignalById } from '../services/signalsApi';
+import { InteractiveLiveChart } from '../components/InteractiveLiveChart';
+import { SignalBadge } from '../components/shared/SignalBadge';
+import { scaleInVariants, fadeInVariants } from '../utils/animations';
+
+interface Candle {
+  id?: string;
+  symbol: string;
+  timeframe: string;
+  openTime: Date | string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  quoteVolume?: number | null;
+}
+
+// Dynamically format price based on its magnitude
+function formatPrice(price: number): string {
+  const abs = Math.abs(price);
+  if (abs === 0) return '0.00';
+  if (abs >= 1000) return price.toFixed(2);
+  if (abs >= 1) return price.toFixed(4);
+  if (abs >= 0.01) return price.toFixed(6);
+  if (abs >= 0.0001) return price.toFixed(8);
+  return price.toFixed(10);
+}
+
+export function SignalDetails() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [candles, setCandles] = useState<Candle[]>([]);
+
+  const { data: signal, isLoading } = useQuery({
+    queryKey: ['signal', id],
+    queryFn: async (): Promise<Signal | null> => {
+      if (!id) return null;
+
+      // Search ALL cached signal lists using fuzzy prefix matching
+      // (keys are ['signals', strategyType, timeframe])
+      const allCachedQueries = queryClient.getQueriesData<Signal[]>({
+        queryKey: ['signals'],
+      });
+      for (const [, list] of allCachedQueries) {
+        if (!Array.isArray(list)) continue;
+        const found = list.find((s) => s.id === id);
+        if (found) return found;
+      }
+
+      // Fallback: fetch from the API
+      return fetchSignalById(id);
+    },
+    enabled: !!id,
+    refetchInterval: 60000,
+  });
+
+  // Fetch candle data from backend /api/candles (Binance klines)
+  const { data: historicalCandles, isLoading: isLoadingCandles, error: candlesError } = useQuery({
+    queryKey: ['candles', signal?.symbol, signal?.timeframe],
+    queryFn: async () => {
+      if (!signal?.symbol || !signal?.timeframe) return [];
+      return fetchCandles(signal.symbol, signal.timeframe, 500);
+    },
+    enabled: !!signal?.symbol && !!signal?.timeframe,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    staleTime: 60000,
+  });
+
+  // Initialize candles from historical data
+  useEffect(() => {
+    if (historicalCandles && historicalCandles.length > 0) {
+      setCandles(historicalCandles as Candle[]);
+    }
+  }, [historicalCandles]);
+
+  // Handle candle updates from chart
+  const handleCandleUpdate = useCallback((candle: Candle) => {
+    setCandles(prev => {
+      const updated = [...prev];
+      const index = updated.findIndex(c =>
+        new Date(c.openTime).getTime() === new Date(candle.openTime).getTime()
+      );
+
+      if (index >= 0) {
+        updated[index] = candle;
+      } else {
+        updated.push(candle);
+        updated.sort((a, b) => new Date(a.openTime).getTime() - new Date(b.openTime).getTime());
+      }
+
+      return updated;
+    });
+  }, []);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="dark:text-white light:text-text-dark text-lg"
+        >
+          Loading signal details...
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!signal) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="dark:text-white light:text-text-dark text-lg"
+        >
+          Signal not found
+        </motion.div>
+      </div>
+    );
+  }
+
+  const signalData = signal as Signal;
+  const detectedDate = new Date(signalData.detectedAt);
+  const timeAgo = Math.floor((Date.now() - detectedDate.getTime()) / 60000);
+
+  // Derive strategy type from signal ID
+  const getStrategyType = (): 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS' => {
+    if (signalData.id?.startsWith('RSI_DIVERGENCE')) return 'RSI_DIVERGENCE';
+    if (signalData.id?.startsWith('ICT_BIAS')) return 'ICT_BIAS';
+    return 'SUPER_ENGULFING';
+  };
+  const strategyType = getStrategyType();
+
+  const getStrategyLabel = () => {
+    if (strategyType === 'RSI_DIVERGENCE') return 'RSI Divergence';
+    if (strategyType === 'ICT_BIAS') return 'ICT Bias';
+    return 'SuperEngulfing';
+  };
+
+  const getStrategyMonitorPath = () => {
+    if (strategyType === 'RSI_DIVERGENCE') return '/monitor/rsi';
+    if (strategyType === 'ICT_BIAS') return '/monitor/bias';
+    return '/monitor/superengulfing';
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getPatternType = () => {
+    if (strategyType === 'RSI_DIVERGENCE') {
+      const divType = (signalData.metadata as any)?.divergenceType || '';
+      if (divType.includes('hidden')) return signalData.signalType === 'BUY' ? 'Hidden Bullish Div' : 'Hidden Bearish Div';
+      return signalData.signalType === 'BUY' ? 'Bullish Divergence' : 'Bearish Divergence';
+    }
+    if (strategyType === 'ICT_BIAS') {
+      const bias = (signalData.metadata as any)?.bias || '';
+      if (bias === 'BULLISH') return 'Bullish Bias';
+      if (bias === 'BEARISH') return 'Bearish Bias';
+      return 'ICT Bias';
+    }
+    return signalData.signalType === 'BUY' ? 'Bullish Engulfing' : 'Bearish Engulfing';
+  };
+
+  const getPatternVariant = () => {
+    if (strategyType === 'RSI_DIVERGENCE') {
+      const rsiVal = (signalData.metadata as any)?.rsiValue;
+      return rsiVal ? `RSI ${Number(rsiVal).toFixed(1)}` : 'Divergence';
+    }
+    if (strategyType === 'ICT_BIAS') {
+      return signalData.signalType === 'BUY' ? 'Long' : 'Short';
+    }
+    // SuperEngulfing
+    const pattern = signalData.metadata?.type || signalData.metadata?.pattern || 'RUN';
+    if (pattern === 'RUN_PLUS') return 'Run+';
+    if (pattern === 'REV_PLUS') return 'Rev+';
+    if (pattern === 'REV') return 'Rev';
+    return 'Run';
+  };
+
+  const getTimeframeDisplay = () => {
+    const tf = signalData.timeframe;
+    if (tf === '1d') return 'Daily';
+    if (tf === '4h') return '4 Hour';
+    if (tf === '1h') return '1 Hour';
+    if (tf === '15m') return '15 Minute';
+    if (tf === '5m') return '5 Minute';
+    if (tf === '1w') return 'Weekly';
+    return (tf as string).toUpperCase();
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Use candles state if available, otherwise use historicalCandles
+  const chartCandles = candles.length > 0 ? candles : (historicalCandles || []);
+  const showCandlesLoading = isLoadingCandles && chartCandles.length === 0;
+
+  return (
+    <>
+      {/* Header */}
+      <div className="sticky top-0 z-30 flex items-center justify-between px-8 py-4 dark:bg-background-dark/80 light:bg-background-light/80 backdrop-blur-md dark:border-b-white/5 light:border-b-green-200/30">
+        <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase">
+          <Link to={getStrategyMonitorPath()} className="dark:text-gray-500 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark cursor-pointer transition-colors">
+            Monitor
+          </Link>
+          <span className="material-symbols-outlined text-[10px] dark:text-gray-600 light:text-text-light-secondary">chevron_right</span>
+          <span className="text-primary drop-shadow-[0_0_5px_rgba(19,236,55,0.5)]">{getStrategyLabel()} Scans</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-2 px-2 py-0.5 rounded text-[10px] font-bold dark:bg-white/5 light:bg-green-50/50 dark:border-white/10 light:border-green-200/30 dark:text-gray-400 light:text-text-light-secondary uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Live Feed
+          </span>
+          <div className="h-4 w-px dark:bg-white/10 light:bg-green-200/30"></div>
+          <span className="text-xs dark:text-gray-500 light:text-text-light-secondary font-medium">
+            Last updated: <span className="dark:text-white light:text-text-dark">Just now</span>
+          </span>
+          <button
+            onClick={() => navigate(-1)}
+            className="p-1.5 rounded-lg dark:bg-white/5 light:bg-green-50/50 dark:hover:bg-white/10 light:hover:bg-green-100/50 dark:text-gray-400 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">arrow_back</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className={`flex-1 overflow-y-auto custom-scrollbar ${isFullscreen ? 'p-0' : 'p-8 pt-6'}`}>
+        <div className={`${isFullscreen ? 'h-screen' : 'max-w-[1600px] mx-auto'} flex flex-col gap-6`}>
+          {/* Title Section */}
+          {!isFullscreen && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-primary tracking-wider uppercase">Crypto Signal</span>
+                <span className="w-1 h-1 rounded-full dark:bg-gray-600 light:bg-text-light-secondary"></span>
+                <span className="text-xs font-medium dark:text-gray-500 light:text-text-light-secondary">Created {timeAgo}m ago</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <h1 className="text-5xl font-sans tracking-tight">
+                  <span className="font-black dark:text-white light:text-text-dark">{signalData.symbol}</span>{' '}
+                  <span className="font-thin dark:text-gray-400 light:text-text-light-secondary">{getStrategyLabel()}</span>
+                </h1>
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(19,236,55,0.2)]">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span> Active
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content Grid */}
+          <div className={`grid ${isFullscreen ? 'grid-cols-1' : 'grid-cols-12'} gap-6`}>
+            {/* Left Column - Chart */}
+            <div className={`${isFullscreen ? 'col-span-1' : 'col-span-12 xl:col-span-8'} flex flex-col gap-6`}>
+              {/* Interactive Chart Panel */}
+              <div className="glass-panel rounded-2xl p-1 relative overflow-hidden group h-[600px] flex flex-col">
+                <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
+                    {getTimeframeDisplay()} Timeframe
+                  </span>
+                  <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono text-primary">
+                    {signalData.symbol}
+                  </span>
+                </div>
+                <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 rounded-lg dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 dark:text-gray-300 light:text-text-dark dark:hover:text-white light:hover:text-text-dark dark:hover:bg-white/10 light:hover:bg-green-100/50 transition-colors"
+                    title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                    </span>
+                  </button>
+                </div>
+
+                {showCandlesLoading ? (
+                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center" style={{ minHeight: isFullscreen ? 'calc(100vh - 100px)' : '600px' }}>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="chart-spinner w-12 h-12"></div>
+                      <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading chart data...</div>
+                    </div>
+                  </div>
+                ) : chartCandles.length === 0 ? (
+                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center" style={{ minHeight: isFullscreen ? 'calc(100vh - 100px)' : '600px' }}>
+                    <div className="flex flex-col items-center gap-4">
+                      <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-text-light-secondary">bar_chart</span>
+                      <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No chart data available</div>
+                      {candlesError && (
+                        <div className="text-xs text-red-400">Error loading candles. Please try again later.</div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50" style={{ minHeight: isFullscreen ? 'calc(100vh - 100px)' : '600px' }}>
+                    <InteractiveLiveChart
+                      candles={chartCandles}
+                      signal={signalData}
+                      symbol={signalData.symbol}
+                      timeframe={signalData.timeframe}
+                      height={isFullscreen ? window.innerHeight - 100 : 600}
+                      isFullscreen={isFullscreen}
+                      onCandleUpdate={handleCandleUpdate}
+                    />
+                  </div>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="px-5 py-3 flex items-center justify-between dark:border-t-white/5 light:border-t-green-200/30 dark:bg-[#0b140d]/50 light:bg-green-50/50"
+                >
+                  <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">
+                    Interactive Live Chart:{' '}
+                    <span className="dark:text-white light:text-text-dark font-medium">
+                      {getPatternType()}{strategyType === 'RSI_DIVERGENCE' ? ' — trend lines show price vs RSI divergence' : ' with volume confirmation'}
+                    </span>
+                  </span>
+                  <div className="flex items-center gap-2 text-[10px] dark:text-gray-500 light:text-text-light-secondary">
+                    <motion.span
+                      className="flex items-center gap-1"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <motion.span
+                        className="w-2 h-2 rounded-full bg-primary"
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [1, 0.7, 1],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      />
+                      Live
+                    </motion.span>
+                    <span className="w-px h-3 dark:bg-white/10 light:bg-green-200/30"></span>
+                    <span>Zoom: Scroll | Pan: Drag</span>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Info Cards */}
+              {!isFullscreen && (
+                <motion.div
+                  initial="initial"
+                  animate="animate"
+                  variants={scaleInVariants}
+                  className="grid grid-cols-4 gap-4"
+                >
+                  <motion.div
+                    variants={fadeInVariants}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="glass-panel p-5 rounded-xl flex flex-col justify-between h-32 hover:border-primary/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 dark:text-gray-500 light:text-text-light-secondary mb-2">
+                      <span className="material-symbols-outlined text-lg">schedule</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Time (UTC)</span>
+                    </div>
+                    <span className="text-3xl font-bold font-mono dark:text-white light:text-text-dark">{formatTime(detectedDate)}</span>
+                  </motion.div>
+                  <motion.div
+                    variants={fadeInVariants}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="glass-panel p-5 rounded-xl flex flex-col justify-between h-32 hover:border-primary/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 dark:text-gray-500 light:text-text-light-secondary mb-2">
+                      <span className="material-symbols-outlined text-lg">calendar_view_day</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Timeframe</span>
+                    </div>
+                    <span className="text-3xl font-bold font-mono dark:text-white light:text-text-dark">{getTimeframeDisplay()}</span>
+                  </motion.div>
+                  <motion.div
+                    variants={fadeInVariants}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="glass-panel p-5 rounded-xl flex flex-col justify-between h-32 relative overflow-hidden group"
+                  >
+                    <div className="absolute right-0 top-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <span className="material-symbols-outlined text-6xl text-primary">trending_up</span>
+                    </div>
+                    <div className="flex items-center gap-2 dark:text-gray-500 light:text-text-light-secondary mb-2 relative z-10">
+                      <span className="material-symbols-outlined text-lg">show_chart</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Type</span>
+                    </div>
+                    <div className="flex flex-col leading-none relative z-10">
+                      <span className="text-3xl font-bold font-mono text-primary drop-shadow-[0_0_8px_rgba(19,236,55,0.4)]">
+                        {signalData.signalType === 'BUY' ? 'Long' : 'Short'}
+                      </span>
+                      <span className="text-lg font-bold font-mono text-primary/80">{getPatternVariant()}</span>
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    variants={fadeInVariants}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="glass-panel p-5 rounded-xl flex flex-col justify-between h-32 hover:border-primary/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 dark:text-gray-500 light:text-text-light-secondary mb-2">
+                      <span className="material-symbols-outlined text-lg">verified_user</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Setup Quality</span>
+                    </div>
+                    <SignalBadge signal={signalData} variant="numeric" />
+                  </motion.div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Right Column - Actions & Context */}
+            {!isFullscreen && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="col-span-12 xl:col-span-4 flex flex-col gap-6"
+              >
+                {/* Execution Actions */}
+                <motion.div
+                  variants={scaleInVariants}
+                  className="glass-panel rounded-2xl p-6 flex flex-col gap-6"
+                >
+                  <div className="flex items-center gap-2 pb-4 dark:border-b-white/5 light:border-b-green-200/30">
+                    <span className="material-symbols-outlined text-primary text-xl">bolt</span>
+                    <h3 className="text-lg font-bold dark:text-white light:text-text-dark">Execution Actions</h3>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <motion.a
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      href={`https://www.tradingview.com/chart/?symbol=BINANCE:${signalData.symbol}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between px-5 py-3.5 rounded-full bg-white text-black font-bold hover:bg-gray-100 transition-all group shadow-lg shadow-white/5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-2xl">change_history</span>
+                        <div className="flex flex-col items-start leading-none">
+                          <span className="text-sm">Open in</span>
+                          <span className="text-sm font-black">TradingView</span>
+                        </div>
+                      </div>
+                      <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">open_in_new</span>
+                    </motion.a>
+                    <motion.a
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      href={`https://www.binance.com/en/trade/${signalData.symbol}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between px-5 py-3.5 rounded-full bg-[#FCD535] text-black font-bold hover:brightness-105 transition-all group shadow-lg shadow-[#FCD535]/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-2xl">diamond</span>
+                        <span className="text-sm font-black">Trade on Binance</span>
+                      </div>
+                      <span className="material-symbols-outlined group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">
+                        north_east
+                      </span>
+                    </motion.a>
+                    <motion.a
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      href={`https://www.bybit.com/trade/usdt/${signalData.symbol}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between px-5 py-3.5 rounded-full bg-[#17181e] text-white border border-white/10 font-bold hover:bg-[#23262b] transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-2xl">layers</span>
+                        <span className="text-sm font-black">Trade on Bybit</span>
+                      </div>
+                      <span className="material-symbols-outlined text-gray-400 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">
+                        north_east
+                      </span>
+                    </motion.a>
+                  </div>
+                  <div className="h-px dark:bg-white/5 light:bg-green-200/30 mx-2"></div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3 rounded-full border border-dashed dark:border-white/20 light:border-green-200/50 text-xs font-bold dark:text-gray-400 light:text-text-light-secondary uppercase tracking-widest dark:hover:text-white light:hover:text-text-dark dark:hover:border-white/40 light:hover:border-green-200/70 dark:hover:bg-white/5 light:hover:bg-green-100/50 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base">sync</span>
+                    Recheck Status
+                  </motion.button>
+                </motion.div>
+
+                {/* Signal Context */}
+                <motion.div
+                  variants={scaleInVariants}
+                  className="glass-panel rounded-2xl p-6 flex flex-col gap-5 flex-1"
+                >
+                  <h3 className="text-sm font-bold dark:text-white light:text-text-dark uppercase tracking-wider mb-2">Signal Context</h3>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between text-xs font-medium dark:text-gray-400 light:text-text-light-secondary">
+                      <span>Pattern Strength</span>
+                      <span className="text-primary font-mono">85%</span>
+                    </div>
+                    <div className="w-full h-2 dark:bg-white/5 light:bg-green-100/50 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-primary shadow-[0_0_10px_rgba(19,236,55,0.4)]"
+                        initial={{ width: 0 }}
+                        animate={{ width: '85%' }}
+                        transition={{ duration: 1, ease: 'easeOut' }}
+                      />
+                    </div>
+                  </div>
+                  <div className="h-px dark:bg-white/5 light:bg-green-200/30 my-1"></div>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Risk / Reward</span>
+                    <span className="font-mono dark:text-white light:text-text-dark text-lg font-bold">1 : 3.5</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Entry Zone</span>
+                    <span className="font-mono dark:text-white light:text-text-dark font-bold tracking-tight">
+                      ${formatPrice(Number(signalData.price) * 0.996)} - ${formatPrice(Number(signalData.price) * 1.004)}
+                    </span>
+                  </div>
+                  <div className="mt-auto pt-4 dark:border-t-white/5 light:border-t-green-200/30">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="p-3 rounded-lg dark:bg-red-500/10 light:bg-red-100/50 border dark:border-red-500/20 light:border-red-200/50 flex items-start gap-3"
+                    >
+                      <span className="material-symbols-outlined text-red-500 text-lg mt-0.5">warning</span>
+                      <div>
+                        <span className="text-xs font-bold text-red-400 uppercase block mb-1">Risk Warning</span>
+                        <p className="text-[10px] dark:text-gray-400 light:text-text-light-secondary leading-relaxed">
+                          High volatility expected in the next 4H due to market opening.
+                        </p>
+                      </div>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

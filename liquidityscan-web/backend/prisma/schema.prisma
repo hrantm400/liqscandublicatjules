@@ -1,0 +1,208 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  name                String?
+  password            String?
+  googleId            String?   @unique
+  avatar              String?
+  isAdmin             Boolean   @default(false)
+  subscriptionId      String?
+  subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionExpiresAt DateTime?
+  subscriptionStatus  String    @default("none") // none, active, expired, cancelled
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  payments            Payment[]
+  refreshTokens       RefreshToken[]
+  userSubscriptions   UserSubscription[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("categories")
+}
+
+model Subscription {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?  @db.Text
+  tier          String   // SCOUT, APPRENTICE, SPECIALIST, STRATEGIST, GODFATHER
+  tierNumber    Int      @default(0) // 0-4 for sorting
+  price         Decimal  @db.Decimal(10, 2) // monthly price (legacy, use priceMonthly)
+  priceMonthly  Decimal  @db.Decimal(10, 2) // monthly price
+  priceYearly   Decimal? @db.Decimal(10, 2) // yearly price (optional)
+  duration      Int      @default(30) // in days
+  markets       Json?    // Available markets: ["crypto", "forex", "indices", "commodities"]
+  pairsLimit    Int?     // null = unlimited
+  timeframes    Json?    // Available timeframes: ["15m", "1H", "4H", "Daily"]
+  signalTypes   Json?    // Signal types: ["Standard", "REV+", "RUN+"]
+  features      Json?    // Array of features
+  limits        Json?    // Additional limits configuration
+  isPopular     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users         User[]
+  courses       Course[]
+  chapterSubscriptions ChapterSubscription[]
+  userSubscriptions UserSubscription[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  subscriptionId String? // Link to subscription if this is a subscription payment
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("USD")
+  status        String   @default("pending") // pending, completed, failed, refunded
+  paymentMethod String?  // crypto, card, etc
+  paymentId     String?  // External payment ID (e.g., NOWPayments)
+  paymentUrl    String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("payments")
+}
+
+model UserSubscription {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription  Subscription @relation(fields: [subscriptionId], references: [id])
+  startDate     DateTime @default(now())
+  endDate       DateTime
+  status        String   @default("active") // active, expired, cancelled
+  paymentId     String?  // Link to payment
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("user_subscriptions")
+}
+
+model Course {
+  id             String        @id @default(uuid())
+  title          String
+  description    String?       @db.Text
+  coverUrl       String?
+  difficulty     String        @default("Beginner") // Beginner, Intermediate, Advanced
+  price          Decimal       @default(0) @db.Decimal(10, 2)
+  isFree         Boolean       @default(false)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  
+  chapters       Chapter[]
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("courses")
+}
+
+model Chapter {
+  id             String        @id @default(uuid())
+  courseId       String
+  course         Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?       @db.Text
+  coverUrl       String?
+  videoUrl       String?       // YouTube or Wistia preview video
+  difficulty     String        @default("Beginner") // Beginner, Intermediate, Advanced
+  price          Decimal       @default(0) @db.Decimal(10, 2)
+  isFree         Boolean       @default(true)
+  order          Int           @default(0)
+  
+  lessons        Lesson[]
+  subscriptions  ChapterSubscription[]
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("chapters")
+}
+
+model ChapterSubscription {
+  id             String        @id @default(uuid())
+  chapterId      String
+  chapter        Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+
+  @@unique([chapterId, subscriptionId])
+  @@map("chapter_subscriptions")
+}
+
+model Lesson {
+  id            String   @id @default(uuid())
+  chapterId     String
+  chapter       Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?  @db.Text
+  videoUrl      String
+  videoProvider String? // youtube | wistia
+  coverUrl      String?
+  order         Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("lessons")
+}
+
+model SuperEngulfingSignal {
+  id         String   @id
+  strategyType String @default("SUPER_ENGULFING")
+  symbol     String
+  timeframe  String
+  signalType String
+  price      Decimal  @db.Decimal(20, 8)
+  detectedAt DateTime
+  status     String   @default("ACTIVE")
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("super_engulfing_signals")
+}

@@ -1,0 +1,309 @@
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { CandlesService } from '../candles/candles.service';
+import { SignalsService, WebhookSignalInput } from './signals.service';
+import {
+    calculateRSI,
+    detectICTBias,
+    detectRSIDivergence,
+    detectSuperEngulfing,
+    CandleData,
+} from './indicators';
+
+@Injectable()
+export class ScannerService implements OnModuleInit {
+    private readonly logger = new Logger(ScannerService.name);
+    private isScanning = false;
+
+    // --- Live bias cache (TTL 60 seconds per timeframe) ---
+    private liveBiasCache = new Map<string, {
+        timestamp: number;
+        data: Record<string, { bias: string; prevHigh: number; prevLow: number; direction: string }>;
+    }>();
+    private static readonly BIAS_CACHE_TTL_MS = 60_000;
+
+    constructor(
+        private readonly candlesService: CandlesService,
+        private readonly signalsService: SignalsService,
+    ) { }
+
+    /**
+     * Compute live ICT bias for every unique ICT_BIAS symbol in the given timeframe.
+     * Results are cached for 60 seconds to avoid hammering Binance.
+     */
+    async getLiveBias(
+        timeframe: string,
+    ): Promise<Record<string, { bias: string; prevHigh: number; prevLow: number; direction: string }>> {
+        // Check cache
+        const cached = this.liveBiasCache.get(timeframe);
+        if (cached && Date.now() - cached.timestamp < ScannerService.BIAS_CACHE_TTL_MS) {
+            return cached.data;
+        }
+
+        // Get unique symbols that have ICT_BIAS signals for this timeframe from DB
+        let symbols: string[] = [];
+        try {
+            const rows = await (this.signalsService as any).prisma.superEngulfingSignal.findMany({
+                where: { strategyType: 'ICT_BIAS', timeframe },
+                select: { symbol: true },
+                distinct: ['symbol'],
+            });
+            symbols = rows.map((r: any) => r.symbol as string);
+        } catch (err) {
+            this.logger.error(`Failed to query ICT_BIAS symbols: ${err}`);
+            return {};
+        }
+
+        if (symbols.length === 0) return {};
+
+        this.logger.log(`[LiveBias] Computing live ${timeframe} bias for ${symbols.length} symbols...`);
+
+        // Batch fetch with concurrency limit of 10
+        const CONCURRENCY = 10;
+        const result: Record<string, { bias: string; prevHigh: number; prevLow: number; direction: string }> = {};
+
+        for (let i = 0; i < symbols.length; i += CONCURRENCY) {
+            const batch = symbols.slice(i, i + CONCURRENCY);
+            const promises = batch.map(async (symbol) => {
+                try {
+                    const klines = await this.candlesService.getKlines(symbol, timeframe, 5);
+                    const candles: CandleData[] = klines.map(k => ({
+                        openTime: k.openTime, open: k.open, high: k.high,
+                        low: k.low, close: k.close, volume: k.volume,
+                    }));
+                    const sig = detectICTBias(candles);
+                    if (sig) {
+                        result[symbol] = {
+                            bias: sig.bias,
+                            prevHigh: sig.prevHigh,
+                            prevLow: sig.prevLow,
+                            direction: sig.direction,
+                        };
+                    }
+                } catch (err) {
+                    this.logger.warn(`[LiveBias] Failed for ${symbol}: ${err}`);
+                }
+            });
+            await Promise.all(promises);
+        }
+
+        // Store in cache
+        this.liveBiasCache.set(timeframe, { timestamp: Date.now(), data: result });
+        this.logger.log(`[LiveBias] Cached ${Object.keys(result).length} results for ${timeframe}`);
+
+        return result;
+    }
+
+    onModuleInit() {
+        this.logger.log('ScannerService initialized.');
+        // Start scanning loop - run every 30 minutes (1800000 ms)
+        setInterval(() => {
+            this.scanAll().catch((err) => this.logger.error(`Scan error: ${err.message}`));
+        }, 30 * 60 * 1000);
+
+        // Run once on startup after a slight delay
+        setTimeout(() => {
+            this.scanAll().catch((err) => this.logger.error(`Startup scan error: ${err.message}`));
+        }, 10000);
+    }
+
+    /**
+     * Fetch all USDT trading pairs from Binance.
+     */
+    async fetchSymbols(): Promise<string[]> {
+        try {
+            const res = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+            if (!res.ok) throw new Error(`Failed to fetch exchange info: ${res.statusText}`);
+            const data = await res.json();
+            const symbols = (data.symbols as any[])
+                .filter((s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && s.isSpotTradingAllowed)
+                .map((s) => s.symbol);
+            this.logger.log(`Fetched ${symbols.length} USDT pairs from Binance.`);
+            return symbols;
+        } catch (error) {
+            this.logger.error(`Error fetching symbols: ${error.message}`);
+            // Fallback if API fails
+            return ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'];
+        }
+    }
+
+    async scanAll() {
+        if (this.isScanning) {
+            this.logger.warn('Scan already in progress, skipping...');
+            return;
+        }
+        this.isScanning = true;
+        const start = Date.now();
+
+        try {
+            const symbols = await this.fetchSymbols();
+            if (symbols.length === 0) {
+                this.logger.warn('No symbols found to scan.');
+                return;
+            }
+            this.logger.log(`Starting scan for ${symbols.length} symbols (chunked)...`);
+
+            let signalCount = 0;
+            const CHUNK_SIZE = 10;
+            const DELAY_MS = 1000; // 1 second delay between chunks to respect rate limits
+
+            for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
+                const chunk = symbols.slice(i, i + CHUNK_SIZE);
+                // Process chunk in parallel
+                const results = await Promise.all(chunk.map(s => this.scanSymbol(s)));
+                signalCount += results.reduce((a, b) => a + b, 0);
+
+                // Progress log every 50 symbols
+                if ((i + CHUNK_SIZE) % 50 === 0) {
+                    this.logger.log(`Scanned ${i + CHUNK_SIZE}/${symbols.length} symbols...`);
+                }
+
+                // Rate limit delay
+                if (i + CHUNK_SIZE < symbols.length) {
+                    await new Promise(resolve => setTimeout(resolve, DELAY_MS));
+                }
+            }
+
+            const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+            this.logger.log(`Scan completed in ${elapsed}s. Found ${signalCount} new signals.`);
+        } catch (err) {
+            this.logger.error(`Scan failed: ${err.message}`);
+        } finally {
+            this.isScanning = false;
+        }
+    }
+
+    private async scanSymbol(symbol: string): Promise<number> {
+        let count = 0;
+        try {
+            // 1. Super Engulfing (4h, 1d, 1w)
+            for (const tf of ['4h', '1d', '1w']) {
+                count += await this.checkSuperEngulfing(symbol, tf);
+            }
+
+            // 2. ICT Bias (4h, 1d, 1w)
+            for (const tf of ['4h', '1d', '1w']) {
+                count += await this.checkICTBias(symbol, tf);
+            }
+
+            // 3. RSI Divergence (1h, 4h, 1d)
+            for (const tf of ['1h', '4h', '1d']) {
+                count += await this.checkRSIDivergence(symbol, tf);
+            }
+        } catch (e) {
+            // safely ignore individual symbol errors to keep scanning
+        }
+        return count;
+    }
+
+    private async getCandles(symbol: string, interval: string): Promise<CandleData[]> {
+        const klines = await this.candlesService.getKlines(symbol, interval, 120); // Increased for RSI divergence lookback
+        return klines.map(k => ({
+            openTime: k.openTime,
+            open: k.open,
+            high: k.high,
+            low: k.low,
+            close: k.close,
+            volume: k.volume,
+        }));
+    }
+
+    private async saveSignal(
+        strategyType: string,
+        symbol: string,
+        timeframe: string,
+        signalType: string,
+        price: number,
+        detectedAt: number,
+        metadata?: Record<string, any>,
+    ) {
+        const id = `${strategyType}-${symbol}-${timeframe}-${detectedAt}`;
+
+        const input = {
+            id,
+            strategyType,
+            symbol,
+            timeframe,
+            signalType, // BUY / SELL
+            price,
+            detectedAt: new Date(detectedAt).toISOString(),
+            status: 'ACTIVE',
+            metadata,
+        };
+
+        return this.signalsService.addSignals([input]);
+    }
+
+    // --- Strategies ---
+
+    private async checkSuperEngulfing(symbol: string, timeframe: string): Promise<number> {
+        const candles = await this.getCandles(symbol, timeframe);
+        const closedCandles = candles.slice(0, -1);
+
+        if (closedCandles.length < 2) return 0;
+
+        const confirmedSignals = detectSuperEngulfing(closedCandles);
+
+        let added = 0;
+        for (const sig of confirmedSignals) {
+            added += await this.saveSignal(
+                'SUPER_ENGULFING', symbol, timeframe, sig.direction, sig.price, sig.time,
+                { pattern: sig.pattern }
+            );
+        }
+        return added;
+    }
+
+    private async checkICTBias(symbol: string, timeframe: string): Promise<number> {
+        const candles = await this.getCandles(symbol, timeframe);
+
+        // detectICTBias uses candles[last] as current forming, [last-1] as Candle B, [last-2] as Candle A
+        // Do NOT slice — the forming candle must stay in the array
+        const sig = detectICTBias(candles);
+        if (!sig || sig.bias === 'RANGING') return 0;
+
+        const signalType = sig.direction === 'NEUTRAL' ? 'BUY' : sig.direction;
+        return this.saveSignal(
+            'ICT_BIAS', symbol, timeframe, signalType, candles[candles.length - 1].close, sig.time,
+            { bias: sig.bias, prevHigh: sig.prevHigh, prevLow: sig.prevLow }
+        );
+    }
+
+    private async checkRSIDivergence(symbol: string, timeframe: string): Promise<number> {
+        const candles = await this.getCandles(symbol, timeframe);
+        const closedCandles = candles.slice(0, -1);
+        if (closedCandles.length < 30) return 0; // Need history for RSI
+
+        const lbR = 5; // Must match the pivot lookback-right used in detectRSIDivergence
+        const signals = detectRSIDivergence(closedCandles);
+
+        // The latest possible confirmed pivot is at index (closedCandles.length - 1 - lbR)
+        // because a pivot needs lbR bars to the right for confirmation.
+        // Save signals from the most recently confirmed pivot window.
+        const latestPivotIndex = closedCandles.length - 1 - lbR;
+
+        let added = 0;
+        for (const sig of signals) {
+            // Save signals where the pivot is at the latest confirmable position
+            if (sig.barIndex >= latestPivotIndex) {
+                const signalType = sig.type.includes('bullish') ? 'BUY' : 'SELL';
+                await this.saveSignal(
+                    'RSI_DIVERGENCE', symbol, timeframe, signalType, sig.price, sig.time,
+                    {
+                        divergenceType: sig.type,
+                        rsiValue: sig.rsiValue,
+                        // Pivot coordinates for drawing divergence lines on chart
+                        pivotBarIndex: sig.barIndex,
+                        pivotPrice: sig.price,
+                        pivotTime: closedCandles[sig.barIndex]?.openTime,
+                        prevPivotBarIndex: sig.prevBarIndex,
+                        prevPivotPrice: sig.prevPrice,
+                        prevPivotRsiValue: sig.prevRsiValue,
+                        prevPivotTime: closedCandles[sig.prevBarIndex]?.openTime,
+                    }
+                );
+                added++;
+            }
+        }
+        return added;
+    }
+}
