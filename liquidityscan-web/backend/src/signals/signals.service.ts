@@ -203,6 +203,47 @@ export class SignalsService {
   }
 
   /**
+   * Update the status and outcome of an existing signal.
+   * Called by the Position Tracker when TP/SL/Expiry is hit.
+   */
+  async updateSignalStatus(update: {
+    id: string;
+    status: string;
+    outcome: string;
+    closedPrice: number;
+    closedAt: string;
+    pnlPercent: number;
+  }) {
+    try {
+      // 1. Update DB
+      await (this.prisma as any).superEngulfingSignal.update({
+        where: { id: update.id },
+        data: {
+          status: update.status,
+          outcome: update.outcome,
+          closedPrice: new Prisma.Decimal(update.closedPrice),
+          closedAt: new Date(update.closedAt),
+          pnlPercent: update.pnlPercent,
+        },
+      });
+
+      // 2. Update in-memory cache
+      const cachedSignal = this.signals.find(s => s.id === update.id);
+      if (cachedSignal) {
+        cachedSignal.status = update.status;
+        cachedSignal.outcome = update.outcome;
+        cachedSignal.closedPrice = update.closedPrice;
+        cachedSignal.closedAt = update.closedAt;
+        cachedSignal.pnlPercent = update.pnlPercent;
+      }
+
+      this.logger.log(`Updated signal ${update.id} to ${update.status} (PnL: ${update.pnlPercent}%)`);
+    } catch (err) {
+      this.logger.error(`Failed to update signal ${update.id}: ${err.message}`);
+    }
+  }
+
+  /**
    * Get stored signals.
    */
   async getSignals(strategyType?: string): Promise<StoredSignal[]> {

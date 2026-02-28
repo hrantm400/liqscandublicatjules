@@ -3,13 +3,14 @@ import { SignalsController } from './signals.controller';
 import { SignalsService } from './signals.service';
 import { ScannerService } from './scanner.service';
 import { LifecycleService } from './lifecycle.service';
+import { PositionTrackerService } from './position-tracker.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CandlesModule } from '../candles/candles.module';
 
 @Module({
   imports: [PrismaModule, CandlesModule],
   controllers: [SignalsController],
-  providers: [SignalsService, ScannerService, LifecycleService],
+  providers: [SignalsService, ScannerService, LifecycleService, PositionTrackerService],
   exports: [SignalsService],
 })
 export class SignalsModule { }
