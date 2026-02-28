@@ -8,6 +8,7 @@ import {
     detectSuperEngulfing,
     CandleData,
 } from './indicators';
+import { checkConfluence as checkConfluenceIndicator } from './confluence.indicator';
 
 @Injectable()
 export class ScannerService implements OnModuleInit {
@@ -189,6 +190,9 @@ export class ScannerService implements OnModuleInit {
             for (const tf of ['1h', '4h', '1d']) {
                 count += await this.checkRSIDivergence(symbol, tf);
             }
+
+            // 4. Confluence: Daily SE/Bias + 5m/15m RSI + 5m/15m Trend Break
+            count += await this.checkConfluenceSignal(symbol);
         } catch (e) {
             // safely ignore individual symbol errors to keep scanning
         }
@@ -305,5 +309,48 @@ export class ScannerService implements OnModuleInit {
             }
         }
         return added;
+    }
+
+    // --- Strategy 4: Confluence (SE+RSI+Trend) ---
+
+    private async checkConfluenceSignal(symbol: string): Promise<number> {
+        try {
+            // Condition 1 uses Daily candles
+            const dailyCandles = await this.getCandles(symbol, '1d');
+            if (dailyCandles.length < 5) return 0;
+
+            let count = 0;
+
+            // Check both 5m and 15m for Conditions 2+3
+            for (const ltf of ['5m', '15m']) {
+                const ltfCandles = await this.getCandles(symbol, ltf);
+                if (ltfCandles.length < 30) continue;
+
+                const signal = checkConfluenceIndicator(dailyCandles, ltfCandles, ltf);
+                if (!signal) continue;
+
+                count += await this.saveSignal(
+                    'CONFLUENCE',
+                    symbol,
+                    ltf, // Save with the lower timeframe
+                    signal.direction, // BUY or SELL
+                    signal.price,
+                    signal.time,
+                    {
+                        htfCondition: signal.htfCondition,
+                        htfDetails: signal.htfDetails,
+                        rsiValue: Math.round(signal.rsiValue * 100) / 100,
+                        rsiCondition: signal.rsiCondition,
+                        triggerType: signal.triggerType,
+                        triggerPrice: signal.triggerPrice,
+                        label: signal.label,
+                        confidence: signal.confidence,
+                    },
+                );
+            }
+            return count;
+        } catch (e) {
+            return 0;
+        }
     }
 }

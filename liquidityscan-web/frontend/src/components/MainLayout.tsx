@@ -68,7 +68,7 @@ const MainLayout: React.FC = () => {
         const currentPath = location.pathname || '/';
         const normalizedPath = path.startsWith('/') ? path : `/${path}`;
         return currentPath === normalizedPath || currentPath.startsWith(normalizedPath + '/')
-            ? 'bg-primary/10 border-l-4 border-l-primary dark:text-white light:text-text-dark' 
+            ? 'bg-primary/10 border-l-4 border-l-primary dark:text-white light:text-text-dark'
             : 'dark:text-gray-500 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark dark:hover:bg-white/5 light:hover:bg-green-100';
     };
 
@@ -91,9 +91,9 @@ const MainLayout: React.FC = () => {
 
     // Fetch user subscription
     const { data: mySubscription } = useQuery({
-      queryKey: ['mySubscription'],
-      queryFn: () => userApi.getMySubscription(),
-      enabled: !!token,
+        queryKey: ['mySubscription'],
+        queryFn: () => userApi.getMySubscription(),
+        enabled: !!token,
     });
 
     const subscriptionPlan = mySubscription?.subscription?.name || 'Free Plan';
@@ -116,8 +116,8 @@ const MainLayout: React.FC = () => {
                             <h2 className="text-primary text-xs font-bold tracking-[0.2em] leading-tight">SCANNER</h2>
                         </div>
                     </div>
-                    <Link 
-                        to="/" 
+                    <Link
+                        to="/"
                         className="flex items-center gap-2 px-3 py-2 rounded-lg dark:bg-white/5 light:bg-green-50 dark:hover:bg-white/10 light:hover:bg-green-100 dark:text-gray-400 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark transition-all text-sm font-medium border dark:border-white/10 light:border-green-300/50"
                     >
                         <span className="material-symbols-outlined text-base">home</span>
@@ -150,6 +150,11 @@ const MainLayout: React.FC = () => {
                             <Link to="/monitor/rsi" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive('/monitor/rsi')}`}>
                                 <span className="material-symbols-outlined transition-colors">hub</span>
                                 <span className="text-sm font-medium">RSI Divergence</span>
+                            </Link>
+
+                            <Link to="/monitor/confluence" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive('/monitor/confluence')}`}>
+                                <span className="material-symbols-outlined transition-colors text-cyan-400">merge_type</span>
+                                <span className="text-sm font-medium text-cyan-400">Confluence</span>
                             </Link>
                         </div>
 
@@ -187,8 +192,8 @@ const MainLayout: React.FC = () => {
                         {(isAdmin || user?.isAdmin) && (
                             <div className="flex flex-col gap-2">
                                 <p className="px-4 text-xs font-bold tracking-widest dark:text-gray-500 light:text-text-light-secondary uppercase">ADMIN</p>
-                                <Link 
-                                    to="/admin" 
+                                <Link
+                                    to="/admin"
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all bg-primary/10 border border-primary/20 ${isActive('/admin')}`}
                                 >
                                     <span className="material-symbols-outlined transition-colors text-primary">admin_panel_settings</span>
@@ -196,7 +201,7 @@ const MainLayout: React.FC = () => {
                                 </Link>
                             </div>
                         )}
-                        
+
                         {/* Debug info - always show for troubleshooting */}
                         <div className="px-4 py-2 text-xs text-gray-500 border-t dark:border-white/5 light:border-green-300/50 mt-2">
                             <div>Debug: isAdmin={String(isAdmin)}</div>
@@ -233,7 +238,7 @@ const MainLayout: React.FC = () => {
                 {/* Bottom section - Theme Toggle & User Profile (always visible) */}
                 <div className="shrink-0 p-4 pt-3 border-t dark:border-white/5 light:border-green-300 space-y-2 dark:bg-black/20 light:bg-white/50 backdrop-blur-sm">
                     <ThemeToggle />
-                    <Link 
+                    <Link
                         to="/profile"
                         className="flex items-center gap-3 p-2.5 rounded-xl dark:bg-white/10 light:bg-green-100 dark:hover:bg-white/15 light:hover:bg-green-200 cursor-pointer transition-colors group border dark:border-white/10 light:border-green-300/50"
                     >
@@ -250,8 +255,8 @@ const MainLayout: React.FC = () => {
                                 {loading ? (
                                     <span className="text-[11px] dark:text-gray-300 light:text-text-light-secondary font-medium">...</span>
                                 ) : (
-                                    <SubscriptionBadge 
-                                        subscription={mySubscription?.subscription} 
+                                    <SubscriptionBadge
+                                        subscription={mySubscription?.subscription}
                                         status={mySubscription?.subscriptionStatus}
                                     />
                                 )}

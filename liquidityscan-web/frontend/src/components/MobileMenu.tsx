@@ -9,6 +9,7 @@ export function MobileMenu() {
     { path: '/monitor/superengulfing', label: 'SuperEngulfing', icon: 'candlestick_chart' },
     { path: '/monitor/bias', label: 'Bias Shifts', icon: 'timeline' },
     { path: '/monitor/rsi', label: 'RSI Divergence', icon: 'hub' },
+    { path: '/monitor/confluence', label: 'Confluence', icon: 'merge_type' },
   ];
 
   return (
@@ -41,11 +42,10 @@ export function MobileMenu() {
                   key={item.path}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 ${
-                    location.pathname === item.path
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 ${location.pathname === item.path
                       ? 'bg-primary/10 border-l-4 border-l-primary text-white'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
+                    }`}
                 >
                   <span className="material-symbols-outlined">{item.icon}</span>
                   <span className="text-sm font-medium">{item.label}</span>

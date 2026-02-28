@@ -2,7 +2,11 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-// import { signalsApi } from '../services/api'; // TODO: Re-enable when API service is recreated
+import { StatusTabs } from '../components/shared/StatusTabs';
+import { WinRatePanel } from '../components/shared/WinRatePanel';
+import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
+// import { fetchSignals } from '../services/signalsApi';
+import { scanSuperEngulfing } from '../services/signalsApi';
 import { Signal } from '../types';
 import { StaticMiniChart } from '../components/StaticMiniChart';
 import { FilterMenu } from '../components/shared/FilterMenu';
@@ -81,7 +85,7 @@ export function MonitorSuperEngulfing() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all'); // 'all' | 'active' | 'closed'
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   // By default, show all timeframes (don't filter)
@@ -150,8 +154,14 @@ export function MonitorSuperEngulfing() {
     let result = timeframeFilteredSignals;
     if (statusFilter === 'active') {
       result = result.filter(s => s.status === 'ACTIVE');
+    } else if (statusFilter === 'won') {
+      result = result.filter(s => s.status === 'HIT_TP' || s.outcome === 'HIT_TP');
+    } else if (statusFilter === 'lost') {
+      result = result.filter(s => s.status === 'HIT_SL' || s.outcome === 'HIT_SL');
+    } else if (statusFilter === 'expired') {
+      result = result.filter(s => s.status === 'EXPIRED' || s.outcome === 'EXPIRED');
     } else if (statusFilter === 'closed') {
-      result = result.filter(s => s.status !== 'ACTIVE'); // CLOSED, EXPIRED, FILLED
+      result = result.filter(s => s.status !== 'ACTIVE');
     }
     return result;
   }, [timeframeFilteredSignals, statusFilter]);
@@ -322,7 +332,7 @@ export function MonitorSuperEngulfing() {
     setIsScanning(true);
     setScanResult(null);
     try {
-      const result = await signalsApi.scanSuperEngulfing(selectedTimeframe || undefined);
+      const result = await scanSuperEngulfing(selectedTimeframe || undefined);
       setScanResult(
         `Scan completed! Generated ${result.totalSignals || 0} signals from ${result.symbolsScanned || 0} symbols across ${result.timeframesScanned || 0} timeframes.`
       );
@@ -502,70 +512,77 @@ export function MonitorSuperEngulfing() {
 
             {/* 1W - hidden for Free Forever (4H and Daily only) */}
             {!isFreeForever && (
-            <AnimatedCard
-              className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all h-36 ${timeframeStats['1w'] > 0
-                ? selectedTimeframe === '1w'
-                  ? 'dark:bg-[rgba(19,236,55,0.15)] light:bg-green-100 dark:border-primary light:border-green-400 dark:shadow-[0_0_20px_rgba(19,236,55,0.3)] light:shadow-[0_0_15px_rgba(19,236,55,0.2)] ring-2 ring-primary/50 scale-[1.02] cursor-pointer'
-                  : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)] hover:scale-[1.01] cursor-pointer'
-                : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
-                }`}
-              onClick={() => {
-                if (timeframeStats['1w'] > 0) {
-                  if (selectedTimeframe === '1w') {
-                    setSearchParams({});
-                    setSelectedTimeframe(null);
-                  } else {
-                    setSearchParams({ timeframe: '1w' });
-                    setSelectedTimeframe('1w');
+              <AnimatedCard
+                className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all h-36 ${timeframeStats['1w'] > 0
+                  ? selectedTimeframe === '1w'
+                    ? 'dark:bg-[rgba(19,236,55,0.15)] light:bg-green-100 dark:border-primary light:border-green-400 dark:shadow-[0_0_20px_rgba(19,236,55,0.3)] light:shadow-[0_0_15px_rgba(19,236,55,0.2)] ring-2 ring-primary/50 scale-[1.02] cursor-pointer'
+                    : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)] hover:scale-[1.01] cursor-pointer'
+                  : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
+                  }`}
+                onClick={() => {
+                  if (timeframeStats['1w'] > 0) {
+                    if (selectedTimeframe === '1w') {
+                      setSearchParams({});
+                      setSelectedTimeframe(null);
+                    } else {
+                      setSearchParams({ timeframe: '1w' });
+                      setSelectedTimeframe('1w');
+                    }
                   }
-                }
-              }}
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-bold ${timeframeStats['1w'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
-                    1W Timeframe
-                  </span>
-                  {selectedTimeframe === '1w' && (
-                    <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to show all">
-                      check_circle
+                }}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${timeframeStats['1w'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
+                      1W Timeframe
+                    </span>
+                    {selectedTimeframe === '1w' && (
+                      <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to show all">
+                        check_circle
+                      </span>
+                    )}
+                  </div>
+                  {timeframeStats['1w'] > 0 ? (
+                    <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframe === '1w'
+                      ? 'text-primary bg-primary/20 border-primary/40'
+                      : 'text-primary bg-primary/10 border-primary/20'
+                      }`}>
+                      <motion.span
+                        className="w-1.5 h-1.5 rounded-full bg-primary"
+                        animate={{ opacity: [1, 0.5, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                      {selectedTimeframe === '1w' ? 'Selected' : 'Active'}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-green-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-green-300">
+                      No Signals
                     </span>
                   )}
                 </div>
-                {timeframeStats['1w'] > 0 ? (
-                  <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframe === '1w'
-                    ? 'text-primary bg-primary/20 border-primary/40'
-                    : 'text-primary bg-primary/10 border-primary/20'
-                    }`}>
-                    <motion.span
-                      className="w-1.5 h-1.5 rounded-full bg-primary"
-                      animate={{ opacity: [1, 0.5, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                    {selectedTimeframe === '1w' ? 'Selected' : 'Active'}
+                <div className="mt-auto">
+                  <span
+                    className={`text-5xl font-black tracking-tight ${timeframeStats['1w'] > 0
+                      ? 'text-primary drop-shadow-[0_0_12px_rgba(19,236,55,0.6)]'
+                      : 'dark:text-gray-700 light:text-text-light-secondary'
+                      }`}
+                  >
+                    {timeframeStats['1w']}
                   </span>
-                ) : (
-                  <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-green-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-green-300">
-                    No Signals
+                  <span className={`text-xs ml-1 font-medium uppercase tracking-wide ${timeframeStats['1w'] > 0 ? 'dark:text-gray-400 light:text-text-light-secondary' : 'dark:text-gray-600 light:text-text-light-secondary'}`}>
+                    Signals Detected
                   </span>
-                )}
-              </div>
-              <div className="mt-auto">
-                <span
-                  className={`text-5xl font-black tracking-tight ${timeframeStats['1w'] > 0
-                    ? 'text-primary drop-shadow-[0_0_12px_rgba(19,236,55,0.6)]'
-                    : 'dark:text-gray-700 light:text-text-light-secondary'
-                    }`}
-                >
-                  {timeframeStats['1w']}
-                </span>
-                <span className={`text-xs ml-1 font-medium uppercase tracking-wide ${timeframeStats['1w'] > 0 ? 'dark:text-gray-400 light:text-text-light-secondary' : 'dark:text-gray-600 light:text-text-light-secondary'}`}>
-                  Signals Detected
-                </span>
-              </div>
-            </AnimatedCard>
+                </div>
+              </AnimatedCard>
             )}
           </div>
+
+          {/* Status Tabs */}
+          <StatusTabs
+            strategyType="SUPER_ENGULFING"
+            activeStatus={statusFilter}
+            onStatusChange={setStatusFilter}
+          />
         </motion.div>
       )}
 
@@ -735,6 +752,7 @@ export function MonitorSuperEngulfing() {
                         <th className="px-6 py-3" scope="col">Symbol</th>
                         <th className="px-6 py-3" scope="col">Exchange</th>
                         <th className="px-6 py-3" scope="col">Pattern</th>
+                        <th className="px-6 py-3 text-center" scope="col">Status</th>
                         <th className="px-6 py-3 text-center" scope="col">Setup Quality</th>
                         <th className="px-6 py-3 text-right" scope="col">Detected</th>
                         <th className="px-6 py-3 text-right" scope="col">Actions</th>
@@ -743,7 +761,7 @@ export function MonitorSuperEngulfing() {
                     <tbody className="dark:divide-y-white/5 light:divide-y-green-200/30 text-xs font-medium">
                       {paginatedSignals.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center dark:text-gray-500 light:text-text-light-secondary">
+                          <td colSpan={7} className="px-6 py-12 text-center dark:text-gray-500 light:text-text-light-secondary">
                             No signals found
                           </td>
                         </tr>
@@ -782,6 +800,9 @@ export function MonitorSuperEngulfing() {
                                 }
                                 return `${direction} Run`;
                               })()}
+                            </td>
+                            <td className="px-6 py-2.5 text-center">
+                              <SignalStatusBadge signal={signal} />
                             </td>
                             <td className="px-6 py-2.5 text-center">
                               <SignalBadge signal={signal} />
@@ -966,73 +987,11 @@ export function MonitorSuperEngulfing() {
               </div>
             )}
 
-            {/* Stats Sidebar - Only show in list view */}
+            {/* Win Rate Sidebar - Only show in list view */}
             {viewMode === 'list' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className="w-72 dark:bg-[#112214] dark:backdrop-blur-md light:bg-white dark:border-[#234829] light:border-green-300 border rounded-xl hidden lg:flex flex-col shadow-xl overflow-hidden"
-              >
-                <div className="p-4 dark:border-b-white/5 light:border-b-green-300 border-b flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider dark:text-gray-400 light:text-text-light-secondary">Pattern Stats</span>
-                  <span className="material-symbols-outlined dark:text-gray-500 light:text-text-light-secondary text-sm">analytics</span>
-                </div>
-                <div className="p-4 flex flex-col gap-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs dark:text-gray-500 light:text-text-light-secondary">Success Rate (24h)</span>
-                    <div className="flex items-end gap-2">
-                      <span className="text-2xl font-bold dark:text-white light:text-text-dark">{patternStats.successRate}%</span>
-                      {patternStats.successRateChange !== 0 && (
-                        <span className={`text-xs mb-1 ${patternStats.successRateChange > 0 ? 'text-primary' : 'text-red-500'}`}>
-                          {patternStats.successRateChange > 0 ? '+' : ''}{patternStats.successRateChange}%
-                        </span>
-                      )}
-                    </div>
-                    <div className="w-full h-1 dark:bg-white/10 light:bg-green-200/50 rounded-full mt-1 overflow-hidden">
-                      <motion.div
-                        className="h-full bg-primary"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${patternStats.successRate}%` }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="p-3 rounded-lg dark:bg-white/5 light:bg-green-50 dark:border-white/5 light:border-green-300 border"
-                    >
-                      <span className="block text-[10px] dark:text-gray-500 light:text-text-light-secondary uppercase">Avg Risk</span>
-                      <span className="block text-lg font-bold dark:text-white light:text-text-dark mt-1">{patternStats.avgRiskReward}</span>
-                    </motion.div>
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="p-3 rounded-lg dark:bg-white/5 light:bg-green-50 dark:border-white/5 light:border-green-300 border"
-                    >
-                      <span className="block text-[10px] dark:text-gray-500 light:text-text-light-secondary uppercase">Avg Dur.</span>
-                      <span className="block text-lg font-bold dark:text-white light:text-text-dark mt-1">{patternStats.avgDuration}m</span>
-                    </motion.div>
-                  </div>
-                  <div className="mt-4 pt-4 dark:border-t-white/5 light:border-t-green-200/30">
-                    <span className="text-xs font-bold uppercase tracking-wider dark:text-gray-400 light:text-text-light-secondary mb-3 block">Quick Risk</span>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between items-center text-xs dark:text-gray-400 light:text-text-light-secondary">
-                        <span>Account</span>
-                        <span className="font-mono dark:text-white light:text-text-dark">$10,000</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs dark:text-gray-400 light:text-text-light-secondary">
-                        <span>Risk %</span>
-                        <span className="font-mono dark:text-white light:text-text-dark">1.0%</span>
-                      </div>
-                      <div className="p-2 rounded bg-primary/10 border border-primary/20 flex justify-between items-center mt-1">
-                        <span className="text-xs font-bold text-primary">Position Size</span>
-                        <span className="text-sm font-bold dark:text-white light:text-text-dark font-mono">$1,250</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+              <div className="hidden lg:block">
+                <WinRatePanel strategyType="SUPER_ENGULFING" />
+              </div>
             )}
           </div>
         </div>

@@ -10,10 +10,10 @@ export interface User {
 }
 
 // Signal types
-export type StrategyType = 'RSI_DIVERGENCE' | 'SUPER_ENGULFING' | 'ICT_BIAS';
+export type StrategyType = 'RSI_DIVERGENCE' | 'SUPER_ENGULFING' | 'ICT_BIAS' | 'CONFLUENCE';
 export type SignalType = 'BUY' | 'SELL';
 export type Timeframe = '5m' | '15m' | '1h' | '4h' | '1d' | '1w';
-export type SignalStatus = 'ACTIVE' | 'EXPIRED' | 'FILLED' | 'CLOSED';
+export type SignalStatus = 'ACTIVE' | 'HIT_TP' | 'HIT_SL' | 'EXPIRED';
 
 export interface Signal {
   id: string;
@@ -25,6 +25,10 @@ export interface Signal {
   detectedAt: string;
   status: SignalStatus;
   metadata?: Record<string, any>;
+  closedAt?: string;
+  closedPrice?: number;
+  pnlPercent?: number;
+  outcome?: string;
 }
 
 // Candle types

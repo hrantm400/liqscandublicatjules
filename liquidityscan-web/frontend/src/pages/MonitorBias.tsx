@@ -2,6 +2,9 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { StatusTabs } from '../components/shared/StatusTabs';
+import { WinRatePanel } from '../components/shared/WinRatePanel';
+import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { Signal, Timeframe } from '../types';
 import { scanAll, fetchLiveBias } from '../services/signalsApi';
 import { StaticMiniChart } from '../components/StaticMiniChart';
@@ -123,7 +126,7 @@ export function MonitorBias() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [pageSize, setPageSize] = useState(50);
@@ -191,8 +194,14 @@ export function MonitorBias() {
       return filteredSignals;
     } else if (statusFilter === 'active') {
       return filteredSignals.filter(s => s.status === 'ACTIVE');
+    } else if (statusFilter === 'won') {
+      return filteredSignals.filter(s => s.status === 'HIT_TP' || s.outcome === 'HIT_TP');
+    } else if (statusFilter === 'lost') {
+      return filteredSignals.filter(s => s.status === 'HIT_SL' || s.outcome === 'HIT_SL');
+    } else if (statusFilter === 'expired') {
+      return filteredSignals.filter(s => s.status === 'EXPIRED' || s.outcome === 'EXPIRED');
     } else if (statusFilter === 'closed') {
-      return filteredSignals.filter(s => s.status !== 'ACTIVE'); // CLOSED, EXPIRED, FILLED
+      return filteredSignals.filter(s => s.status !== 'ACTIVE');
     }
     return filteredSignals;
   }, [filteredSignals, statusFilter]);
@@ -450,6 +459,15 @@ export function MonitorBias() {
         </div>
       </motion.div>
 
+      {/* Status Tabs */}
+      <div className="px-8 pb-2">
+        <StatusTabs
+          strategyType="ICT_BIAS"
+          activeStatus={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
+      </div>
+
       {/* Main Content */}
       <div className="flex-1 min-h-0 px-8 pb-8 flex flex-col">
         <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-4 min-h-full">
@@ -612,6 +630,7 @@ export function MonitorBias() {
                         <th className="px-6 py-3" scope="col">Symbol</th>
                         <th className="px-6 py-3" scope="col">Exchange</th>
                         <th className="px-6 py-3" scope="col">Bias Type</th>
+                        <th className="px-6 py-3 text-center" scope="col">Status</th>
                         <th className="px-6 py-3 text-center" scope="col">Trend</th>
                         <th className="px-6 py-3 text-right" scope="col">Detected</th>
                         <th className="px-6 py-3 text-right" scope="col">Actions</th>
@@ -620,7 +639,7 @@ export function MonitorBias() {
                     <tbody className="dark:divide-y-white/5 light:divide-y-green-200/30 text-xs font-medium">
                       {filteredSignals.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center dark:text-gray-500 light:text-text-light-secondary">
+                          <td colSpan={7} className="px-6 py-12 text-center dark:text-gray-500 light:text-text-light-secondary">
                             No signals found
                           </td>
                         </tr>
@@ -648,6 +667,9 @@ export function MonitorBias() {
                                 Binance Perp
                               </td>
                               <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">{biasType}</td>
+                              <td className="px-6 py-2.5 text-center">
+                                <SignalStatusBadge signal={signal} />
+                              </td>
                               <td className="px-6 py-2.5 text-center">
                                 <TrendIndicator signal={signal} />
                               </td>
@@ -845,6 +867,13 @@ export function MonitorBias() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Win Rate Sidebar - Only show in list view */}
+            {viewMode === 'list' && (
+              <div className="hidden lg:block">
+                <WinRatePanel strategyType="ICT_BIAS" />
               </div>
             )}
           </div>

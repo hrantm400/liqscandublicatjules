@@ -192,17 +192,21 @@ model Lesson {
 }
 
 model SuperEngulfingSignal {
-  id         String   @id
-  strategyType String @default("SUPER_ENGULFING")
-  symbol     String
-  timeframe  String
-  signalType String
-  price      Decimal  @db.Decimal(20, 8)
-  detectedAt DateTime
-  status     String   @default("ACTIVE")
-  metadata   Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String    @id
+  strategyType String  @default("SUPER_ENGULFING")
+  symbol      String
+  timeframe   String
+  signalType  String
+  price       Decimal  @db.Decimal(20, 8)
+  detectedAt  DateTime
+  status      String   @default("ACTIVE")
+  metadata    Json?
+  closedAt    DateTime?
+  closedPrice Decimal? @db.Decimal(20, 8)
+  pnlPercent  Float?
+  outcome     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("super_engulfing_signals")
 }

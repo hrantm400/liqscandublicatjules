@@ -18,7 +18,7 @@ export type WebhookSignalInput = {
   metadata?: Record<string, unknown>;
 };
 
-export interface StoredSignal {
+export class StoredSignal {
   id: string;
   strategyType: string;
   symbol: string;
@@ -28,6 +28,10 @@ export interface StoredSignal {
   detectedAt: string;
   status: string;
   metadata?: unknown;
+  closedAt?: string;
+  closedPrice?: number;
+  pnlPercent?: number;
+  outcome?: string;
 }
 
 /** Grno payload: body.signals is array of { symbol, price, signals_by_timeframe: { "1d": { signals: ["REV Bull"], price, time }, ... } } */
@@ -218,6 +222,10 @@ export class SignalsService {
         detectedAt: r.detectedAt.toISOString(),
         status: r.status,
         metadata: r.metadata ?? undefined,
+        closedAt: r.closedAt ? r.closedAt.toISOString() : undefined,
+        closedPrice: r.closedPrice ? Number(r.closedPrice) : undefined,
+        pnlPercent: r.pnlPercent ?? undefined,
+        outcome: r.outcome ?? undefined,
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -250,12 +258,59 @@ export class SignalsService {
         detectedAt: row.detectedAt.toISOString(),
         status: row.status,
         metadata: row.metadata ?? undefined,
+        closedAt: row.closedAt ? row.closedAt.toISOString() : undefined,
+        closedPrice: row.closedPrice ? Number(row.closedPrice) : undefined,
+        pnlPercent: row.pnlPercent ?? undefined,
+        outcome: row.outcome ?? undefined,
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Failed to load signal by ID ${id}: ${msg}`);
       // Fallback to in-memory cache
       return this.signals.find((s) => s.id === id) ?? null;
+    }
+  }
+
+  /**
+   * Get aggregated signal statistics.
+   */
+  async getSignalStats(strategyType?: string): Promise<{
+    total: number;
+    active: number;
+    won: number;
+    lost: number;
+    expired: number;
+    winRate: number;
+    avgWinPnl: number;
+    avgLossPnl: number;
+  }> {
+    try {
+      const where = strategyType ? { strategyType } : undefined;
+      const rows = await (this.prisma as any).superEngulfingSignal.findMany({ where });
+
+      const total = rows.length;
+      const active = rows.filter((r) => r.status === 'ACTIVE').length;
+      const won = rows.filter((r) => r.status === 'HIT_TP' || r.outcome === 'HIT_TP').length;
+      const lost = rows.filter((r) => r.status === 'HIT_SL' || r.outcome === 'HIT_SL').length;
+      const expired = rows.filter((r) => r.status === 'EXPIRED' || r.outcome === 'EXPIRED').length;
+
+      const winPnls = rows.filter((r) => r.outcome === 'HIT_TP' && r.pnlPercent != null).map((r) => r.pnlPercent);
+      const lossPnls = rows.filter((r) => r.outcome === 'HIT_SL' && r.pnlPercent != null).map((r) => r.pnlPercent);
+
+      const closed = won + lost;
+      const winRate = closed > 0 ? Math.round((won / closed) * 100) : 0;
+      const avgWinPnl = winPnls.length > 0
+        ? Math.round((winPnls.reduce((a, b) => a + b, 0) / winPnls.length) * 100) / 100
+        : 0;
+      const avgLossPnl = lossPnls.length > 0
+        ? Math.round((lossPnls.reduce((a, b) => a + b, 0) / lossPnls.length) * 100) / 100
+        : 0;
+
+      return { total, active, won, lost, expired, winRate, avgWinPnl, avgLossPnl };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to get signal stats: ${msg}`);
+      return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0 };
     }
   }
 }

@@ -2,6 +2,9 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { StatusTabs } from '../components/shared/StatusTabs';
+import { WinRatePanel } from '../components/shared/WinRatePanel';
+import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { Signal, Timeframe } from '../types';
 import { FilterMenu } from '../components/shared/FilterMenu';
 import { PatternFilter } from '../components/shared/PatternFilter';
@@ -75,7 +78,7 @@ export function MonitorRSI() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,8 +122,14 @@ export function MonitorRSI() {
       return filteredSignals;
     } else if (statusFilter === 'active') {
       return filteredSignals.filter(s => s.status === 'ACTIVE');
+    } else if (statusFilter === 'won') {
+      return filteredSignals.filter(s => s.status === 'HIT_TP' || s.outcome === 'HIT_TP');
+    } else if (statusFilter === 'lost') {
+      return filteredSignals.filter(s => s.status === 'HIT_SL' || s.outcome === 'HIT_SL');
+    } else if (statusFilter === 'expired') {
+      return filteredSignals.filter(s => s.status === 'EXPIRED' || s.outcome === 'EXPIRED');
     } else if (statusFilter === 'closed') {
-      return filteredSignals.filter(s => s.status !== 'ACTIVE'); // CLOSED, EXPIRED, FILLED
+      return filteredSignals.filter(s => s.status !== 'ACTIVE');
     }
     return filteredSignals;
   }, [filteredSignals, statusFilter]);
@@ -291,10 +300,10 @@ export function MonitorRSI() {
           {!isFreeForever && (
             <AnimatedCard
               className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 ${timeframeStats['1h'] > 0
-                  ? activeTimeframe === '1h'
-                    ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
-                    : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
-                  : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
+                ? activeTimeframe === '1h'
+                  ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
+                  : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
+                : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
                 }`}
               onClick={() => {
                 if (timeframeStats['1h'] > 0) {
@@ -324,8 +333,8 @@ export function MonitorRSI() {
               <div className="mt-auto">
                 <span
                   className={`text-5xl font-black tracking-tight ${timeframeStats['1h'] > 0
-                      ? 'text-primary drop-shadow-[0_0_8px_rgba(19,236,55,0.5)]'
-                      : 'dark:text-gray-700 light:text-text-light-secondary'
+                    ? 'text-primary drop-shadow-[0_0_8px_rgba(19,236,55,0.5)]'
+                    : 'dark:text-gray-700 light:text-text-light-secondary'
                     }`}
                 >
                   {timeframeStats['1h']}
@@ -340,10 +349,10 @@ export function MonitorRSI() {
           {/* 4H */}
           <AnimatedCard
             className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 ${timeframeStats['4h'] > 0
-                ? activeTimeframe === '4h'
-                  ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
-                  : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
-                : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
+              ? activeTimeframe === '4h'
+                ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
+                : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
+              : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
               }`}
             onClick={() => {
               if (timeframeStats['4h'] > 0) {
@@ -373,8 +382,8 @@ export function MonitorRSI() {
             <div className="mt-auto">
               <span
                 className={`text-5xl font-black tracking-tight ${timeframeStats['4h'] > 0
-                    ? 'text-primary drop-shadow-[0_0_12px_rgba(19,236,55,0.6)]'
-                    : 'dark:text-gray-700 light:text-text-light-secondary'
+                  ? 'text-primary drop-shadow-[0_0_12px_rgba(19,236,55,0.6)]'
+                  : 'dark:text-gray-700 light:text-text-light-secondary'
                   }`}
               >
                 {timeframeStats['4h']}
@@ -388,10 +397,10 @@ export function MonitorRSI() {
           {/* 1D */}
           <AnimatedCard
             className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 ${timeframeStats['1d'] > 0
-                ? activeTimeframe === '1d'
-                  ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
-                  : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
-                : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
+              ? activeTimeframe === '1d'
+                ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
+                : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
+              : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
               }`}
             onClick={() => {
               if (timeframeStats['1d'] > 0) {
@@ -421,8 +430,8 @@ export function MonitorRSI() {
             <div className="mt-auto">
               <span
                 className={`text-5xl font-black tracking-tight ${timeframeStats['1d'] > 0
-                    ? 'text-primary drop-shadow-[0_0_8px_rgba(19,236,55,0.5)]'
-                    : 'dark:text-gray-700 light:text-text-light-secondary'
+                  ? 'text-primary drop-shadow-[0_0_8px_rgba(19,236,55,0.5)]'
+                  : 'dark:text-gray-700 light:text-text-light-secondary'
                   }`}
               >
                 {timeframeStats['1d']}
@@ -433,6 +442,13 @@ export function MonitorRSI() {
             </div>
           </AnimatedCard>
         </div>
+
+        {/* Status Tabs */}
+        <StatusTabs
+          strategyType="RSI_DIVERGENCE"
+          activeStatus={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
       </motion.div>
 
       {/* Main Content */}
@@ -483,8 +499,8 @@ export function MonitorRSI() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setFilterMenuOpen(!filterMenuOpen)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors group whitespace-nowrap ${filterMenuOpen
-                    ? 'dark:bg-white/10 light:bg-green-100 border-primary/30 dark:text-white light:text-text-dark active:bg-primary/10 active:border-primary/30'
-                    : 'dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-300 dark:text-gray-300 light:text-text-light-secondary dark:hover:bg-white/10 light:hover:bg-green-100 dark:hover:text-white light:hover:text-text-dark'
+                  ? 'dark:bg-white/10 light:bg-green-100 border-primary/30 dark:text-white light:text-text-dark active:bg-primary/10 active:border-primary/30'
+                  : 'dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-300 dark:text-gray-300 light:text-text-light-secondary dark:hover:bg-white/10 light:hover:bg-green-100 dark:hover:text-white light:hover:text-text-dark'
                   }`}
               >
                 <span className={`material-symbols-outlined text-sm ${filterMenuOpen ? 'text-primary' : 'group-hover:text-primary transition-colors'}`}>
@@ -536,6 +552,9 @@ export function MonitorRSI() {
                         Divergence Type
                       </th>
                       <th className="px-6 py-3 text-center" scope="col">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center" scope="col">
                         Setup Quality
                       </th>
                       <th className="px-6 py-3 text-right" scope="col">
@@ -549,7 +568,7 @@ export function MonitorRSI() {
                   <tbody className="dark:divide-y-white/5 light:divide-y-green-300 divide-y text-xs font-medium">
                     {filteredSignals.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center dark:text-gray-500 light:text-text-light-secondary">
+                        <td colSpan={7} className="px-6 py-12 text-center dark:text-gray-500 light:text-text-light-secondary">
                           No signals found
                         </td>
                       </tr>
@@ -577,6 +596,9 @@ export function MonitorRSI() {
                               Binance Perp
                             </td>
                             <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">{divergenceType}</td>
+                            <td className="px-6 py-2.5 text-center">
+                              <SignalStatusBadge signal={signal} />
+                            </td>
                             <td className="px-6 py-2.5 text-center">
                               <TrendIndicator signal={signal} />
                             </td>
@@ -640,6 +662,11 @@ export function MonitorRSI() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Win Rate Sidebar */}
+            <div className="hidden lg:block">
+              <WinRatePanel strategyType="RSI_DIVERGENCE" />
             </div>
           </div>
         </div>

@@ -70,3 +70,51 @@ export async function fetchLiveBias(
     return {};
   }
 }
+
+/**
+ * Signal statistics from backend lifecycle tracking.
+ */
+export interface SignalStats {
+  total: number;
+  active: number;
+  won: number;
+  lost: number;
+  expired: number;
+  winRate: number;
+  avgWinPnl: number;
+  avgLossPnl: number;
+}
+
+/**
+ * Fetch aggregated signal statistics.
+ */
+export async function fetchSignalStats(strategyType?: string): Promise<SignalStats> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const params = new URLSearchParams();
+    if (strategyType) params.set('strategyType', strategyType);
+    const url = `${baseUrl}/signals/stats${params.toString() ? `?${params.toString()}` : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0 };
+    return (await res.json()) as SignalStats;
+  } catch {
+    return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0 };
+  }
+}
+
+/**
+ * Trigger manual scan for signals
+ */
+export async function scanSuperEngulfing(_timeframe?: string): Promise<{ totalSignals: number; symbolsScanned: number; timeframesScanned: number }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const url = `${baseUrl}/signals/scan`;
+    const res = await fetch(url, { method: 'POST' });
+    if (!res.ok) throw new Error('Scan failed');
+    // The backend currently returns { status: 'Scan completed' }. We mock the rest for the UI.
+    return { totalSignals: 0, symbolsScanned: 0, timeframesScanned: 0 };
+  } catch (error) {
+    throw error;
+  }
+}
+

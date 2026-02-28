@@ -15,7 +15,8 @@ interface StrategySummary {
 const STRATEGY_TIMEFRAMES = {
   SUPER_ENGULFING: ['4h', '1d', '1w'] as Timeframe[],
   RSI_DIVERGENCE: ['1h', '4h', '1d'] as Timeframe[],
-  ICT_BIAS: ['4h', '1d', '1w'] as Timeframe[]
+  ICT_BIAS: ['4h', '1d', '1w'] as Timeframe[],
+  CONFLUENCE: ['5m', '15m'] as Timeframe[]
 };
 
 export const Dashboard: React.FC = () => {
@@ -33,6 +34,10 @@ export const Dashboard: React.FC = () => {
     total: 0,
     timeframes: { '1h': 0, '4h': 0, '1d': 0 } as Record<Timeframe, number>
   });
+  const [confluenceSummary, setConfluenceSummary] = useState<StrategySummary>({
+    total: 0,
+    timeframes: { '5m': 0, '15m': 0 } as Record<Timeframe, number>
+  });
 
   // Super Engulfing: from GET /api/signals (webhook-fed); Bias/RSI: no source yet
   const { data: seData } = useQuery({
@@ -43,13 +48,19 @@ export const Dashboard: React.FC = () => {
 
   const { data: biasData } = useQuery({
     queryKey: ['signals', 'ICT_BIAS'],
-    queryFn: () => Promise.resolve([]),
+    queryFn: () => fetchSignals('ICT_BIAS', 5000),
     refetchInterval: 5 * 60 * 1000,
   });
 
   const { data: rsiData } = useQuery({
     queryKey: ['signals', 'RSI_DIVERGENCE'],
-    queryFn: () => Promise.resolve([]),
+    queryFn: () => fetchSignals('RSI_DIVERGENCE', 5000),
+    refetchInterval: 5 * 60 * 1000,
+  });
+
+  const { data: confluenceData } = useQuery({
+    queryKey: ['signals', 'CONFLUENCE'],
+    queryFn: () => fetchSignals('CONFLUENCE', 5000),
     refetchInterval: 5 * 60 * 1000,
   });
 
@@ -106,6 +117,23 @@ export const Dashboard: React.FC = () => {
       setRsiSummary(summary);
     }
   }, [rsiData]);
+
+  useEffect(() => {
+    if (confluenceData) {
+      const signals = confluenceData as any[];
+      const summary: StrategySummary = {
+        total: signals.length,
+        timeframes: { '5m': 0, '15m': 0 } as Record<Timeframe, number>,
+      };
+      signals.forEach((signal) => {
+        const tf = signal.timeframe as Timeframe;
+        if (STRATEGY_TIMEFRAMES.CONFLUENCE.includes(tf) && summary.timeframes[tf] !== undefined) {
+          summary.timeframes[tf]++;
+        }
+      });
+      setConfluenceSummary(summary);
+    }
+  }, [confluenceData]);
 
   const toggleAccordion = (targetId: string) => {
     setExpandedAccordions((prev) => {
@@ -382,6 +410,79 @@ export const Dashboard: React.FC = () => {
                           {rsiSummary.timeframes[tf as Timeframe]}
                         </span>
                         <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-purple-500">arrow_forward</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Strategy 9: Confluence */}
+            <motion.div
+              variants={listItemVariants}
+              whileHover={{ scale: 1.005 }}
+              className="glass-panel rounded-2xl relative z-10 overflow-hidden group/card"
+            >
+              <div
+                className={`p-6 flex items-center justify-between cursor-pointer transition-all ${isExpanded('confluence-content') ? 'accordion-header-expanded' : ''
+                  }`}
+                onClick={(e) => {
+                  if (!(e.target as HTMLElement).closest('a')) {
+                    toggleAccordion('confluence-content');
+                  }
+                }}
+              >
+                <Link to="/monitor/confluence" className="flex items-center gap-4 group">
+                  <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.15)] group-hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] group-hover:bg-cyan-500/20 transition-all duration-300">
+                    <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">merge_type</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <h3 className="text-2xl font-bold dark:text-white light:text-text-dark group-hover:text-cyan-500 transition-colors tracking-tight">SE+RSI+Trend</h3>
+                    <span className="text-xs dark:text-gray-400 light:text-text-light-secondary tracking-widest font-mono uppercase opacity-70">Strategy C-09 • Confluence</span>
+                  </div>
+                </Link>
+                <div className="flex items-center gap-4">
+                  <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-500 text-[11px] font-bold border border-cyan-500/20 animate-pulse">
+                    {confluenceSummary.total} ACTIVE
+                  </span>
+                  <button
+                    className="toggle-button w-8 h-8 flex items-center justify-center rounded-full dark:hover:bg-white/10 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleAccordion('confluence-content');
+                    }}
+                  >
+                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('confluence-content') ? 'rotate-180 text-cyan-500' : 'text-gray-500'}`}>expand_more</span>
+                  </button>
+                </div>
+              </div>
+              <div
+                className={`accordion-content ${isExpanded('confluence-content') ? 'expanded' : ''}`}
+                id="confluence-content"
+              >
+                <div className="p-6 flex flex-col gap-3">
+                  {['5m', '15m'].map((tf) => (
+                    <Link
+                      key={tf}
+                      to={`/monitor/confluence?timeframe=${tf}`}
+                      className="w-full flex justify-between items-center p-4 rounded-xl dark:border-white/5 light:border-green-300 dark:bg-white/[0.01] hover:bg-cyan-500/5 hover:border-cyan-500/20 transition-all cursor-pointer group/item relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <span className="w-12 h-8 flex items-center justify-center rounded-md text-sm font-black bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 font-mono group-hover/item:bg-cyan-500 group-hover/item:text-white transition-colors">
+                          {tf.toUpperCase()}
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium dark:text-gray-300 group-hover/item:text-white transition-colors">
+                            {tf === '5m' ? '5-Minute Scalp' : '15-Minute Intraday'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 relative z-10">
+                        <span className={`font-mono font-bold text-lg ${confluenceSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'text-gray-600'}`}>
+                          {confluenceSummary.timeframes[tf as Timeframe]}
+                        </span>
+                        <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-cyan-500">arrow_forward</span>
                       </div>
                     </Link>
                   ))}

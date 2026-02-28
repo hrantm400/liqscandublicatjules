@@ -27,6 +27,11 @@ export class SignalsController {
     return this.scannerService.getLiveBias(tf);
   }
 
+  @Get('stats')
+  async getStats(@Query('strategyType') strategyType?: string) {
+    return this.signalsService.getSignalStats(strategyType || undefined);
+  }
+
   @Get(':id')
   async getSignalById(@Param('id') id: string) {
     const signal = await this.signalsService.getSignalById(id);
