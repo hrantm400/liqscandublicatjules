@@ -16,19 +16,19 @@ export const Footer: React.FC = () => {
                 Liquidity<span className="text-primary">Scanner</span>
               </span>
             </div>
-            <p className="text-gray-500 max-w-sm mb-6">
+            <p className="dark:text-gray-500 light:text-slate-500 max-w-sm mb-6">
               The most advanced crypto screening tool for professional traders. Detect market manipulation and ride the institutional waves.
             </p>
             <div className="flex gap-4">
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors"><Twitter className="w-5 h-5" /></a>
-              <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors"><Disc className="w-5 h-5" /></a>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors"><Github className="w-5 h-5" /></a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="dark:text-gray-400 light:text-slate-500 hover:text-primary transition-colors"><Twitter className="w-5 h-5" /></a>
+              <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="dark:text-gray-400 light:text-slate-500 hover:text-primary transition-colors"><Disc className="w-5 h-5" /></a>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="dark:text-gray-400 light:text-slate-500 hover:text-primary transition-colors"><Github className="w-5 h-5" /></a>
             </div>
           </div>
           
           <div>
             <h4 className="font-bold text-white mb-6">Platform</h4>
-            <ul className="space-y-4 text-gray-500">
+            <ul className="space-y-4 dark:text-gray-500 light:text-slate-500">
               <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
               <li><a href="#pricing" className="hover:text-primary transition-colors">Pricing</a></li>
               <li><a href="#demo" className="hover:text-primary transition-colors">Live Demo</a></li>
@@ -38,7 +38,7 @@ export const Footer: React.FC = () => {
 
           <div>
             <h4 className="font-bold text-white mb-6">Legal</h4>
-            <ul className="space-y-4 text-gray-500">
+            <ul className="space-y-4 dark:text-gray-500 light:text-slate-500">
               <li><Link to="/support" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
               <li><Link to="/support" className="hover:text-primary transition-colors">Terms of Service</Link></li>
               <li><Link to="/support" className="hover:text-primary transition-colors">Disclaimer</Link></li>
@@ -46,7 +46,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="border-t border-white/5 pt-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
+        <div className="border-t border-white/5 pt-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-sm dark:text-gray-600 light:text-slate-400">
           <p>&copy; 2024 Liquidity Scanner Inc. All rights reserved.</p>
           <p className="mt-2 md:mt-0">Trading involves risk. Invest responsibly.</p>
         </div>

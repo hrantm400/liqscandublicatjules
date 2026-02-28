@@ -48,7 +48,7 @@ export const StrategyBuilder: React.FC<StrategyBuilderProps> = ({
         <button 
             onClick={handleGenerate}
             onMouseEnter={() => playSound('hover')}
-            className="group flex items-center space-x-2 px-4 py-2 bg-surface-dark/50 hover:bg-surface-dark/80 rounded-lg text-gray-300 text-xs font-mono border border-white/10 transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(19,236,55,0.3)]"
+            className="group flex items-center space-x-2 px-4 py-2 dark:bg-surface-dark/50 light:bg-white/50 hover:bg-surface-dark/80 rounded-lg dark:text-gray-300 light:text-slate-600 text-xs font-mono border border-white/10 transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(19,236,55,0.3)]"
         >
             <Shuffle size={14} className="group-hover:rotate-180 transition-transform duration-500" />
             <span>RANDOMIZE</span>
@@ -60,7 +60,7 @@ export const StrategyBuilder: React.FC<StrategyBuilderProps> = ({
         {/* Logic Sections */}
         {['RUN', 'REV'].map((strategy) => (
              <div key={strategy} className="space-y-3">
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-mono flex items-center">
+                <h3 className="text-[10px] font-bold dark:text-gray-400 light:text-slate-500 uppercase tracking-[0.2em] font-mono flex items-center">
                     <div className={`w-1.5 h-1.5 rounded-full mr-2 ${strategy === 'RUN' ? 'bg-primary shadow-[0_0_8px_rgba(19,236,55,0.5)]' : 'bg-primary/80 shadow-[0_0_8px_rgba(19,236,55,0.4)]'}`}></div>
                     {strategy === 'RUN' ? 'CONTINUATION' : 'REVERSAL'} ({strategy})
                 </h3>
@@ -106,7 +106,7 @@ export const StrategyBuilder: React.FC<StrategyBuilderProps> = ({
         {/* X Logic Section */}
          <div className="space-y-4 pt-6 border-t border-white/5">
              <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-mono flex items-center">
+                <h3 className="text-[10px] font-bold dark:text-gray-400 light:text-slate-500 uppercase tracking-[0.2em] font-mono flex items-center">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(19,236,55,0.5)] mr-2"></div>
                     X-FACTOR LOGIC
                 </h3>
@@ -122,7 +122,7 @@ export const StrategyBuilder: React.FC<StrategyBuilderProps> = ({
                     max="10" 
                     value={xParam} 
                     onChange={(e) => setXParam(parseInt(e.target.value))}
-                    className="w-full h-2 bg-surface-dark rounded-lg appearance-none cursor-pointer accent-primary"
+                    className="w-full h-2 dark:bg-surface-dark light:bg-white rounded-lg appearance-none cursor-pointer accent-primary"
                 />
             </div>
 

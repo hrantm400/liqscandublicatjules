@@ -1361,10 +1361,10 @@ export function InteractiveLiveChart({
                 {/* ICT Bias Indicator */}
                 {ictBias && (
                   <div className="flex items-center gap-2 pl-4 border-l border-white/10">
-                    <span className="text-xs font-mono text-gray-400 uppercase tracking-widest opacity-70">BIAS:</span>
+                    <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500 uppercase tracking-widest opacity-70">BIAS:</span>
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${ictBias.bias === 'BULLISH' ? 'bg-[#13ec37]/10 text-[#13ec37] border-[#13ec37]/20 shadow-[0_0_10px_rgba(19,236,55,0.1)]' :
                       ictBias.bias === 'BEARISH' ? 'bg-[#ff4444]/10 text-[#ff4444] border-[#ff4444]/20 shadow-[0_0_10px_rgba(255,68,68,0.1)]' :
-                        'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                        'bg-gray-500/10 dark:text-gray-400 light:text-slate-500 border-gray-500/20'
                       }`}>
                       {ictBias.bias}
                     </span>

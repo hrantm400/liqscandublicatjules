@@ -10,7 +10,7 @@
 @layer base {
   html {
     font-family: "Outfit", "Inter", sans-serif;
-    /* Switched to Outfit for more premium feel */
+    text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -24,7 +24,7 @@
   }
 
   .light body {
-    @apply bg-[#f2f4f6] text-slate-900;
+    @apply bg-slate-50 text-slate-800;
   }
 
   /* Improved Typography Contrast */
@@ -34,14 +34,13 @@
   h4,
   h5,
   h6 {
-    @apply dark:text-white tracking-tight font-semibold;
+    @apply dark:text-white light:text-slate-900 tracking-tight font-semibold;
   }
 
   p,
   span,
   li {
-    @apply dark:text-gray-200;
-    /* Improved contrast from gray-300 */
+    @apply dark:text-gray-200 light:text-slate-600;
   }
 }
 
@@ -201,9 +200,12 @@
 
   /* Gradient Animation */
   @keyframes gradient {
-    0%, 100% {
+
+    0%,
+    100% {
       background-position: 0% 50%;
     }
+
     50% {
       background-position: 100% 50%;
     }
@@ -216,9 +218,12 @@
 
   /* Slow Pulse Animation */
   @keyframes pulseSlow {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 0.3;
     }
+
     50% {
       opacity: 0.6;
     }
@@ -230,7 +235,7 @@
 
   /* Grid Pattern */
   .bg-grid-pattern {
-    background-image: 
+    background-image:
       linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 40px 40px;

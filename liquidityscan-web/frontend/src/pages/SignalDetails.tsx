@@ -484,7 +484,7 @@ export function SignalDetails() {
                         <span className="material-symbols-outlined text-2xl">layers</span>
                         <span className="text-sm font-black">Trade on Bybit</span>
                       </div>
-                      <span className="material-symbols-outlined text-gray-400 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">
+                      <span className="material-symbols-outlined dark:text-gray-400 light:text-slate-500 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform">
                         north_east
                       </span>
                     </motion.a>

@@ -61,7 +61,7 @@ export const Stats: React.FC = () => {
               <div className="text-primary font-bold text-sm uppercase tracking-wider mb-1">
                 {stat.label}
               </div>
-              <div className="text-gray-500 text-xs font-mono">
+              <div className="dark:text-gray-500 light:text-slate-500 text-xs font-mono">
                 {stat.sub}
               </div>
             </motion.div>

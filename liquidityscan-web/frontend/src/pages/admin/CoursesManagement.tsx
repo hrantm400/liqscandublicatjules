@@ -61,7 +61,7 @@ export function CoursesManagement() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">Courses</h1>
-          <p className="text-gray-400 text-sm mt-1">Manage courses and lessons</p>
+          <p className="dark:text-gray-400 light:text-slate-500 text-sm mt-1">Manage courses and lessons</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -88,22 +88,22 @@ export function CoursesManagement() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                <div className="w-full h-full flex items-center justify-center dark:text-gray-500 light:text-slate-500">
                   <BookOpen className="w-12 h-12" />
                 </div>
               )}
             </div>
             <div className="p-4">
               <h3 className="font-semibold text-white truncate">{course.title}</h3>
-              <p className="text-sm text-gray-400 line-clamp-2 mt-1">{course.description}</p>
-              <p className="text-xs text-gray-500 mt-2">{lessonCount(course)} lessons</p>
+              <p className="text-sm dark:text-gray-400 light:text-slate-500 line-clamp-2 mt-1">{course.description}</p>
+              <p className="text-xs dark:text-gray-500 light:text-slate-500 mt-2">{lessonCount(course)} lessons</p>
             </div>
           </button>
         ))}
       </div>
 
       {courses?.length === 0 && (
-        <div className="text-center py-16 text-gray-500">
+        <div className="text-center py-16 dark:text-gray-500 light:text-slate-500">
           <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <p className="text-lg">No courses yet</p>
           <button
@@ -121,7 +121,7 @@ export function CoursesManagement() {
             <h2 className="text-xl font-bold text-white mb-4">Create course</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Name</label>
                 <input
                   type="text"
                   value={name}
@@ -131,7 +131,7 @@ export function CoursesManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -141,7 +141,7 @@ export function CoursesManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Difficulty</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Difficulty</label>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
@@ -155,7 +155,7 @@ export function CoursesManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Cover image URL</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Cover image URL</label>
                 <input
                   type="url"
                   value={coverUrl}
@@ -168,7 +168,7 @@ export function CoursesManagement() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-gray-300 hover:bg-white/5"
+                className="flex-1 py-2 rounded-lg border border-white/20 dark:text-gray-300 light:text-slate-600 hover:bg-white/5"
               >
                 Cancel
               </button>

@@ -228,7 +228,7 @@ export const Dashboard: React.FC = () => {
                       toggleAccordion('superEngulfing-content');
                     }}
                   >
-                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('superEngulfing-content') ? 'rotate-180 text-primary' : 'text-gray-500'}`}>
+                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('superEngulfing-content') ? 'rotate-180 text-primary' : 'dark:text-gray-500 light:text-slate-500'}`}>
                       expand_more
                     </span>
                   </button>
@@ -254,13 +254,13 @@ export const Dashboard: React.FC = () => {
                           <span className="text-sm font-medium dark:text-gray-300 group-hover/item:text-white transition-colors">
                             {tf === '4h' ? 'Mid-Term Trend' : tf === '1d' ? 'Daily Structure' : 'Macro View'}
                           </span>
-                          <span className="text-[10px] text-gray-500 font-mono">
+                          <span className="text-[10px] dark:text-gray-500 light:text-slate-500 font-mono">
                             {tf === '4h' ? 'Intraday swings' : tf === '1d' ? 'Major market moves' : 'Long-term bias'}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-4 relative z-10">
-                        <span className={`font-mono font-bold text-lg ${superEngulfingSummary.timeframes[tf as Timeframe] > 0 ? 'text-white text-glow' : 'text-gray-600'}`}>
+                        <span className={`font-mono font-bold text-lg ${superEngulfingSummary.timeframes[tf as Timeframe] > 0 ? 'text-white text-glow' : 'dark:text-gray-600 light:text-slate-400'}`}>
                           {superEngulfingSummary.timeframes[tf as Timeframe]}
                         </span>
                         <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-primary">arrow_forward</span>
@@ -306,7 +306,7 @@ export const Dashboard: React.FC = () => {
                       toggleAccordion('dailyBias-content');
                     }}
                   >
-                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('dailyBias-content') ? 'rotate-180 text-blue-500' : 'text-gray-500'}`}>expand_more</span>
+                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('dailyBias-content') ? 'rotate-180 text-blue-500' : 'dark:text-gray-500 light:text-slate-500'}`}>expand_more</span>
                   </button>
                 </div>
               </div>
@@ -333,7 +333,7 @@ export const Dashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4 relative z-10">
-                        <span className={`font-mono font-bold text-lg ${biasSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'text-gray-600'}`}>
+                        <span className={`font-mono font-bold text-lg ${biasSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'dark:text-gray-600 light:text-slate-400'}`}>
                           {biasSummary.timeframes[tf as Timeframe]}
                         </span>
                         <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-blue-500">arrow_forward</span>
@@ -379,7 +379,7 @@ export const Dashboard: React.FC = () => {
                       toggleAccordion('rsiDivergence-content');
                     }}
                   >
-                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('rsiDivergence-content') ? 'rotate-180 text-purple-500' : 'text-gray-500'}`}>expand_more</span>
+                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('rsiDivergence-content') ? 'rotate-180 text-purple-500' : 'dark:text-gray-500 light:text-slate-500'}`}>expand_more</span>
                   </button>
                 </div>
               </div>
@@ -406,7 +406,7 @@ export const Dashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4 relative z-10">
-                        <span className={`font-mono font-bold text-lg ${rsiSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'text-gray-600'}`}>
+                        <span className={`font-mono font-bold text-lg ${rsiSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'dark:text-gray-600 light:text-slate-400'}`}>
                           {rsiSummary.timeframes[tf as Timeframe]}
                         </span>
                         <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-purple-500">arrow_forward</span>
@@ -452,7 +452,7 @@ export const Dashboard: React.FC = () => {
                       toggleAccordion('confluence-content');
                     }}
                   >
-                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('confluence-content') ? 'rotate-180 text-cyan-500' : 'text-gray-500'}`}>expand_more</span>
+                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('confluence-content') ? 'rotate-180 text-cyan-500' : 'dark:text-gray-500 light:text-slate-500'}`}>expand_more</span>
                   </button>
                 </div>
               </div>
@@ -479,7 +479,7 @@ export const Dashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4 relative z-10">
-                        <span className={`font-mono font-bold text-lg ${confluenceSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'text-gray-600'}`}>
+                        <span className={`font-mono font-bold text-lg ${confluenceSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'dark:text-gray-600 light:text-slate-400'}`}>
                           {confluenceSummary.timeframes[tf as Timeframe]}
                         </span>
                         <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-cyan-500">arrow_forward</span>

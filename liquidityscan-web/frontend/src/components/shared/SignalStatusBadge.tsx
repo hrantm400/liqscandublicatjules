@@ -28,7 +28,7 @@ export function SignalStatusBadge({ signal }: { signal: Signal }) {
     if (status === 'EXPIRED' || outcome === 'EXPIRED') {
         const pnlStr = pnlPercent != null ? ` ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}%` : '';
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-500/15 text-gray-400 border border-gray-500/20">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-500/15 dark:text-gray-400 light:text-slate-500 border border-gray-500/20">
                 <span className="material-symbols-outlined text-xs">schedule</span>
                 Expired{pnlStr}
             </span>

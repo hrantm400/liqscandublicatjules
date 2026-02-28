@@ -83,7 +83,7 @@ export const StrategyDetail: React.FC = () => {
       emerald: 'bg-emerald-500/20 text-emerald-500 ring-emerald-500/40',
       fuchsia: 'bg-fuchsia-500/20 text-fuchsia-500 ring-fuchsia-500/40',
     };
-    return colors[color] || 'bg-gray-500/20 text-gray-500 ring-gray-500/40';
+    return colors[color] || 'bg-gray-500/20 dark:text-gray-500 light:text-slate-500 ring-gray-500/40';
   };
 
   return (
@@ -115,8 +115,8 @@ export const StrategyDetail: React.FC = () => {
                 <span className="material-symbols-outlined text-lg">school</span>
                 Learn About This Strategy
               </a>
-              <span className="text-xs text-gray-400 font-medium">Last updated: <span className="text-white">Just now</span></span>
-              <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+              <span className="text-xs dark:text-gray-400 light:text-slate-500 font-medium">Last updated: <span className="text-white">Just now</span></span>
+              <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 dark:text-gray-400 light:text-slate-500 hover:text-white transition-colors">
                 <span className="material-symbols-outlined text-xl">refresh</span>
               </button>
             </div>
@@ -130,9 +130,9 @@ export const StrategyDetail: React.FC = () => {
           {/* Search and Filters */}
           <div className="flex items-center gap-3 py-2 bg-background-dark/50 backdrop-blur-sm sticky top-0 z-20 overflow-visible">
             <div className="relative w-60 shrink-0">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">search</span>
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 dark:text-gray-500 light:text-slate-500 text-lg">search</span>
               <input
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-gray-600 focus:border-primary focus:ring-primary focus:ring-1 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:dark:text-gray-600 light:text-slate-400 focus:border-primary focus:ring-primary focus:ring-1 transition-colors"
                 placeholder="Search..."
                 type="text"
                 value={searchQuery}
@@ -146,7 +146,7 @@ export const StrategyDetail: React.FC = () => {
                   className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
                     filter === 'all'
                       ? 'bg-[#13ec37] text-black shadow-[0_0_15px_rgba(19,236,55,0.4)] hover:shadow-[0_0_20px_rgba(19,236,55,0.6)]'
-                      : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20'
+                      : 'bg-white/5 border border-white/10 dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/10 hover:border-white/20'
                   }`}
                 >
                   All
@@ -156,7 +156,7 @@ export const StrategyDetail: React.FC = () => {
                   className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
                     filter === 'bullish'
                       ? 'bg-[#13ec37] text-black shadow-[0_0_15px_rgba(19,236,55,0.4)]'
-                      : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20'
+                      : 'bg-white/5 border border-white/10 dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/10 hover:border-white/20'
                   }`}
                 >
                   Bullish
@@ -166,23 +166,23 @@ export const StrategyDetail: React.FC = () => {
                   className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
                     filter === 'bearish'
                       ? 'bg-[#13ec37] text-black shadow-[0_0_15px_rgba(19,236,55,0.4)]'
-                      : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20'
+                      : 'bg-white/5 border border-white/10 dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/10 hover:border-white/20'
                   }`}
                 >
                   Bearish
                 </button>
               </div>
               <div className="w-px h-6 bg-white/10 mx-2"></div>
-              <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors group whitespace-nowrap">
+              <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 dark:text-gray-300 light:text-slate-600 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors group whitespace-nowrap">
                 <span className="material-symbols-outlined text-base group-hover:text-primary transition-colors">filter_list</span>
                 More
               </button>
-              <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors group whitespace-nowrap">
+              <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 dark:text-gray-300 light:text-slate-600 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors group whitespace-nowrap">
                 <span className="material-symbols-outlined text-base group-hover:text-primary transition-colors">sort</span>
                 Sort: Confidence
               </button>
               <div className="w-px h-6 bg-white/10 mx-2"></div>
-              <button className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-primary transition-colors">
+              <button className="p-2.5 rounded-lg bg-white/5 border border-white/10 dark:text-gray-400 light:text-slate-500 hover:text-primary transition-colors">
                 <span className="material-symbols-outlined text-base">download</span>
               </button>
             </div>
@@ -192,8 +192,8 @@ export const StrategyDetail: React.FC = () => {
           <div className="flex-1 overflow-hidden rounded-xl table-glass-panel relative flex flex-col">
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
               <div className="h-full overflow-y-auto custom-scrollbar">
-                <table className="w-full text-sm text-left text-gray-400">
-                  <thead className="text-[11px] uppercase text-gray-500 font-bold sticky top-0 bg-[#0a140d] border-b border-white/10 z-10 tracking-wider">
+                <table className="w-full text-sm text-left dark:text-gray-400 light:text-slate-500">
+                  <thead className="text-[11px] uppercase dark:text-gray-500 light:text-slate-500 font-bold sticky top-0 bg-[#0a140d] border-b border-white/10 z-10 tracking-wider">
                     <tr>
                       <th className="px-6 py-3" scope="col">Coin</th>
                       <th className="px-6 py-3" scope="col">Exchange</th>
@@ -214,7 +214,7 @@ export const StrategyDetail: React.FC = () => {
                             <span className="text-sm">{signal.pair}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-2.5 whitespace-nowrap text-gray-400 group-hover:text-gray-300">{signal.exchange}</td>
+                        <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-slate-500 group-hover:dark:text-gray-300 light:text-slate-600">{signal.exchange}</td>
                         <td className="px-6 py-2.5 whitespace-nowrap text-white">{signal.signalType}</td>
                         <td className="px-6 py-2.5 text-center">
                           <div className={`flex items-center justify-center gap-1 ${getConfidenceColor(signal.confidence)}`}>
@@ -226,7 +226,7 @@ export const StrategyDetail: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-2.5 text-right font-mono text-gray-400">{signal.detected}</td>
+                        <td className="px-6 py-2.5 text-right font-mono dark:text-gray-400 light:text-slate-500">{signal.detected}</td>
                         <td className="px-6 py-2.5 text-right">
                           <button className="text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:text-white">Analyze</button>
                         </td>
@@ -238,7 +238,7 @@ export const StrategyDetail: React.FC = () => {
             </div>
             {/* Pagination */}
             <div className="shrink-0 p-4 border-t border-white/5 flex items-center justify-between">
-              <div className="text-xs text-gray-400">
+              <div className="text-xs dark:text-gray-400 light:text-slate-500">
                 Showing <span className="font-medium text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
                 <span className="font-medium text-white">{Math.min(currentPage * itemsPerPage, filteredSignals.length)}</span> of{' '}
                 <span className="font-medium text-white">{filteredSignals.length}</span> results
@@ -274,7 +274,7 @@ export const StrategyDetail: React.FC = () => {
                   );
                 })}
                 {totalPages > 5 && currentPage < totalPages - 2 && (
-                  <span className="text-gray-500 px-2">...</span>
+                  <span className="dark:text-gray-500 light:text-slate-500 px-2">...</span>
                 )}
                 {totalPages > 5 && (
                   <button

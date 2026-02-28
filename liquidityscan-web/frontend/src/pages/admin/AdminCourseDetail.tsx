@@ -146,7 +146,7 @@ export function AdminCourseDetail() {
 
   if (!course) {
     return (
-      <div className="text-center py-16 text-gray-500">
+      <div className="text-center py-16 dark:text-gray-500 light:text-slate-500">
         <p>Course not found</p>
         <Link to="/admin/courses" className="text-primary hover:underline mt-2 inline-block">
           Back to courses
@@ -159,7 +159,7 @@ export function AdminCourseDetail() {
     <div>
       <Link
         to="/admin/courses"
-        className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6"
+        className="inline-flex items-center gap-2 dark:text-gray-400 light:text-slate-500 hover:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to courses
@@ -170,20 +170,20 @@ export function AdminCourseDetail() {
           {course.coverUrl ? (
             <img src={course.coverUrl} alt={course.title} className="w-full h-full object-cover" />
           ) : (
-            <BookOpen className="w-16 h-16 text-gray-600" />
+            <BookOpen className="w-16 h-16 dark:text-gray-600 light:text-slate-400" />
           )}
         </div>
         <div className="p-6 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold text-white">{course.title}</h1>
             {course.description && (
-              <p className="text-gray-400 mt-2">{course.description}</p>
+              <p className="dark:text-gray-400 light:text-slate-500 mt-2">{course.description}</p>
             )}
           </div>
           <button
             type="button"
             onClick={openEditCourse}
-            className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+            className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 dark:text-gray-300 light:text-slate-600 hover:bg-white/10 hover:text-white transition-colors"
             title="Edit course"
           >
             <Pencil className="w-4 h-4" />
@@ -206,11 +206,11 @@ export function AdminCourseDetail() {
       </div>
 
       {!firstChapter ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-500">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center dark:text-gray-500 light:text-slate-500">
           No chapters found. Edit this course in the database or create a chapter via API.
         </div>
       ) : lessons.length === 0 ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-gray-500">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center dark:text-gray-500 light:text-slate-500">
           <p className="mb-4">No lessons yet</p>
           <button
             onClick={openAddLesson}
@@ -224,27 +224,27 @@ export function AdminCourseDetail() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/10 bg-white/5">
-                <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Title</th>
-                <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Video link</th>
-                <th className="w-24 py-3 px-4 text-right text-gray-400 font-medium text-sm">Actions</th>
+                <th className="text-left py-3 px-4 dark:text-gray-400 light:text-slate-500 font-medium text-sm">Title</th>
+                <th className="text-left py-3 px-4 dark:text-gray-400 light:text-slate-500 font-medium text-sm">Video link</th>
+                <th className="w-24 py-3 px-4 text-right dark:text-gray-400 light:text-slate-500 font-medium text-sm">Actions</th>
               </tr>
             </thead>
             <tbody>
               {lessons.map((lesson: any) => (
                 <tr key={lesson.id} className="border-b border-white/5 hover:bg-white/5">
                   <td className="py-3 px-4 text-white font-medium">{lesson.title}</td>
-                  <td className="py-3 px-4 text-gray-400 text-sm truncate max-w-xs">{lesson.videoUrl}</td>
+                  <td className="py-3 px-4 dark:text-gray-400 light:text-slate-500 text-sm truncate max-w-xs">{lesson.videoUrl}</td>
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => openEditLesson(lesson)}
-                      className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 mr-1"
+                      className="p-2 dark:text-gray-400 light:text-slate-500 hover:text-white rounded-lg hover:bg-white/10 mr-1"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(lesson.id)}
-                      className="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-red-500/10"
+                      className="p-2 dark:text-gray-400 light:text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -265,7 +265,7 @@ export function AdminCourseDetail() {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Title</label>
                 <input
                   type="text"
                   value={lessonTitle}
@@ -275,7 +275,7 @@ export function AdminCourseDetail() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Description</label>
                 <textarea
                   value={lessonDescription}
                   onChange={(e) => setLessonDescription(e.target.value)}
@@ -285,7 +285,7 @@ export function AdminCourseDetail() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Video link</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Video link</label>
                 <input
                   type="url"
                   value={lessonVideoUrl}
@@ -295,7 +295,7 @@ export function AdminCourseDetail() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Video provider</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Video provider</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -303,7 +303,7 @@ export function AdminCourseDetail() {
                     className={`flex-1 py-2 rounded-lg border text-sm font-medium ${
                       lessonVideoProvider === 'youtube'
                         ? 'border-primary bg-primary/20 text-primary'
-                        : 'border-white/10 text-gray-400 hover:bg-white/5'
+                        : 'border-white/10 dark:text-gray-400 light:text-slate-500 hover:bg-white/5'
                     }`}
                   >
                     YouTube
@@ -314,7 +314,7 @@ export function AdminCourseDetail() {
                     className={`flex-1 py-2 rounded-lg border text-sm font-medium ${
                       lessonVideoProvider === 'wistia'
                         ? 'border-primary bg-primary/20 text-primary'
-                        : 'border-white/10 text-gray-400 hover:bg-white/5'
+                        : 'border-white/10 dark:text-gray-400 light:text-slate-500 hover:bg-white/5'
                     }`}
                   >
                     Wistia
@@ -325,7 +325,7 @@ export function AdminCourseDetail() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={closeLessonModal}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-gray-300 hover:bg-white/5"
+                className="flex-1 py-2 rounded-lg border border-white/20 dark:text-gray-300 light:text-slate-600 hover:bg-white/5"
               >
                 Cancel
               </button>
@@ -349,7 +349,7 @@ export function AdminCourseDetail() {
             <h2 className="text-xl font-bold text-white mb-4">Edit course</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Name</label>
                 <input
                   type="text"
                   value={courseName}
@@ -359,7 +359,7 @@ export function AdminCourseDetail() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Description</label>
                 <textarea
                   value={courseDescription}
                   onChange={(e) => setCourseDescription(e.target.value)}
@@ -369,7 +369,7 @@ export function AdminCourseDetail() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Difficulty</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Difficulty</label>
                 <select
                   value={courseDifficulty}
                   onChange={(e) => setCourseDifficulty(e.target.value)}
@@ -383,7 +383,7 @@ export function AdminCourseDetail() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Cover image URL</label>
+                <label className="block text-sm font-medium dark:text-gray-300 light:text-slate-600 mb-1">Cover image URL</label>
                 <input
                   type="url"
                   value={courseCoverUrl}
@@ -396,7 +396,7 @@ export function AdminCourseDetail() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={closeEditCourseModal}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-gray-300 hover:bg-white/5"
+                className="flex-1 py-2 rounded-lg border border-white/20 dark:text-gray-300 light:text-slate-600 hover:bg-white/5"
               >
                 Cancel
               </button>
@@ -419,7 +419,7 @@ export function AdminCourseDetail() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-gray-300 hover:bg-white/5"
+                className="flex-1 py-2 rounded-lg border border-white/20 dark:text-gray-300 light:text-slate-600 hover:bg-white/5"
               >
                 Cancel
               </button>

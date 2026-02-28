@@ -29,8 +29,8 @@ export const StrategiesDashboard: React.FC = () => {
               My Strategies
             </h1>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400 font-medium">Last updated: <span className="text-white">Just now</span></span>
-              <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+              <span className="text-xs dark:text-gray-400 light:text-slate-500 font-medium">Last updated: <span className="text-white">Just now</span></span>
+              <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 dark:text-gray-400 light:text-slate-500 hover:text-white transition-colors">
                 <span className="material-symbols-outlined text-xl">refresh</span>
               </button>
             </div>

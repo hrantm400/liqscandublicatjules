@@ -69,7 +69,7 @@ export function AdminLayout() {
               </h1>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden text-gray-400 hover:text-white"
+                className="lg:hidden dark:text-gray-400 light:text-slate-500 hover:text-white"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -89,7 +89,7 @@ export function AdminLayout() {
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     active
                       ? 'bg-primary text-black font-bold shadow-lg shadow-primary/50'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      : 'dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -109,7 +109,7 @@ export function AdminLayout() {
                 <div className="text-sm font-bold text-white truncate">
                   {user?.name || user?.email || 'Admin'}
                 </div>
-                <div className="text-xs text-gray-400 truncate">{user?.email}</div>
+                <div className="text-xs dark:text-gray-400 light:text-slate-500 truncate">{user?.email}</div>
               </div>
             </div>
             <button
@@ -137,7 +137,7 @@ export function AdminLayout() {
         <header className="h-16 bg-black/40 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="lg:hidden dark:text-gray-400 light:text-slate-500 hover:text-white"
           >
             <Menu className="w-6 h-6" />
           </button>

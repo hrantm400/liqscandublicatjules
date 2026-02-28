@@ -98,7 +98,7 @@ export const LandingPage: React.FC = () => {
                   STOP GUESSING. <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-green-200 to-primary animate-gradient text-glow">START PRINTING.</span>
                 </h2>
-                <p className="text-xl md:text-2xl text-gray-400 mb-12 max-w-3xl mx-auto font-light leading-relaxed">
+                <p className="text-xl md:text-2xl dark:text-gray-400 light:text-slate-500 mb-12 max-w-3xl mx-auto font-light leading-relaxed">
                   Join 10,000+ traders who have upgraded their edge. <br/>
                   <span className="text-white font-medium">No credit card required for the 7-day trial.</span>
                 </p>
@@ -109,7 +109,7 @@ export const LandingPage: React.FC = () => {
                       {isAuthenticated ? "LAUNCH TERMINAL" : "GET STARTED NOW"}
                     </Button>
                   </Link>
-                  <span className="text-gray-500 font-mono text-sm hidden sm:block">
+                  <span className="dark:text-gray-500 light:text-slate-500 font-mono text-sm hidden sm:block">
                     // LIMITED SPOTS AVAILABLE
                   </span>
                 </div>

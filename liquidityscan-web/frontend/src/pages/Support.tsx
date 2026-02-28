@@ -59,7 +59,7 @@ export function Support() {
                   search
                 </span>
                 <input
-                  className="w-full pl-16 pr-6 py-4 rounded-full dark:bg-[#0a140d]/80 light:bg-white border dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark dark:placeholder:text-gray-600 light:placeholder:text-text-light-secondary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-xl text-lg backdrop-blur-md"
+                  className="w-full pl-16 pr-6 py-4 rounded-full dark:bg-[#0a140d]/80 light:bg-white border dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark dark:placeholder:dark:text-gray-600 light:text-slate-400 light:placeholder:text-text-light-secondary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-xl text-lg backdrop-blur-md"
                   placeholder="Search Help Articles..."
                   type="text"
                   value={searchQuery}

@@ -39,7 +39,7 @@ export const HowItWorks: React.FC = () => {
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
             How It <span className="text-primary text-glow">Works</span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          <p className="dark:text-gray-400 light:text-slate-500 max-w-2xl mx-auto text-lg">
             From setup to first trade in under <span className="text-white font-bold">5 minutes</span>.
           </p>
         </div>
@@ -65,13 +65,13 @@ export const HowItWorks: React.FC = () => {
                   <div className="relative w-24 h-24 mb-8">
                     <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     <div className="w-full h-full rounded-2xl bg-[#0A0A0A] border border-white/10 flex items-center justify-center relative z-10 group-hover:border-primary/50 group-hover:scale-110 transition-all duration-300 shadow-xl">
-                      <div className="text-gray-400 group-hover:text-primary transition-colors duration-300">
+                      <div className="dark:text-gray-400 light:text-slate-500 group-hover:text-primary transition-colors duration-300">
                         {step.icon}
                       </div>
                     </div>
                     
                     {/* Step Number Badge */}
-                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-[#0F1115] border border-white/10 rounded-full flex items-center justify-center text-xs font-bold font-mono text-gray-500 group-hover:text-primary group-hover:border-primary transition-colors z-20 shadow-lg">
+                    <div className="absolute -top-3 -right-3 w-8 h-8 bg-[#0F1115] border border-white/10 rounded-full flex items-center justify-center text-xs font-bold font-mono dark:text-gray-500 light:text-slate-500 group-hover:text-primary group-hover:border-primary transition-colors z-20 shadow-lg">
                       {idx + 1}
                     </div>
                   </div>
@@ -79,7 +79,7 @@ export const HowItWorks: React.FC = () => {
                   <h3 className="text-xl font-bold mb-4 text-white group-hover:text-primary transition-colors font-display">
                     {step.title}
                   </h3>
-                  <p className="text-gray-400 text-sm leading-relaxed max-w-[250px] mx-auto group-hover:text-gray-300 transition-colors">
+                  <p className="dark:text-gray-400 light:text-slate-500 text-sm leading-relaxed max-w-[250px] mx-auto group-hover:dark:text-gray-300 light:text-slate-600 transition-colors">
                     {step.desc}
                   </p>
                   

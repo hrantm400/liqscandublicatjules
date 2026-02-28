@@ -55,7 +55,7 @@ export const Hero: React.FC = () => {
             </span>
           </h1>
           
-          <p className="text-gray-400 text-xl md:text-2xl mb-12 max-w-lg leading-relaxed font-light">
+          <p className="dark:text-gray-400 light:text-slate-500 text-xl md:text-2xl mb-12 max-w-lg leading-relaxed font-light">
             The only <span className="text-white font-medium">institutional-grade</span> liquidity scanner for retail. 
             Identify smart money flow and hidden divergences before they print.
           </p>
@@ -77,17 +77,17 @@ export const Hero: React.FC = () => {
             <div className="flex flex-col gap-2 group">
               <Zap className="text-primary w-8 h-8 mb-2 group-hover:scale-110 transition-transform duration-300" />
               <h3 className="font-bold text-white text-lg">Real-time</h3>
-              <p className="text-sm text-gray-500 font-mono group-hover:text-primary transition-colors">&lt; 50ms Latency</p>
+              <p className="text-sm dark:text-gray-500 light:text-slate-500 font-mono group-hover:text-primary transition-colors">&lt; 50ms Latency</p>
             </div>
             <div className="flex flex-col gap-2 group">
               <ShieldCheck className="text-primary w-8 h-8 mb-2 group-hover:scale-110 transition-transform duration-300" />
               <h3 className="font-bold text-white text-lg">No Repaint</h3>
-              <p className="text-sm text-gray-500 font-mono group-hover:text-primary transition-colors">Confirmed Signals</p>
+              <p className="text-sm dark:text-gray-500 light:text-slate-500 font-mono group-hover:text-primary transition-colors">Confirmed Signals</p>
             </div>
             <div className="flex flex-col gap-2 group">
               <TrendingUp className="text-primary w-8 h-8 mb-2 group-hover:scale-110 transition-transform duration-300" />
               <h3 className="font-bold text-white text-lg">78% Win Rate</h3>
-              <p className="text-sm text-gray-500 font-mono group-hover:text-primary transition-colors">Backtested Data</p>
+              <p className="text-sm dark:text-gray-500 light:text-slate-500 font-mono group-hover:text-primary transition-colors">Backtested Data</p>
             </div>
           </div>
         </motion.div>
@@ -113,7 +113,7 @@ export const Hero: React.FC = () => {
                   <div className="w-3 h-3 rounded-full bg-red-500/50" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
                   <div className="w-3 h-3 rounded-full bg-green-500/50" />
-                  <div className="ml-auto font-mono text-xs text-gray-500">liq_scan_v3.exe</div>
+                  <div className="ml-auto font-mono text-xs dark:text-gray-500 light:text-slate-500">liq_scan_v3.exe</div>
                 </div>
 
                 {/* Content */}
@@ -122,7 +122,7 @@ export const Hero: React.FC = () => {
                      <div>
                        <div className="flex items-center gap-2 mb-1">
                          <span className="font-mono text-2xl font-bold text-white tracking-wider">BTC/USDT</span>
-                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 border border-white/10 text-gray-300">PERP</span>
+                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 border border-white/10 dark:text-gray-300 light:text-slate-600">PERP</span>
                        </div>
                        <div className="text-4xl font-mono font-bold text-primary text-glow">$68,420.50</div>
                      </div>
@@ -159,7 +159,7 @@ export const Hero: React.FC = () => {
                       
                       {/* Signal Badge */}
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 backdrop-blur-md border border-primary text-primary px-6 py-3 rounded-xl font-bold shadow-[0_0_30px_rgba(19,236,55,0.3)] z-30 flex flex-col items-center">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Pattern Detected</span>
+                        <span className="text-[10px] dark:text-gray-400 light:text-slate-500 uppercase tracking-widest mb-1">Pattern Detected</span>
                         <div className="flex items-center gap-2 text-lg">
                            <span className="relative flex h-3 w-3">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -172,11 +172,11 @@ export const Hero: React.FC = () => {
 
                    <div className="mt-6 grid grid-cols-2 gap-4">
                       <div className="bg-white/5 rounded-xl p-4 border border-white/5 hover:border-primary/30 transition-colors">
-                        <div className="text-gray-500 text-xs mb-1">24h Vol</div>
+                        <div className="dark:text-gray-500 light:text-slate-500 text-xs mb-1">24h Vol</div>
                         <div className="font-mono text-white font-bold">$42.8B</div>
                       </div>
                       <div className="bg-white/5 rounded-xl p-4 border border-white/5 hover:border-primary/30 transition-colors">
-                        <div className="text-gray-500 text-xs mb-1">Liq. Zone</div>
+                        <div className="dark:text-gray-500 light:text-slate-500 text-xs mb-1">Liq. Zone</div>
                         <div className="font-mono text-primary font-bold">$69,000</div>
                       </div>
                    </div>
@@ -193,7 +193,7 @@ export const Hero: React.FC = () => {
             >
                <div className="flex items-center gap-2 mb-2">
                  <div className="w-2 h-2 rounded-full bg-red-500" />
-                 <span className="text-xs text-gray-400">RSI Divergence</span>
+                 <span className="text-xs dark:text-gray-400 light:text-slate-500">RSI Divergence</span>
                </div>
                <div className="h-1 bg-white/10 rounded-full overflow-hidden mb-2">
                  <div className="h-full bg-red-500 w-[70%]" />
@@ -209,7 +209,7 @@ export const Hero: React.FC = () => {
               transition={{ delay: 1.2 }}
             >
                <div className="flex items-center justify-between mb-2">
-                 <span className="text-xs text-gray-400">Active Signals</span>
+                 <span className="text-xs dark:text-gray-400 light:text-slate-500">Active Signals</span>
                  <span className="text-xs text-primary font-bold">12</span>
                </div>
                <div className="flex -space-x-2">

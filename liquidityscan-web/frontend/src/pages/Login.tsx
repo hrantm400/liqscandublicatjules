@@ -193,7 +193,7 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl dark:bg-white/5 light:bg-white dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark dark:placeholder:text-gray-600 light:placeholder:text-text-light-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                className="w-full px-4 py-3 rounded-xl dark:bg-white/5 light:bg-white dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark dark:placeholder:dark:text-gray-600 light:text-slate-400 light:placeholder:text-text-light-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                 placeholder="you@example.com"
               />
             </div>
@@ -207,7 +207,7 @@ export function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl dark:bg-white/5 light:bg-white dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark dark:placeholder:text-gray-600 light:placeholder:text-text-light-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                className="w-full px-4 py-3 rounded-xl dark:bg-white/5 light:bg-white dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark dark:placeholder:dark:text-gray-600 light:text-slate-400 light:placeholder:text-text-light-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                 placeholder="••••••••"
               />
             </div>

@@ -117,7 +117,7 @@ export function MonitorStrategy1() {
                     <Link to="/strategies" className="dark:hover:text-white light:hover:text-text-dark cursor-pointer transition-colors">My Strategies</Link>
                     <span className="material-symbols-outlined text-[10px]">chevron_right</span>
                     <span className="text-amber-400 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">Strategy 1</span>
-                    <span className="ml-2 text-gray-600">Last updated: <span className="dark:text-white light:text-text-dark">Just now</span></span>
+                    <span className="ml-2 dark:text-gray-600 light:text-slate-400">Last updated: <span className="dark:text-white light:text-text-dark">Just now</span></span>
                 </div>
             </div>
 
@@ -202,13 +202,13 @@ export function MonitorStrategy1() {
 
                             {/* Search */}
                             <div className="relative">
-                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-base">search</span>
+                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 dark:text-gray-500 light:text-slate-500 text-base">search</span>
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                                     placeholder="Search pairs..."
-                                    className="pl-9 pr-4 py-2 text-sm rounded-lg dark:bg-white/5 light:bg-white dark:border-white/5 light:border-green-200 border dark:text-white light:text-text-dark dark:placeholder:text-gray-600 light:placeholder:text-text-light-secondary focus:outline-none focus:ring-1 focus:ring-amber-500/50 w-48"
+                                    className="pl-9 pr-4 py-2 text-sm rounded-lg dark:bg-white/5 light:bg-white dark:border-white/5 light:border-green-200 border dark:text-white light:text-text-dark dark:placeholder:dark:text-gray-600 light:text-slate-400 light:placeholder:text-text-light-secondary focus:outline-none focus:ring-1 focus:ring-amber-500/50 w-48"
                                 />
                             </div>
                         </div>

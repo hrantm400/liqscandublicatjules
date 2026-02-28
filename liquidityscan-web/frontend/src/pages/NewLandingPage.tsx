@@ -49,7 +49,7 @@ export const LandingPage: React.FC = () => {
                 Stop Guessing. <br />
                 <span className="text-primary text-glow">Start Printing.</span>
               </h2>
-              <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+              <p className="text-xl dark:text-gray-400 light:text-slate-500 mb-10 max-w-2xl mx-auto">
                 Join 10,000+ traders who have upgraded their edge. No credit card required for the 7-day trial.
               </p>
               <div className="flex justify-center">
@@ -59,7 +59,7 @@ export const LandingPage: React.FC = () => {
                   </Button>
                 </Link>
               </div>
-              <p className="mt-6 text-sm text-gray-500 font-mono">
+              <p className="mt-6 text-sm dark:text-gray-500 light:text-slate-500 font-mono">
                 Limited spots available for current beta cohort.
               </p>
             </div>

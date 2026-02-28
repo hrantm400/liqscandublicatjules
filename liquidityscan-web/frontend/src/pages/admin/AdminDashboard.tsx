@@ -54,7 +54,7 @@ export function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-4xl font-black text-white mb-2">Admin Dashboard</h1>
-        <p className="text-gray-400">Overview of your platform</p>
+        <p className="dark:text-gray-400 light:text-slate-500">Overview of your platform</p>
       </div>
 
       {/* Stats Grid */}
@@ -85,7 +85,7 @@ export function AdminDashboard() {
                 </div>
               </div>
               <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
-              <div className="text-sm text-gray-400">{stat.label}</div>
+              <div className="text-sm dark:text-gray-400 light:text-slate-500">{stat.label}</div>
             </motion.div>
           );
         })}
@@ -110,15 +110,15 @@ export function AdminDashboard() {
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-white">{user.name || user.email}</div>
-                    <div className="text-xs text-gray-400">{user.email}</div>
+                    <div className="text-xs dark:text-gray-400 light:text-slate-500">{user.email}</div>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs dark:text-gray-500 light:text-slate-500">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-400">No recent users</div>
+              <div className="text-center py-8 dark:text-gray-400 light:text-slate-500">No recent users</div>
             )}
           </div>
         </motion.div>

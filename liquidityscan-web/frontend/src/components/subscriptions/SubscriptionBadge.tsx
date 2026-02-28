@@ -14,7 +14,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({ subscripti
         animate={{ opacity: 1, scale: 1 }}
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20"
       >
-        <span className="text-xs font-medium text-gray-400">Free Plan</span>
+        <span className="text-xs font-medium dark:text-gray-400 light:text-slate-500">Free Plan</span>
       </motion.div>
     );
   }
@@ -26,9 +26,9 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({ subscripti
       case 'expired':
         return 'bg-red-500/20 text-red-400 border-red-500/30';
       case 'cancelled':
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+        return 'bg-gray-500/20 dark:text-gray-400 light:text-slate-500 border-gray-500/30';
       default:
-        return 'bg-white/10 text-gray-400 border-white/20';
+        return 'bg-white/10 dark:text-gray-400 light:text-slate-500 border-white/20';
     }
   };
 

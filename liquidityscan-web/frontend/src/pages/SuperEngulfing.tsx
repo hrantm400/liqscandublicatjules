@@ -186,7 +186,7 @@ export const SuperEngulfing: React.FC = () => {
             <div className="flex items-center space-x-4">
                 <div className="relative group cursor-pointer">
                     <div className="absolute inset-0 bg-primary rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                    <div className="relative w-10 h-10 bg-surface-dark rounded-xl border border-primary/20 flex items-center justify-center shadow-[0_0_15px_rgba(19,236,55,0.2)]">
+                    <div className="relative w-10 h-10 dark:bg-surface-dark light:bg-white rounded-xl border border-primary/20 flex items-center justify-center shadow-[0_0_15px_rgba(19,236,55,0.2)]">
                         <BarChart2 size={24} className="text-primary group-hover:text-primary transition-colors" />
                     </div>
                 </div>
@@ -194,7 +194,7 @@ export const SuperEngulfing: React.FC = () => {
                     <h1 className="text-2xl font-bold tracking-tight font-mono text-white">
                         SUPER<span className="text-primary">ENGULFING</span>
                     </h1>
-                    <div className="flex items-center space-x-2 text-[10px] text-gray-400 font-mono uppercase tracking-widest">
+                    <div className="flex items-center space-x-2 text-[10px] dark:text-gray-400 light:text-slate-500 font-mono uppercase tracking-widest">
                         <span>System 2026</span>
                         <span className="w-1 h-1 rounded-full bg-gray-600"></span>
                         <span className="text-primary">Online</span>
@@ -202,23 +202,23 @@ export const SuperEngulfing: React.FC = () => {
                 </div>
             </div>
             
-            <nav className="hidden md:flex items-center bg-surface-dark/50 p-1.5 rounded-xl border border-white/5 space-x-1">
+            <nav className="hidden md:flex items-center dark:bg-surface-dark/50 light:bg-white/50 p-1.5 rounded-xl border border-white/5 space-x-1">
                 <button 
                     onClick={() => handleModeChange('playground')}
-                    className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 font-mono ${mode === 'playground' ? 'bg-primary text-black shadow-lg shadow-[0_0_20px_rgba(19,236,55,0.4)]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 font-mono ${mode === 'playground' ? 'bg-primary text-black shadow-lg shadow-[0_0_20px_rgba(19,236,55,0.4)]' : 'dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/5'}`}
                 >
                     VISUALIZER
                 </button>
                  <button 
                     onClick={() => handleModeChange('quiz')}
-                    className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 font-mono flex items-center space-x-2 ${mode === 'quiz' ? 'bg-primary/80 text-black shadow-lg shadow-[0_0_20px_rgba(19,236,55,0.3)]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 font-mono flex items-center space-x-2 ${mode === 'quiz' ? 'bg-primary/80 text-black shadow-lg shadow-[0_0_20px_rgba(19,236,55,0.3)]' : 'dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/5'}`}
                 >
                     <GraduationCap size={16} />
                     <span>EXAM MODE</span>
                 </button>
                 <button 
                     onClick={() => handleModeChange('learn')}
-                    className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 font-mono ${mode === 'learn' ? 'bg-primary text-black shadow-lg shadow-[0_0_20px_rgba(19,236,55,0.4)]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 font-mono ${mode === 'learn' ? 'bg-primary text-black shadow-lg shadow-[0_0_20px_rgba(19,236,55,0.4)]' : 'dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/5'}`}
                 >
                     THEORY_DB
                 </button>
@@ -238,12 +238,12 @@ export const SuperEngulfing: React.FC = () => {
                         <div className="absolute top-0 left-0 right-0 h-14 bg-surface-dark/60 backdrop-blur border-b border-white/5 flex items-center justify-between px-6 z-10">
                              <div className="flex items-center space-x-4">
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-gray-400 font-mono">ASSET</span>
+                                    <span className="text-xs dark:text-gray-400 light:text-slate-500 font-mono">ASSET</span>
                                     <span className="text-sm font-bold text-white font-mono">BTC/USD</span>
                                 </div>
                                 <div className="h-6 w-px bg-white/10"></div>
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-gray-400 font-mono">TIMEFRAME</span>
+                                    <span className="text-xs dark:text-gray-400 light:text-slate-500 font-mono">TIMEFRAME</span>
                                     <span className="text-sm font-bold text-primary font-mono">5m</span>
                                 </div>
                              </div>
@@ -281,7 +281,7 @@ export const SuperEngulfing: React.FC = () => {
                         <div className="grid grid-cols-4 gap-4">
                             {['RUN', 'RUN+', 'REV', 'REV+'].map((type) => (
                                 <div key={type} className="glass-panel rounded-xl p-4 flex flex-col items-center justify-center border-t border-white/5 hover:border-primary/30 transition-colors">
-                                    <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-1">{type} Count</span>
+                                    <span className="text-[10px] dark:text-gray-500 light:text-slate-500 font-mono uppercase tracking-widest mb-1">{type} Count</span>
                                     <span className="text-xl font-bold text-white font-mono">
                                         {patterns.filter(p => p?.label.includes(type) && !p?.label.includes('x')).length}
                                     </span>
@@ -299,7 +299,7 @@ export const SuperEngulfing: React.FC = () => {
                             {/* Signal Status Box */}
                             <div className="glass-panel p-6 rounded-2xl border-t border-white/10 relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-primary to-transparent opacity-50"></div>
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest font-mono mb-4 flex items-center">
+                                <h3 className="text-xs font-bold dark:text-gray-400 light:text-slate-500 uppercase tracking-widest font-mono mb-4 flex items-center">
                                     <Activity size={14} className="mr-2 text-primary" />
                                     Signal Analysis
                                 </h3>
@@ -314,7 +314,7 @@ export const SuperEngulfing: React.FC = () => {
                                         <div className={`text-3xl font-black font-mono tracking-tighter ${latestPattern.label.includes('Bull') ? 'text-primary' : 'text-red-400'}`}>
                                             {latestPattern.label}
                                         </div>
-                                        <div className="mt-4 pt-4 border-t border-white/5 text-sm text-gray-400 leading-relaxed">
+                                        <div className="mt-4 pt-4 border-t border-white/5 text-sm dark:text-gray-400 light:text-slate-500 leading-relaxed">
                                             {latestPattern.type.includes('RUN') && "Market structure maintained. Liquidity grab successful, continuation likely."}
                                             {latestPattern.type.includes('REV') && "Trend reversal detected. Previous range engulfed. Prepare for shift."}
                                             {latestPattern.isPlus && <span className="block mt-2 text-primary font-bold">PLUS confirmed: Strong close beyond previous extreme.</span>}
@@ -322,7 +322,7 @@ export const SuperEngulfing: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center h-24 text-gray-600 font-mono text-sm">
+                                    <div className="flex flex-col items-center justify-center h-24 dark:text-gray-600 light:text-slate-400 font-mono text-sm">
                                         <span>// AWAITING SIGNAL INPUT...</span>
                                     </div>
                                 )}
@@ -354,22 +354,22 @@ export const SuperEngulfing: React.FC = () => {
 
                     {/* Quick Cheat Sheet */}
                     <div className="glass-panel p-5 rounded-2xl border border-white/5">
-                        <h4 className="flex items-center text-xs font-bold text-gray-300 mb-4 uppercase tracking-widest font-mono">
+                        <h4 className="flex items-center text-xs font-bold dark:text-gray-300 light:text-slate-600 mb-4 uppercase tracking-widest font-mono">
                             <BookOpen size={14} className="mr-2 text-primary" />
                             Algo Reference
                         </h4>
-                        <ul className="space-y-3 text-xs text-gray-400 font-mono">
+                        <ul className="space-y-3 text-xs dark:text-gray-400 light:text-slate-500 font-mono">
                             <li className="flex justify-between items-center group cursor-help">
                                 <span className="group-hover:text-white transition-colors">RUN</span>
-                                <span className="text-gray-600 group-hover:text-primary transition-colors">Sweep Low + Close High</span>
+                                <span className="dark:text-gray-600 light:text-slate-400 group-hover:text-primary transition-colors">Sweep Low + Close High</span>
                             </li>
                             <li className="flex justify-between items-center group cursor-help">
                                 <span className="group-hover:text-white transition-colors">REV</span>
-                                <span className="text-gray-600 group-hover:text-primary transition-colors">Sweep Low + Engulf Open</span>
+                                <span className="dark:text-gray-600 light:text-slate-400 group-hover:text-primary transition-colors">Sweep Low + Engulf Open</span>
                             </li>
                             <li className="flex justify-between items-center group cursor-help">
                                 <span className="group-hover:text-white transition-colors">PLUS (+)</span>
-                                <span className="text-gray-600 group-hover:text-primary transition-colors">Close {'>'} Prev Extreme</span>
+                                <span className="dark:text-gray-600 light:text-slate-400 group-hover:text-primary transition-colors">Close {'>'} Prev Extreme</span>
                             </li>
                         </ul>
                     </div>
@@ -383,7 +383,7 @@ export const SuperEngulfing: React.FC = () => {
                     <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-primary/60 tracking-tight mb-4">
                         ALGORITHMIC LOGIC
                     </h1>
-                    <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
+                    <p className="dark:text-gray-400 light:text-slate-500 text-lg max-w-2xl mx-auto font-light">
                         The SuperEngulfing system identifies high-probability order block reclaims and liquidity sweeps.
                     </p>
                 </div>
@@ -395,7 +395,7 @@ export const SuperEngulfing: React.FC = () => {
                         </div>
                         <h3 className="text-2xl font-bold text-white mb-2 font-mono">RUN</h3>
                         <span className="inline-block px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest mb-6">Continuation Model</span>
-                        <p className="text-gray-400 mb-6 leading-relaxed">
+                        <p className="dark:text-gray-400 light:text-slate-500 mb-6 leading-relaxed">
                             The trend pauses to grab liquidity. A candle sweeps the previous candle's low (in an uptrend) but refuses to reverse, closing higher than the previous close. This indicates trapped sellers.
                         </p>
                     </div>
@@ -406,7 +406,7 @@ export const SuperEngulfing: React.FC = () => {
                         </div>
                         <h3 className="text-2xl font-bold text-white mb-2 font-mono">REV</h3>
                         <span className="inline-block px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest mb-6">Reversal Model</span>
-                        <p className="text-gray-400 mb-6 leading-relaxed">
+                        <p className="dark:text-gray-400 light:text-slate-500 mb-6 leading-relaxed">
                             A hard reversal. The candle opens against the trend, sweeps liquidity, and then engulfs the previous candle's body completely. This signifies a total shift in market control.
                         </p>
                     </div>
@@ -417,13 +417,13 @@ export const SuperEngulfing: React.FC = () => {
                      <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                         <div className="flex-1">
                             <h2 className="text-2xl font-bold text-white mb-4 font-mono">THE <span className="text-primary">PLUS (+)</span> STANDARD</h2>
-                            <p className="text-gray-400 leading-relaxed">
+                            <p className="dark:text-gray-400 light:text-slate-500 leading-relaxed">
                                 Standard patterns are good, but <span className="text-white font-bold">PLUS</span> patterns are elite. To qualify for a PLUS tag, the candle must close beyond the <span className="text-primary">absolute extreme</span> (High/Low) of the previous candle, not just the body. This filters out weak reactions.
                             </p>
                         </div>
-                        <div className="w-full md:w-1/3 p-6 bg-surface-dark rounded-xl border border-primary/20 text-center">
+                        <div className="w-full md:w-1/3 p-6 dark:bg-surface-dark light:bg-white rounded-xl border border-primary/20 text-center">
                             <Zap size={48} className="mx-auto text-primary mb-4" />
-                            <div className="text-xs text-gray-500 uppercase tracking-widest">Confidence Score</div>
+                            <div className="text-xs dark:text-gray-500 light:text-slate-500 uppercase tracking-widest">Confidence Score</div>
                             <div className="text-3xl font-bold text-primary">95%</div>
                         </div>
                      </div>

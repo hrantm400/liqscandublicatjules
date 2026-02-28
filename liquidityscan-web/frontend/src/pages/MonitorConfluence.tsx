@@ -125,7 +125,7 @@ export function MonitorConfluence() {
                     <Link to="/strategies" className="dark:hover:text-white light:hover:text-text-dark cursor-pointer transition-colors">My Strategies</Link>
                     <span className="material-symbols-outlined text-[10px]">chevron_right</span>
                     <span className="text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">Strategy 9</span>
-                    <span className="ml-2 text-gray-600">Last updated: <span className="dark:text-white light:text-text-dark">Just now</span></span>
+                    <span className="ml-2 dark:text-gray-600 light:text-slate-400">Last updated: <span className="dark:text-white light:text-text-dark">Just now</span></span>
                 </div>
             </div>
 
@@ -186,9 +186,9 @@ export function MonitorConfluence() {
                     <div className="flex items-center gap-3 flex-wrap">
                         {/* Search */}
                         <div className="relative w-60 shrink-0">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">search</span>
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 dark:text-gray-500 light:text-slate-500 text-lg">search</span>
                             <input
-                                className="w-full pl-10 pr-4 py-2.5 rounded-lg dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-200 border dark:text-white light:text-text-dark text-sm dark:placeholder:text-gray-600 light:placeholder:text-gray-400 focus:border-cyan-400 focus:ring-cyan-400 focus:ring-1 transition-colors"
+                                className="w-full pl-10 pr-4 py-2.5 rounded-lg dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-200 border dark:text-white light:text-text-dark text-sm dark:placeholder:dark:text-gray-600 light:text-slate-400 light:placeholder:dark:text-gray-400 light:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400 focus:ring-1 transition-colors"
                                 placeholder="Search..."
                                 type="text"
                                 value={searchQuery}
@@ -240,8 +240,8 @@ export function MonitorConfluence() {
                         <div className="flex-1 rounded-xl table-glass-panel relative flex flex-col overflow-hidden">
                             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                                 <div className="h-full overflow-y-auto custom-scrollbar">
-                                    <table className="w-full text-sm text-left text-gray-400">
-                                        <thead className="text-[11px] uppercase text-gray-500 font-bold sticky top-0 dark:bg-[#0a140d] light:bg-green-50 border-b dark:border-white/10 light:border-green-200 z-10 tracking-wider">
+                                    <table className="w-full text-sm text-left dark:text-gray-400 light:text-slate-500">
+                                        <thead className="text-[11px] uppercase dark:text-gray-500 light:text-slate-500 font-bold sticky top-0 dark:bg-[#0a140d] light:bg-green-50 border-b dark:border-white/10 light:border-green-200 z-10 tracking-wider">
                                             <tr>
                                                 <th className="px-4 py-3" scope="col">Symbol</th>
                                                 <th className="px-4 py-3" scope="col">Exchange</th>
@@ -259,7 +259,7 @@ export function MonitorConfluence() {
                                                     <td colSpan={8} className="text-center py-20">
                                                         <div className="flex flex-col items-center gap-3">
                                                             <div className="w-8 h-8 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
-                                                            <span className="text-gray-500 text-sm">Loading confluence signals...</span>
+                                                            <span className="dark:text-gray-500 light:text-slate-500 text-sm">Loading confluence signals...</span>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -267,9 +267,9 @@ export function MonitorConfluence() {
                                                 <tr>
                                                     <td colSpan={8} className="text-center py-20">
                                                         <div className="flex flex-col items-center gap-3">
-                                                            <span className="material-symbols-outlined text-4xl text-gray-600">search_off</span>
-                                                            <span className="text-gray-500 text-sm">No confluence signals found</span>
-                                                            <span className="text-gray-600 text-xs">Signals appear when all 3 conditions align simultaneously</span>
+                                                            <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-slate-400">search_off</span>
+                                                            <span className="dark:text-gray-500 light:text-slate-500 text-sm">No confluence signals found</span>
+                                                            <span className="dark:text-gray-600 light:text-slate-400 text-xs">Signals appear when all 3 conditions align simultaneously</span>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -340,7 +340,7 @@ export function MonitorConfluence() {
                                                             <td className="px-4 py-2.5 text-center">
                                                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border uppercase ${meta?.confidence === 'HIGH'
                                                                     ? 'bg-cyan-400/10 border-cyan-400/20 text-cyan-400'
-                                                                    : 'bg-white/5 border-white/10 text-gray-400'
+                                                                    : 'bg-white/5 border-white/10 dark:text-gray-400 light:text-slate-500'
                                                                     }`}>
                                                                     <span className="material-symbols-outlined text-sm">
                                                                         {meta?.confidence === 'HIGH' ? 'verified' : 'check_circle'}

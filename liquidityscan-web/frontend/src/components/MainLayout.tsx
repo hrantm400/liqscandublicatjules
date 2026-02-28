@@ -198,7 +198,7 @@ const MainLayout: React.FC = () => {
                         )}
 
                         {/* Debug info - always show for troubleshooting */}
-                        <div className="px-4 py-2 text-xs text-gray-500 border-t dark:border-white/5 light:border-green-300/50 mt-2">
+                        <div className="px-4 py-2 text-xs dark:text-gray-500 light:text-slate-500 border-t dark:border-white/5 light:border-green-300/50 mt-2">
                             <div>Debug: isAdmin={String(isAdmin)}</div>
                             <div>user?.isAdmin={String(user?.isAdmin)}</div>
                             <div>user?.email={user?.email || 'N/A'}</div>

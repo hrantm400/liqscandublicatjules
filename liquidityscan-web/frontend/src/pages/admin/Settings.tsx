@@ -14,7 +14,7 @@ export function Settings() {
     <div className="space-y-6">
       <div>
         <h1 className="text-4xl font-black text-white mb-2">Settings</h1>
-        <p className="text-gray-400">Manage platform settings</p>
+        <p className="dark:text-gray-400 light:text-slate-500">Manage platform settings</p>
       </div>
 
       <div className="glass-panel rounded-2xl p-6 border border-white/10 space-y-6">

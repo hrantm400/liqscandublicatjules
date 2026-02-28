@@ -109,7 +109,7 @@ export function Chart({ candles, signals, symbol, timeframe, height = 400 }: Cha
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-white dark:text-white">{symbol}</h3>
-          <p className="text-sm text-gray-400">{timeframe}</p>
+          <p className="text-sm dark:text-gray-400 light:text-slate-500">{timeframe}</p>
         </div>
       </div>
       <div ref={chartContainerRef} className="w-full" style={{ height: isMobile ? 300 : height }} />

@@ -38,7 +38,7 @@ export const Strategies: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="mb-20 text-center">
            <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Three Pillars of <span className="text-primary text-glow">Profitability</span></h2>
-           <p className="text-gray-400 max-w-2xl mx-auto">
+           <p className="dark:text-gray-400 light:text-slate-500 max-w-2xl mx-auto">
              Our core algorithms that power your edge.
            </p>
         </div>
@@ -54,7 +54,7 @@ export const Strategies: React.FC = () => {
                
                <h3 className="text-2xl font-bold mb-4 font-display text-white group-hover:text-primary transition-colors">{strategy.title}</h3>
                
-               <p className="text-gray-400 text-sm leading-relaxed mb-8">
+               <p className="dark:text-gray-400 light:text-slate-500 text-sm leading-relaxed mb-8">
                  {strategy.desc}
                </p>
                

@@ -50,7 +50,7 @@ export const ToolsDashboard: React.FC = () => {
                     <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">Risk Calculator</span>
                   </div>
                 </div>
-                <p className="text-sm dark:text-gray-400 light:text-text-light-secondary dark:group-hover:text-gray-300 light:group-hover:text-text-dark transition-colors">
+                <p className="text-sm dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark transition-colors">
                   Calculate position sizes and risk management parameters for your trades.
                 </p>
                 <div className="flex items-center gap-2 text-primary text-sm font-bold mt-auto pt-4">
@@ -78,7 +78,7 @@ export const ToolsDashboard: React.FC = () => {
                     <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">Pattern Visualizer</span>
                   </div>
                 </div>
-                <p className="text-sm dark:text-gray-400 light:text-text-light-secondary dark:group-hover:text-gray-300 light:group-hover:text-text-dark transition-colors">
+                <p className="text-sm dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark transition-colors">
                   Interactive visualizer and quiz for SuperEngulfing patterns (RUN, REV, PLUS, X-Logic).
                 </p>
                 <div className="flex items-center gap-2 text-indigo-400 text-sm font-bold mt-auto pt-4">

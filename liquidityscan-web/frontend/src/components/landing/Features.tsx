@@ -13,7 +13,7 @@ export const Features: React.FC = () => {
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
             Built for <span className="text-primary">Precision</span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          <p className="dark:text-gray-400 light:text-slate-500 max-w-2xl mx-auto text-lg">
             Stop trading blind. Our advanced algorithms process millions of data points per second to give you the edge you need.
           </p>
         </div>
@@ -26,7 +26,7 @@ export const Features: React.FC = () => {
                  <Target className="w-6 h-6" />
                </div>
                <h3 className="text-2xl font-bold mb-4 font-display text-white">Real-Time Scanner</h3>
-               <p className="text-gray-400 leading-relaxed">
+               <p className="dark:text-gray-400 light:text-slate-500 leading-relaxed">
                  Instantly scans 300+ pairs across Binance and Bybit. Filter by volume spike, RSI divergence, or liquidation cascades.
                </p>
              </div>
@@ -43,9 +43,9 @@ export const Features: React.FC = () => {
                <div className="space-y-3 relative">
                  {[1,2,3].map((i) => (
                    <div key={i} className="flex justify-between items-center py-2 border-b border-white/5 group-hover:bg-white/[0.02] px-2 rounded transition-colors">
-                     <span className="font-mono text-xs text-gray-300">BTC/USDT</span>
+                     <span className="font-mono text-xs dark:text-gray-300 light:text-slate-600">BTC/USDT</span>
                      <span className="font-mono text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">LONG</span>
-                     <span className="font-mono text-xs text-gray-500">Just now</span>
+                     <span className="font-mono text-xs dark:text-gray-500 light:text-slate-500">Just now</span>
                    </div>
                  ))}
                  {/* Fading bottom */}
@@ -61,7 +61,7 @@ export const Features: React.FC = () => {
                  <Activity className="w-6 h-6" />
                </div>
                <h3 className="text-2xl font-bold mb-4 font-display text-white">Confluence Detection</h3>
-               <p className="text-gray-400 leading-relaxed">
+               <p className="dark:text-gray-400 light:text-slate-500 leading-relaxed">
                  We don't just give you one signal. We layer Volume, Open Interest, and Delta to confirm high-probability setups.
                </p>
              </div>

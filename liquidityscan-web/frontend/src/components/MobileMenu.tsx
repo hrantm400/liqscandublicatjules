@@ -43,7 +43,7 @@ export function MobileMenu() {
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 ${location.pathname === item.path
                     ? 'bg-primary/10 border-l-4 border-l-primary text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    : 'dark:text-gray-400 light:text-slate-500 hover:text-white hover:bg-white/5'
                     }`}
                 >
                   <span className="material-symbols-outlined">{item.icon}</span>

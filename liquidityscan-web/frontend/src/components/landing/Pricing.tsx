@@ -45,7 +45,7 @@ export const Pricing: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
           <h2 className="font-display text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
-          <p className="text-gray-400">Pay for value. Cancel anytime.</p>
+          <p className="dark:text-gray-400 light:text-slate-500">Pay for value. Cancel anytime.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -62,20 +62,20 @@ export const Pricing: React.FC = () => {
               )}
               
               <div className="mb-8">
-                <h3 className="text-gray-400 font-medium mb-2">{plan.name}</h3>
+                <h3 className="dark:text-gray-400 light:text-slate-500 font-medium mb-2">{plan.name}</h3>
                 <div className="flex items-baseline">
                   <span className="text-4xl font-bold text-white font-display">{plan.price}</span>
-                  <span className="text-gray-500 ml-2">{plan.period}</span>
+                  <span className="dark:text-gray-500 light:text-slate-500 ml-2">{plan.period}</span>
                 </div>
               </div>
 
               <div className="flex-1 mb-8 space-y-4">
                 {plan.features.map((feature, fIdx) => (
                   <div key={fIdx} className="flex items-center gap-3">
-                    <div className={`p-0.5 rounded-full ${plan.popular ? 'bg-primary text-black' : 'bg-gray-800 text-gray-400'}`}>
+                    <div className={`p-0.5 rounded-full ${plan.popular ? 'bg-primary text-black' : 'bg-gray-800 dark:text-gray-400 light:text-slate-500'}`}>
                       <Check className="w-3 h-3" />
                     </div>
-                    <span className="text-gray-300 text-sm">{feature}</span>
+                    <span className="dark:text-gray-300 light:text-slate-600 text-sm">{feature}</span>
                   </div>
                 ))}
               </div>

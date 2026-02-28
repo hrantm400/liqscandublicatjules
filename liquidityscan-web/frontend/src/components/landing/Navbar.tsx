@@ -31,7 +31,7 @@ export const Navbar: React.FC = () => {
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+        <div className="hidden md:flex items-center gap-8 text-sm font-medium dark:text-gray-300 light:text-slate-600">
           <a href="#features" className="hover:text-primary transition-colors">Features</a>
           <a href="#strategies" className="hover:text-primary transition-colors">Strategies</a>
           <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
@@ -69,20 +69,20 @@ export const Navbar: React.FC = () => {
           className="md:hidden bg-surface border-b border-white/10"
         >
           <div className="flex flex-col p-6 gap-4">
-            <a href="#features" className="text-gray-300 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
-            <a href="#strategies" className="text-gray-300 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Strategies</a>
-            <a href="#pricing" className="text-gray-300 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+            <a href="#features" className="dark:text-gray-300 light:text-slate-600 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
+            <a href="#strategies" className="dark:text-gray-300 light:text-slate-600 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Strategies</a>
+            <a href="#pricing" className="dark:text-gray-300 light:text-slate-600 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
             <hr className="border-white/10 my-2"/>
             {isAuthenticated ? (
               <>
-                <Link to="/dashboard" className="text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
+                <Link to="/dashboard" className="dark:text-gray-300 light:text-slate-600 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
                 <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)}>
                   <Button className="w-full justify-center">{user?.name || 'Profile'}</Button>
                 </Link>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>Log In</Link>
+                <Link to="/login" className="dark:text-gray-300 light:text-slate-600 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>Log In</Link>
                 <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>
                   <Button className="w-full justify-center">Get Started</Button>
                 </Link>

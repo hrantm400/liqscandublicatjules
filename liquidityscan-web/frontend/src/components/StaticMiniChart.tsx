@@ -18,7 +18,7 @@ export function StaticMiniChart({ candles, isLong, height = 128 }: StaticMiniCha
   if (!candles || candles.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <span className={`material-symbols-outlined text-2xl ${isDark ? 'text-gray-600' : 'text-green-300'}`}>show_chart</span>
+        <span className={`material-symbols-outlined text-2xl ${isDark ? 'dark:text-gray-600 light:text-slate-400' : 'text-green-300'}`}>show_chart</span>
       </div>
     );
   }

@@ -37,7 +37,7 @@ export const SignalBadge: React.FC<SignalBadgeProps> = ({ signal, variant = 'def
   }
   
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-gray-500/10 text-gray-500 border border-gray-500/20 uppercase ${variant === 'compact' ? 'text-[9px] px-1.5 py-0.5' : ''}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-gray-500/10 dark:text-gray-500 light:text-slate-500 border border-gray-500/20 uppercase ${variant === 'compact' ? 'text-[9px] px-1.5 py-0.5' : ''}`}>
       Basic
     </span>
   );

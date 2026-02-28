@@ -48,7 +48,7 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
                     PATTERN<span className="text-primary">_EXAM</span>
                 </h2>
             </div>
-            <div className="flex items-center space-x-2 bg-surface-dark/50 px-3 py-1 rounded-full border border-primary/20">
+            <div className="flex items-center space-x-2 dark:bg-surface-dark/50 light:bg-white/50 px-3 py-1 rounded-full border border-primary/20">
                 <Trophy size={14} className="text-primary" />
                 <span className="text-sm font-mono text-white">SCORE: {score}/{totalQuestions}</span>
             </div>
@@ -56,7 +56,7 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
 
         {/* Question Prompt */}
         <div className="mb-6">
-            <p className="text-gray-300 text-sm font-light">
+            <p className="dark:text-gray-300 light:text-slate-600 text-sm font-light">
                 Analyze the last candle formation. Identify the correct SuperEngulfing strategy setup.
             </p>
         </div>
@@ -64,8 +64,8 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
         {/* Options Grid */}
         <div className="grid grid-cols-1 gap-3">
             {options.map((option, idx) => {
-                let btnClass = "bg-surface-dark/50 border-white/10 hover:bg-surface-dark hover:border-primary/50";
-                let icon = <div className="w-5 h-5 rounded-full border border-gray-500 flex items-center justify-center text-[10px] text-gray-400">{String.fromCharCode(65+idx)}</div>;
+                let btnClass = "dark:bg-surface-dark/50 light:bg-white/50 border-white/10 hover:dark:bg-surface-dark light:bg-white hover:border-primary/50";
+                let icon = <div className="w-5 h-5 rounded-full border border-gray-500 flex items-center justify-center text-[10px] dark:text-gray-400 light:text-slate-500">{String.fromCharCode(65+idx)}</div>;
                 
                 if (isAnswered) {
                     if (option === correctOption) {
@@ -110,7 +110,7 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
                 <ArrowRight size={16} />
             </button>
         ) : (
-            <div className="w-full py-3 text-center text-gray-500 text-xs font-mono uppercase tracking-widest animate-pulse">
+            <div className="w-full py-3 text-center dark:text-gray-500 light:text-slate-500 text-xs font-mono uppercase tracking-widest animate-pulse">
                 Waiting for input...
             </div>
         )}

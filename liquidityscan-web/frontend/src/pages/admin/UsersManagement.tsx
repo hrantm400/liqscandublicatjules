@@ -44,13 +44,13 @@ export function UsersManagement() {
     <div className="space-y-6">
       <div>
         <h1 className="text-4xl font-black text-white mb-2">Users Management</h1>
-        <p className="text-gray-400">Manage all users</p>
+        <p className="dark:text-gray-400 light:text-slate-500">Manage all users</p>
       </div>
 
       <div className="glass-panel rounded-2xl p-4 border border-white/10">
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 dark:text-gray-400 light:text-slate-500 w-5 h-5" />
             <input
               type="text"
               placeholder="Search users..."
@@ -71,7 +71,7 @@ export function UsersManagement() {
         </div>
       ) : users.length === 0 ? (
         <div className="glass-panel rounded-2xl p-12 text-center border border-white/10">
-          <p className="text-gray-400">No users found</p>
+          <p className="dark:text-gray-400 light:text-slate-500">No users found</p>
         </div>
       ) : (
         <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
@@ -79,11 +79,11 @@ export function UsersManagement() {
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase">User</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase">Email</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase">Role</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase">Joined</th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold dark:text-gray-400 light:text-slate-500 uppercase">User</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold dark:text-gray-400 light:text-slate-500 uppercase">Email</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold dark:text-gray-400 light:text-slate-500 uppercase">Role</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold dark:text-gray-400 light:text-slate-500 uppercase">Joined</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold dark:text-gray-400 light:text-slate-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -102,15 +102,15 @@ export function UsersManagement() {
                         <div className="font-bold text-white">{user.name || 'No name'}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-300">{user.email}</td>
+                    <td className="px-6 py-4 dark:text-gray-300 light:text-slate-600">{user.email}</td>
                     <td className="px-6 py-4">
                       {user.isAdmin ? (
                         <span className="px-3 py-1 rounded-lg bg-primary/10 text-primary text-sm font-bold">Admin</span>
                       ) : (
-                        <span className="px-3 py-1 rounded-lg bg-gray-500/10 text-gray-400 text-sm font-bold">User</span>
+                        <span className="px-3 py-1 rounded-lg bg-gray-500/10 dark:text-gray-400 light:text-slate-500 text-sm font-bold">User</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-300">
+                    <td className="px-6 py-4 dark:text-gray-300 light:text-slate-600">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
@@ -122,7 +122,7 @@ export function UsersManagement() {
                           className={`p-2 rounded-lg transition-all ${
                             user.isAdmin
                               ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                              : 'bg-white/5 text-gray-400 hover:text-primary'
+                              : 'bg-white/5 dark:text-gray-400 light:text-slate-500 hover:text-primary'
                           }`}
                           title={user.isAdmin ? 'Remove Admin' : 'Make Admin'}
                         >
@@ -134,7 +134,7 @@ export function UsersManagement() {
                               deleteMutation.mutate(user.id);
                             }
                           }}
-                          className="p-2 rounded-lg bg-white/5 hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all"
+                          className="p-2 rounded-lg bg-white/5 hover:bg-red-500/10 dark:text-gray-400 light:text-slate-500 hover:text-red-400 transition-all"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />

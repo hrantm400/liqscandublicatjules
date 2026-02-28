@@ -523,7 +523,7 @@ export function MonitorBias() {
                 search
               </span>
               <input
-                className="w-full pl-9 pr-3 py-1.5 rounded-full dark:bg-white/5 light:bg-white dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark text-xs dark:placeholder:text-gray-600 light:placeholder:text-text-light-secondary focus:border-primary focus:ring-primary focus:ring-1 transition-all outline-none"
+                className="w-full pl-9 pr-3 py-1.5 rounded-full dark:bg-white/5 light:bg-white dark:border-white/10 light:border-green-300 dark:text-white light:text-text-dark text-xs dark:placeholder:dark:text-gray-600 light:text-slate-400 light:placeholder:text-text-light-secondary focus:border-primary focus:ring-primary focus:ring-1 transition-all outline-none"
                 placeholder="Search..."
                 type="text"
                 value={searchQuery}
@@ -663,7 +663,7 @@ export function MonitorBias() {
                                   <span className="text-sm">{signal.symbol}</span>
                                 </div>
                               </td>
-                              <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-text-light-secondary dark:group-hover:text-gray-300 light:group-hover:text-text-dark">
+                              <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark">
                                 Binance Perp
                               </td>
                               <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">{biasType}</td>

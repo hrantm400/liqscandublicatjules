@@ -31,7 +31,7 @@ export function Analytics() {
     <div className="space-y-6">
       <div>
         <h1 className="text-4xl font-black text-white mb-2">Analytics</h1>
-        <p className="text-gray-400">Platform statistics and insights</p>
+        <p className="dark:text-gray-400 light:text-slate-500">Platform statistics and insights</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -45,7 +45,7 @@ export function Analytics() {
             <TrendingUp className="w-5 h-5 text-green-400" />
           </div>
           <div className="text-3xl font-black text-white mb-1">{analytics?.stats?.totalUsers || 0}</div>
-          <div className="text-sm text-gray-400">Total Users</div>
+          <div className="text-sm dark:text-gray-400 light:text-slate-500">Total Users</div>
         </motion.div>
 
         <motion.div
@@ -61,14 +61,14 @@ export function Analytics() {
           <div className="text-3xl font-black text-white mb-1">
             ${analytics?.stats?.revenue?.toFixed(2) || '0.00'}
           </div>
-          <div className="text-sm text-gray-400">Total Revenue</div>
+          <div className="text-sm dark:text-gray-400 light:text-slate-500">Total Revenue</div>
         </motion.div>
       </div>
 
       {/* Charts placeholder */}
       <div className="glass-panel rounded-2xl p-6 border border-white/10">
         <h2 className="text-xl font-bold text-white mb-4">Revenue Chart</h2>
-        <div className="h-64 flex items-center justify-center text-gray-400">
+        <div className="h-64 flex items-center justify-center dark:text-gray-400 light:text-slate-500">
           Chart will be implemented here
         </div>
       </div>

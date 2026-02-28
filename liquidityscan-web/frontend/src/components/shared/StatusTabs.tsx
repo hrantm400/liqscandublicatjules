@@ -63,7 +63,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange }: Statu
             label: 'Expired',
             count: stats?.expired ?? 0,
             icon: 'schedule',
-            color: 'text-gray-400',
+            color: 'dark:text-gray-400 light:text-slate-500',
             bgActive: 'dark:bg-gray-500/15 light:bg-gray-100',
             glow: '',
         },
