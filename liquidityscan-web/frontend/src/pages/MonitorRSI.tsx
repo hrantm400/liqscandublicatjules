@@ -8,7 +8,6 @@ import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { Signal, Timeframe } from '../types';
 import { FilterMenu } from '../components/shared/FilterMenu';
 import { PatternFilter } from '../components/shared/PatternFilter';
-import { SignalBadge } from '../components/shared/SignalBadge';
 import { TrendIndicator } from '../components/shared/TrendIndicator';
 import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/animations/AnimatedCard';
@@ -45,12 +44,24 @@ function formatTime(dateString: string) {
   return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-// Helper functions for RSI signals
 function getRSIValue(signal: Signal): number {
   const metadata = signal.metadata as any;
   return Number(metadata?.rsiValue || metadata?.rsiHigh || metadata?.rsiLow || 50);
 }
 
+function getDivergenceType(signal: Signal): string {
+  const metadata = signal.metadata as any;
+  if (metadata?.divergenceType) {
+    return metadata.divergenceType;
+  }
+  const rsiValue = getRSIValue(signal);
+  const isBullish = signal.signalType === 'BUY';
+  if (isBullish) {
+    return rsiValue < 40 ? 'Regular Bullish' : 'Hidden Bullish';
+  } else {
+    return rsiValue > 60 ? 'Regular Bearish' : 'Hidden Bearish';
+  }
+}
 
 export function MonitorRSI() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -76,7 +87,6 @@ export function MonitorRSI() {
     queryFn: () => userApi.getMySubscription(),
     enabled: isAuthenticated,
   });
-  const isFreeForever = mySubscription?.subscription?.tier === 'SCOUT';
   const isFreeForever = mySubscription?.subscription?.tier === 'SCOUT';
   const allowedPairs: string[] | undefined = mySubscription?.subscription?.limits?.pairs;
 
@@ -544,7 +554,6 @@ export function MonitorRSI() {
                       </tr>
                     ) : (
                       paginatedSignals.map((signal, index) => {
-                        const rsiValue = getRSIValue(signal);
                         const divergenceType = getDivergenceType(signal);
 
                         return (
