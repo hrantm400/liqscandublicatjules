@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ALL_TIMEFRAMES } from './dto/webhook-signal.dto';
+import { ALL_TIMEFRAMES, ALL_STRATEGY_TYPES } from './dto/webhook-signal.dto';
 
 const MAX_SIGNALS = 5000;
 const ALLOWED_TF = new Set<string>(ALL_TIMEFRAMES);
@@ -124,7 +124,7 @@ export class SignalsService {
    * If an item has signals_by_timeframe but no timeframe (raw Grno single-coin), expand it first.
    */
   async addSignals(items: Array<{ id?: string; strategyType?: string; symbol: string; timeframe?: string; signalType?: string; price: number; detectedAt?: string; status?: string; metadata?: Record<string, unknown>; signals_by_timeframe?: Record<string, unknown> }>): Promise<number> {
-    const allowedStrategies = new Set(['SUPER_ENGULFING', 'RSI_DIVERGENCE', 'ICT_BIAS']);
+    const allowedStrategies = new Set<string>(ALL_STRATEGY_TYPES);
     const allowedTf = new Set(ALL_TIMEFRAMES);
     const nowIso = new Date().toISOString();
 
