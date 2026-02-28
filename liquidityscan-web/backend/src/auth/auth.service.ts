@@ -12,12 +12,12 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   private isAdminEmail(email: string): boolean {
     const adminEmails = this.configService.get<string>('ADMIN_EMAILS', '');
     if (!adminEmails) return false;
-    
+
     const emailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
     return emailList.includes(email.toLowerCase());
   }
@@ -125,11 +125,11 @@ export class AuthService {
       if (existingUser) {
         // Check if email is in admin list and update if needed
         const isAdmin = this.isAdminEmail(profile.emails[0].value);
-        
+
         // Link Google account and update admin status based on current ADMIN_EMAILS
         user = await this.prisma.user.update({
           where: { id: existingUser.id },
-          data: { 
+          data: {
             googleId: profile.id,
             isAdmin: isAdmin, // Always use current ADMIN_EMAILS check, don't preserve old status
           },
@@ -137,7 +137,7 @@ export class AuthService {
       } else {
         // Check if email is in admin list
         const isAdmin = this.isAdminEmail(profile.emails[0].value);
-        
+
         // Create new user
         user = await this.prisma.user.create({
           data: {
@@ -244,9 +244,10 @@ export class AuthService {
   }
 
   async fastLogin() {
-    // Only allow in development mode
+    // Only allow when ENABLE_DEV_LOGIN is set or in development mode
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
-    if (nodeEnv === 'production') {
+    const enableDevLogin = this.configService.get<string>('ENABLE_DEV_LOGIN', 'false');
+    if (nodeEnv === 'production' && enableDevLogin !== 'true') {
       throw new UnauthorizedException('Fast login is only available in development mode');
     }
 
@@ -269,7 +270,7 @@ export class AuthService {
     if (!dbUser) {
       // Check if email is in admin list
       const isAdmin = this.isAdminEmail(devEmail);
-      
+
       // Create dev user
       const createdUser = await this.prisma.user.create({
         data: {
@@ -279,7 +280,7 @@ export class AuthService {
           isAdmin,
         },
       });
-      
+
       user = {
         id: createdUser.id,
         email: createdUser.email,
@@ -297,7 +298,7 @@ export class AuthService {
           where: { id: dbUser.id },
           data: { isAdmin: shouldBeAdmin },
         });
-        
+
         user = {
           id: updatedUser.id,
           email: updatedUser.email,

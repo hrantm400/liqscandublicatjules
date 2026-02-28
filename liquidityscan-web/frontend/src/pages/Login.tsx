@@ -41,7 +41,7 @@ export function Login() {
       setUser(data.user);
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
-      
+
       // Fetch fresh profile to ensure isAdmin is up to date
       try {
         const profile = await authApi.getProfile();
@@ -50,7 +50,7 @@ export function Login() {
         console.error('Failed to fetch profile after login:', profileError);
         // Continue anyway, user data from login should be sufficient
       }
-      
+
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
@@ -72,7 +72,7 @@ export function Login() {
       setUser(data.user);
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
-      
+
       // Fetch fresh profile to ensure isAdmin is up to date
       try {
         const profile = await authApi.getProfile();
@@ -81,7 +81,7 @@ export function Login() {
         console.error('Failed to fetch profile after fast login:', profileError);
         // Continue anyway, user data from login should be sufficient
       }
-      
+
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Fast login failed');
@@ -93,8 +93,8 @@ export function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center dark:bg-background-dark light:bg-background-light px-4 relative">
       {/* Back to Landing Button */}
-      <a 
-        href="/" 
+      <a
+        href="/"
         className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 rounded-lg dark:bg-white/5 light:bg-green-50 dark:hover:bg-white/10 light:hover:bg-green-100 dark:text-gray-400 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark transition-all text-sm font-medium border dark:border-white/10 light:border-green-300/50 z-10"
       >
         <span className="material-symbols-outlined text-base">arrow_back</span>
@@ -130,7 +130,7 @@ export function Login() {
           )}
 
           {/* Fast Login Button (Dev Only) */}
-          {import.meta.env.DEV && (
+          {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_LOGIN === 'true') && (
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
