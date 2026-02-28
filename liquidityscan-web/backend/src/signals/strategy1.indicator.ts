@@ -11,10 +11,11 @@
  *   7. Calculate TP1 (1:1) and TP2 (1:2)
  *   8. Return signal (first break only)
  *
- * Standalone — imports shared helpers from indicators.ts
+ * Standalone — does NOT import shared detectSuperEngulfing.
+ * Has its own inline SE detection to scan multiple candle pairs.
  */
 
-import { CandleData, detectSuperEngulfing } from './indicators';
+import { CandleData } from './indicators';
 
 // ============================================================
 // TYPES
@@ -23,8 +24,10 @@ import { CandleData, detectSuperEngulfing } from './indicators';
 export interface Strategy1Signal {
     direction: 'BUY' | 'SELL';
     price: number;            // Entry price (5M break candle close)
-    time: number;             // Time of signal
+    time: number;             // Time of 5M break candle
     barIndex: number;
+    /** 4H SE candle time — used for dedup in scanner */
+    seTime: number;
     /** 4H SE pattern details */
     sePattern: string;        // REV | RUN | REV_PLUS | RUN_PLUS
     seDirection: string;      // BULLISH | BEARISH
@@ -75,12 +78,9 @@ function isValidSession(timestampMs: number): boolean {
  * A swing low requires the low to be lower than 3 bars on each side.
  */
 function findLastSwingLow(candles: CandleData[], beforeIndex: number, leftBars = 3, rightBars = 3): { price: number; index: number } | null {
-    // Start searching from beforeIndex going backwards
-    // The pivot needs at least leftBars before and rightBars after
     for (let i = beforeIndex - rightBars; i >= leftBars; i--) {
         let isSwingLow = true;
 
-        // Check left bars
         for (let j = 1; j <= leftBars; j++) {
             if (candles[i - j].low <= candles[i].low) {
                 isSwingLow = false;
@@ -89,7 +89,6 @@ function findLastSwingLow(candles: CandleData[], beforeIndex: number, leftBars =
         }
         if (!isSwingLow) continue;
 
-        // Check right bars
         for (let j = 1; j <= rightBars; j++) {
             if (candles[i + j].low <= candles[i].low) {
                 isSwingLow = false;
@@ -112,7 +111,6 @@ function findLastSwingHigh(candles: CandleData[], beforeIndex: number, leftBars 
     for (let i = beforeIndex - rightBars; i >= leftBars; i--) {
         let isSwingHigh = true;
 
-        // Check left bars
         for (let j = 1; j <= leftBars; j++) {
             if (candles[i - j].high >= candles[i].high) {
                 isSwingHigh = false;
@@ -121,7 +119,6 @@ function findLastSwingHigh(candles: CandleData[], beforeIndex: number, leftBars 
         }
         if (!isSwingHigh) continue;
 
-        // Check right bars
         for (let j = 1; j <= rightBars; j++) {
             if (candles[i + j].high >= candles[i].high) {
                 isSwingHigh = false;
@@ -137,7 +134,7 @@ function findLastSwingHigh(candles: CandleData[], beforeIndex: number, leftBars 
 }
 
 // ============================================================
-// 4H SUPER ENGULFING DETECTION
+// 4H SUPER ENGULFING DETECTION (inline, scans last 12 pairs)
 // ============================================================
 
 interface SE4HResult {
@@ -149,39 +146,75 @@ interface SE4HResult {
 }
 
 /**
- * Check the last closed 4H candles for a SuperEngulfing pattern.
- * Uses the shared detectSuperEngulfing which handles REV/RUN/PLUS.
- * Returns the most recent SE found, or null.
+ * Scan the last N closed 4H candle pairs for SuperEngulfing patterns.
+ * Returns ALL found SEs (most recent first) so the caller can try each one.
+ *
+ * Detection rules (per user spec):
+ *   BULLISH REV: A=Red, B=Green, B.Low < A.Low (sweep), B.Close > A.Open
+ *   BULLISH RUN: A=Green, B=Green, B.Low < A.Low (sweep), B.Close > A.Close
+ *   BEARISH REV: A=Green, B=Red, B.High > A.High (sweep), B.Close < A.Open
+ *   BEARISH RUN: A=Red, B=Red, B.High > A.High (sweep), B.Close < A.Close
+ *   PLUS variant: same rules + B.Close > A.High (bull) or B.Close < A.Low (bear)
  */
-function detect4HSuperEngulfing(candles4H: CandleData[]): SE4HResult | null {
-    // Only check last 2 closed candles (most recent)
-    if (candles4H.length < 3) return null;
+function detect4HSuperEngulfingAll(candles4H: CandleData[]): SE4HResult[] {
+    const results: SE4HResult[] = [];
+    if (candles4H.length < 3) return results;
 
-    // Slice off last (forming) candle, take only last few closed candles
+    // Remove the currently forming candle (last one)
     const closed = candles4H.slice(0, -1);
-    if (closed.length < 2) return null;
+    if (closed.length < 2) return results;
 
-    // detectSuperEngulfing returns all SE signals in the array
-    const allSignals = detectSuperEngulfing(closed);
-    if (allSignals.length === 0) return null;
+    // Scan the last 12 closed candle pairs (48 hours of 4H candles)
+    const scanStart = Math.max(1, closed.length - 12);
 
-    // Take the most recent signal
-    const lastSE = allSignals[allSignals.length - 1];
+    for (let i = closed.length - 1; i >= scanStart; i--) {
+        const candleB = closed[i];      // Current candle
+        const candleA = closed[i - 1];  // Previous candle
 
-    const direction = lastSE.direction === 'BUY' ? 'BULLISH' : 'BEARISH';
+        const aBull = candleA.close > candleA.open;
+        const aBear = candleA.close < candleA.open;
+        const bBull = candleB.close > candleB.open;
+        const bBear = candleB.close < candleB.open;
 
-    // Break level = Candle B close
-    // The SE is detected at barIndex, which is Candle B
-    const candleB = closed[lastSE.barIndex];
-    const breakLevel = candleB.close;
+        const plusBullCond = candleB.close > candleA.high;
+        const plusBearCond = candleB.close < candleA.low;
 
-    return {
-        direction,
-        pattern: lastSE.pattern,
-        breakLevel,
-        time: candleB.openTime,
-        barIndex: lastSE.barIndex,
-    };
+        let direction: 'BULLISH' | 'BEARISH' | null = null;
+        let pattern: string | null = null;
+
+        // BULLISH REV: A=Red, B=Green, B.Low < A.Low, B.Close > A.Open
+        if (bBull && aBear && candleB.low < candleA.low && candleB.close > candleA.open) {
+            direction = 'BULLISH';
+            pattern = plusBullCond ? 'REV_PLUS' : 'REV';
+        }
+        // BULLISH RUN: A=Green, B=Green, B.Low < A.Low, B.Close > A.Close
+        else if (bBull && aBull && candleB.low < candleA.low && candleB.close > candleA.close) {
+            direction = 'BULLISH';
+            pattern = plusBullCond ? 'RUN_PLUS' : 'RUN';
+        }
+        // BEARISH REV: A=Green, B=Red, B.High > A.High, B.Close < A.Open
+        else if (bBear && aBull && candleB.high > candleA.high && candleB.close < candleA.open) {
+            direction = 'BEARISH';
+            pattern = plusBearCond ? 'REV_PLUS' : 'REV';
+        }
+        // BEARISH RUN: A=Red, B=Red, B.High > A.High, B.Close < A.Close
+        else if (bBear && aBear && candleB.high > candleA.high && candleB.close < candleA.close) {
+            direction = 'BEARISH';
+            pattern = plusBearCond ? 'RUN_PLUS' : 'RUN';
+        }
+
+        if (direction && pattern) {
+            results.push({
+                direction,
+                pattern,
+                breakLevel: candleB.close,
+                time: candleB.openTime,
+                barIndex: i,
+            });
+        }
+    }
+
+    return results; // Most recent first (index goes from high to low)
 }
 
 // ============================================================
@@ -191,7 +224,10 @@ function detect4HSuperEngulfing(candles4H: CandleData[]): SE4HResult | null {
 /**
  * Check Strategy 1: 4H SE + 5M Break
  *
- * @param candles4H  4H candles (at least 10, including 1 forming)
+ * Scans all recent 4H SEs and tries each one against 5M candles.
+ * Returns the FIRST valid signal found (most recent SE first).
+ *
+ * @param candles4H  4H candles (at least 15, including 1 forming)
  * @param candles5M  5M candles (at least 30, including 1 forming)
  * @returns Signal or null
  */
@@ -199,23 +235,33 @@ export function checkStrategy1(
     candles4H: CandleData[],
     candles5M: CandleData[],
 ): Strategy1Signal | null {
-    // STEP 1: Detect 4H SuperEngulfing
-    const se = detect4HSuperEngulfing(candles4H);
-    if (!se) return null;
+    // STEP 1: Detect ALL recent 4H SuperEngulfing patterns
+    const allSEs = detect4HSuperEngulfingAll(candles4H);
+    if (allSEs.length === 0) return null;
 
-    // STEP 2: Break level is already in se.breakLevel (Candle B close)
-    const breakLevel = se.breakLevel;
-
-    // STEP 3+4: Look through recent 5M candles for a body close beyond the level
-    // Only check 5M candles that formed AFTER the 4H SE candle
-    const closed5M = candles5M.slice(0, -1); // Remove forming candle
+    // Remove forming 5M candle
+    const closed5M = candles5M.slice(0, -1);
     if (closed5M.length < 10) return null;
 
-    // Find the start index: 5M candles after the 4H SE candle's time
-    const seTime = se.time;
+    // Try each SE pattern (most recent first)
+    for (const se of allSEs) {
+        const result = tryBreakForSE(se, closed5M);
+        if (result) return result;
+    }
+
+    return null;
+}
+
+/**
+ * Try to find a valid 5M break for a given 4H SE pattern.
+ */
+function tryBreakForSE(se: SE4HResult, closed5M: CandleData[]): Strategy1Signal | null {
+    const breakLevel = se.breakLevel;
+
+    // Find 5M candles that formed AFTER the 4H SE candle
     let startIdx = -1;
     for (let i = 0; i < closed5M.length; i++) {
-        if (closed5M[i].openTime >= seTime) {
+        if (closed5M[i].openTime >= se.time) {
             startIdx = i;
             break;
         }
@@ -228,23 +274,27 @@ export function checkStrategy1(
 
     for (let i = startIdx; i < closed5M.length; i++) {
         const c = closed5M[i];
-        // We need candle body — use Math.min/max of open,close
-        const bodyClose = c.close;
 
-        if (se.direction === 'BULLISH' && bodyClose > breakLevel) {
+        if (se.direction === 'BULLISH' && c.close > breakLevel) {
             breakCandle = c;
             breakCandleIdx = i;
-            break; // FIRST break only
-        } else if (se.direction === 'BEARISH' && bodyClose < breakLevel) {
+            break; // FIRST break only — no re-entry
+        } else if (se.direction === 'BEARISH' && c.close < breakLevel) {
             breakCandle = c;
             breakCandleIdx = i;
-            break; // FIRST break only
+            break; // FIRST break only — no re-entry
         }
 
-        // INVALIDATION: Check if price has already moved against the setup
-        // For bullish: if price drops significantly below the SE candle's low
-        // For bearish: if price rallies significantly above the SE candle's high
-        // This handles "setup failed" invalidation
+        // INVALIDATION: price moved opposite direction significantly
+        // For bullish: if price drops far below break level (>2% below)
+        // For bearish: if price rallies far above break level (>2% above)
+        if (se.direction === 'BULLISH') {
+            const dropPct = (breakLevel - c.low) / breakLevel * 100;
+            if (dropPct > 2) return null; // Setup failed — invalidated
+        } else {
+            const rallyPct = (c.high - breakLevel) / breakLevel * 100;
+            if (rallyPct > 2) return null; // Setup failed — invalidated
+        }
     }
 
     if (!breakCandle || breakCandleIdx < 0) return null;
@@ -258,12 +308,10 @@ export function checkStrategy1(
     let stopLoss: number;
 
     if (se.direction === 'BULLISH') {
-        // SL = Last 5M swing low before the break candle
         const swing = findLastSwingLow(closed5M, breakCandleIdx);
         if (!swing) return null;
         stopLoss = swing.price;
     } else {
-        // SL = Last 5M swing high before the break candle
         const swing = findLastSwingHigh(closed5M, breakCandleIdx);
         if (!swing) return null;
         stopLoss = swing.price;
@@ -297,6 +345,7 @@ export function checkStrategy1(
         price: entry,
         time: breakCandle.openTime,
         barIndex: breakCandleIdx,
+        seTime: se.time,           // 4H SE candle time for dedup
         sePattern: se.pattern,
         seDirection: se.direction,
         breakLevel,

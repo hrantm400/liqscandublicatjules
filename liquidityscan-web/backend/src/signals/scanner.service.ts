@@ -398,29 +398,42 @@ export class ScannerService implements OnModuleInit {
         }
     }
 
-    // --- Strategy 1: 4H SE + 5M Break ---
-
     private async checkStrategy1Signal(symbol: string): Promise<number> {
         try {
-            // Get 4H candles (need at least 10 including forming candle)
-            const candles4H = await this.getCandles(symbol, '4h');
-            if (candles4H.length < 10) return 0;
+            // Get 4H candles (need at least 15 including forming candle)
+            const candles4H = await this.candlesService.getKlines(symbol, '4h', 20);
+            if (candles4H.length < 15) return 0;
 
-            // Get 5M candles
-            const candles5M = await this.getCandles(symbol, '5m');
+            // Get 5M candles (need recent ones for break detection)
+            const candles5M = await this.candlesService.getKlines(symbol, '5m', 120);
             if (candles5M.length < 30) return 0;
 
-            const signal = checkStrategy1Indicator(candles4H, candles5M);
+            // Map to CandleData format
+            const mapped4H: CandleData[] = candles4H.map(k => ({
+                openTime: k.openTime, open: k.open, high: k.high,
+                low: k.low, close: k.close, volume: k.volume,
+            }));
+            const mapped5M: CandleData[] = candles5M.map(k => ({
+                openTime: k.openTime, open: k.open, high: k.high,
+                low: k.low, close: k.close, volume: k.volume,
+            }));
+
+            const signal = checkStrategy1Indicator(mapped4H, mapped5M);
             if (!signal) return 0;
 
-            return this.saveSignal(
-                'STRATEGY_1',
+            // Use SE candle time for dedup — prevents duplicate signals for same SE pattern
+            const signalId = `STRATEGY_1-${symbol}-5m-${signal.seTime}`;
+
+            const input = {
+                id: signalId,
+                strategyType: 'STRATEGY_1',
                 symbol,
-                '5m', // Lower timeframe used for entry
-                signal.direction, // BUY or SELL
-                signal.price,
-                signal.time,
-                {
+                timeframe: '5m',
+                signalType: signal.direction,
+                price: signal.price,
+                detectedAt: new Date(signal.time).toISOString(),
+                status: 'ACTIVE',
+                metadata: {
                     sePattern: signal.sePattern,
                     seDirection: signal.seDirection,
                     breakLevel: signal.breakLevel,
@@ -430,8 +443,11 @@ export class ScannerService implements OnModuleInit {
                     tp2: signal.tp2,
                     riskPercent: signal.riskPercent,
                     label: signal.label,
+                    seTime: signal.seTime,
                 },
-            );
+            };
+
+            return this.signalsService.addSignals([input]);
         } catch (e) {
             return 0;
         }
