@@ -9,6 +9,7 @@ import {
     CandleData,
 } from './indicators';
 import { checkConfluence as checkConfluenceIndicator } from './confluence.indicator';
+import { checkStrategy1 as checkStrategy1Indicator } from './strategy1.indicator';
 
 @Injectable()
 export class ScannerService implements OnModuleInit {
@@ -193,6 +194,9 @@ export class ScannerService implements OnModuleInit {
 
             // 4. Confluence: Daily SE/Bias + 5m/15m RSI + 5m/15m Trend Break
             count += await this.checkConfluenceSignal(symbol);
+
+            // 5. Strategy 1: 4H SE + 5M Break
+            count += await this.checkStrategy1Signal(symbol);
         } catch (e) {
             // safely ignore individual symbol errors to keep scanning
         }
@@ -349,6 +353,45 @@ export class ScannerService implements OnModuleInit {
                 );
             }
             return count;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    // --- Strategy 1: 4H SE + 5M Break ---
+
+    private async checkStrategy1Signal(symbol: string): Promise<number> {
+        try {
+            // Get 4H candles (need at least 10 including forming candle)
+            const candles4H = await this.getCandles(symbol, '4h');
+            if (candles4H.length < 10) return 0;
+
+            // Get 5M candles
+            const candles5M = await this.getCandles(symbol, '5m');
+            if (candles5M.length < 30) return 0;
+
+            const signal = checkStrategy1Indicator(candles4H, candles5M);
+            if (!signal) return 0;
+
+            return this.saveSignal(
+                'STRATEGY_1',
+                symbol,
+                '5m', // Lower timeframe used for entry
+                signal.direction, // BUY or SELL
+                signal.price,
+                signal.time,
+                {
+                    sePattern: signal.sePattern,
+                    seDirection: signal.seDirection,
+                    breakLevel: signal.breakLevel,
+                    session: signal.session,
+                    stopLoss: signal.stopLoss,
+                    tp1: signal.tp1,
+                    tp2: signal.tp2,
+                    riskPercent: signal.riskPercent,
+                    label: signal.label,
+                },
+            );
         } catch (e) {
             return 0;
         }

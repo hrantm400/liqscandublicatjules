@@ -17,6 +17,7 @@ const MonitorSuperEngulfing = lazy(() => import('./pages/MonitorSuperEngulfing')
 const MonitorBias = lazy(() => import('./pages/MonitorBias').then(m => ({ default: m.MonitorBias })));
 const MonitorRSI = lazy(() => import('./pages/MonitorRSI').then(m => ({ default: m.MonitorRSI })));
 const MonitorConfluence = lazy(() => import('./pages/MonitorConfluence').then(m => ({ default: m.MonitorConfluence })));
+const MonitorStrategy1 = lazy(() => import('./pages/MonitorStrategy1').then(m => ({ default: m.MonitorStrategy1 })));
 const SignalDetails = lazy(() => import('./pages/SignalDetails').then(m => ({ default: m.SignalDetails })));
 const StrategiesDashboard = lazy(() => import('./pages/StrategiesDashboard').then(m => ({ default: m.StrategiesDashboard })));
 const StrategyDetail = lazy(() => import('./pages/StrategyDetail').then(m => ({ default: m.StrategyDetail })));
@@ -89,6 +90,7 @@ function AppRoutes() {
             <Route path="monitor/confluence" element={<AnimatedPage><MonitorConfluence /></AnimatedPage>} />
             <Route path="signals/:id" element={<AnimatedPage><SignalDetails /></AnimatedPage>} />
             <Route path="strategies" element={<AnimatedPage><StrategiesDashboard /></AnimatedPage>} />
+            <Route path="strategies/1" element={<AnimatedPage><MonitorStrategy1 /></AnimatedPage>} />
             <Route path="strategies/9" element={<AnimatedPage><MonitorConfluence /></AnimatedPage>} />
             <Route path="strategies/:id" element={<AnimatedPage><StrategyDetail /></AnimatedPage>} />
             <Route path="tools" element={<AnimatedPage><ToolsDashboard /></AnimatedPage>} />
