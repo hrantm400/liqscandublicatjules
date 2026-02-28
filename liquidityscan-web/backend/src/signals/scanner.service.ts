@@ -14,7 +14,7 @@ import { checkStrategy1 as checkStrategy1Indicator } from './strategy1.indicator
 @Injectable()
 export class ScannerService implements OnModuleInit {
     private readonly logger = new Logger(ScannerService.name);
-    private isScanning = false;
+    private isScanningBasic = false;
     private isScanningStrategy1 = false;
 
     // --- Live bias cache (TTL 60 seconds per timeframe) ---
@@ -100,7 +100,7 @@ export class ScannerService implements OnModuleInit {
         this.logger.log('ScannerService initialized.');
         // Start scanning loop - run every 30 minutes (1800000 ms)
         setInterval(() => {
-            this.scanAll().catch((err) => this.logger.error(`Main scan error: ${err.message}`));
+            this.scanBasicStrategies().catch((err) => this.logger.error(`Basic scan error: ${err.message}`));
         }, 30 * 60 * 1000);
 
         // Strategy 1 scanning loop - run every 5 minutes (300000 ms)
@@ -110,7 +110,7 @@ export class ScannerService implements OnModuleInit {
 
         // Run both once on startup after a slight delay
         setTimeout(() => {
-            this.scanAll().catch((err) => this.logger.error(`Startup main scan error: ${err.message}`));
+            this.scanBasicStrategies().catch((err) => this.logger.error(`Startup basic scan error: ${err.message}`));
             this.scanStrategy1All().catch((err) => this.logger.error(`Startup Strategy 1 scan error: ${err.message}`));
         }, 10000);
     }
@@ -135,12 +135,12 @@ export class ScannerService implements OnModuleInit {
         }
     }
 
-    async scanAll() {
-        if (this.isScanning) {
-            this.logger.warn('Scan already in progress, skipping...');
+    async scanBasicStrategies() {
+        if (this.isScanningBasic) {
+            this.logger.warn('Basic scan already in progress, skipping...');
             return;
         }
-        this.isScanning = true;
+        this.isScanningBasic = true;
         const start = Date.now();
 
         try {
@@ -175,9 +175,9 @@ export class ScannerService implements OnModuleInit {
             const elapsed = ((Date.now() - start) / 1000).toFixed(1);
             this.logger.log(`Scan completed in ${elapsed}s. Found ${signalCount} new signals.`);
         } catch (err) {
-            this.logger.error(`Scan failed: ${err.message}`);
+            this.logger.error(`Basic scan failed: ${err.message}`);
         } finally {
-            this.isScanning = false;
+            this.isScanningBasic = false;
         }
     }
 

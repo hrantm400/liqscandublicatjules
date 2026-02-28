@@ -17,7 +17,7 @@ export class SignalsController {
   async runScan() {
     this.logger.log('Manual scan triggered via POST /signals/scan');
     // Run scan in background or await it? Awaiting is better for response
-    await this.scannerService.scanAll();
+    await this.scannerService.scanBasicStrategies();
     return { status: 'Scan completed' };
   }
 

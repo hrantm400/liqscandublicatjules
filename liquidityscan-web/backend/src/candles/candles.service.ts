@@ -36,7 +36,13 @@ export class CandlesService {
       if (apiKey) {
         headers['X-MBX-APIKEY'] = apiKey;
       }
-      const res = await fetch(url, { headers });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const res = await fetch(url, { headers, signal: controller.signal });
+      clearTimeout(timeoutId);
+
       if (!res.ok) {
         if (process.env.NODE_ENV !== 'production') {
           console.warn('[candles] Binance klines error:', res.status, await res.text().catch(() => ''));
