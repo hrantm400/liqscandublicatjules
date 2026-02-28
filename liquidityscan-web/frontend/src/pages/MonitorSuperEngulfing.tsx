@@ -18,7 +18,7 @@ import { AnimatedList } from '../components/animations/AnimatedList';
 import { useMarketData } from '../hooks/useMarketData';
 import { fetchCandles } from '../services/candles';
 import { useSignalFilter } from '../hooks/useSignalFilter';
-import { listItemVariants, scaleInVariants } from '../utils/animations';
+import { scaleInVariants } from '../utils/animations';
 import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
 
@@ -211,7 +211,6 @@ export function MonitorSuperEngulfing() {
     setCurrentPage(1);
   }, [selectedTimeframe, searchQuery, bullFilter, bearFilter, sortBy, statusFilter]);
 
-  // Calculate signals by timeframe - count ONLY ACTIVE signals for cards
   const timeframeStats = useMemo(() => {
     const stats: Record<string, number> = {
       '4h': 0,
@@ -219,101 +218,17 @@ export function MonitorSuperEngulfing() {
       '1w': 0,
     };
 
-    // Count only ACTIVE signals for timeframe cards
-    signals.forEach((signal) => {
-      if (signal.status === 'ACTIVE') {
-        const tf = signal.timeframe.toLowerCase();
-        if (tf === '4h' || tf === '1d' || tf === '1w') {
-          stats[tf] = (stats[tf] || 0) + 1;
-        }
+    statusFilteredSignals.forEach((signal) => {
+      const tf = signal.timeframe.toLowerCase();
+      if (tf === '4h' || tf === '1d' || tf === '1w') {
+        stats[tf] = (stats[tf] || 0) + 1;
       }
     });
 
     return stats;
-  }, [signals]);
+  }, [statusFilteredSignals]);
 
-  // Calculate Pattern Stats from actual signals
-  const patternStats = useMemo(() => {
-    // Get signals from last 24 hours
-    const now = Date.now();
-    const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
 
-    const recentSignals = signals.filter(s => {
-      const signalTime = new Date(s.detectedAt).getTime();
-      return signalTime >= twentyFourHoursAgo;
-    });
-
-    // Calculate success rate (closed signals that were profitable)
-    const closedSignals = recentSignals.filter(s => s.status !== 'ACTIVE');
-    const profitableSignals = closedSignals.filter(s => {
-      // Check if signal was profitable (this would need to be calculated from actual price movements)
-      // For now, we'll use a simple heuristic based on signal type and metadata
-      const metadata = s.metadata as any;
-      return metadata?.profitability === 'PROFIT' || metadata?.outcome === 'WIN';
-    });
-
-    const successRate = closedSignals.length > 0
-      ? Math.round((profitableSignals.length / closedSignals.length) * 100)
-      : 0;
-
-    // Calculate average risk/reward ratio
-    // Default to 1:2.5 if not available in metadata
-    const riskRewardRatios = recentSignals
-      .map(s => {
-        const metadata = s.metadata as any;
-        return metadata?.riskReward || metadata?.riskRewardRatio || '1:2.5';
-      })
-      .filter(rr => rr);
-
-    const avgRiskReward = riskRewardRatios.length > 0
-      ? riskRewardRatios[0] // For now, use first available or default
-      : '1:2.5';
-
-    // Calculate average duration (time from signal to close)
-    const durations = closedSignals
-      .map(s => {
-        const detected = new Date(s.detectedAt).getTime();
-        const closed = s.closedAt ? new Date(s.closedAt).getTime() : null;
-        if (closed) {
-          return Math.round((closed - detected) / (60 * 1000)); // Duration in minutes
-        }
-        return null;
-      })
-      .filter((d): d is number => d !== null);
-
-    const avgDuration = durations.length > 0
-      ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-      : 45; // Default 45 minutes
-
-    // Calculate previous success rate for comparison
-    const previousPeriod = now - 48 * 60 * 60 * 1000;
-    const previousSignals = signals.filter(s => {
-      const signalTime = new Date(s.detectedAt).getTime();
-      return signalTime >= previousPeriod && signalTime < twentyFourHoursAgo;
-    });
-    const previousClosed = previousSignals.filter(s => s.status !== 'ACTIVE');
-    const previousProfitable = previousClosed.filter(s => {
-      const metadata = s.metadata as any;
-      return metadata?.profitability === 'PROFIT' || metadata?.outcome === 'WIN';
-    });
-    const previousSuccessRate = previousClosed.length > 0
-      ? Math.round((previousProfitable.length / previousClosed.length) * 100)
-      : 0;
-
-    const successRateChange = successRate - previousSuccessRate;
-
-    return {
-      successRate,
-      successRateChange,
-      avgRiskReward,
-      avgDuration,
-    };
-  }, [signals]);
-
-  const handleTimeframeChange = useCallback((tf: string) => {
-    setSelectedTimeframe(tf);
-    setSearchParams({ timeframe: tf });
-  }, [setSearchParams]);
 
   const handleResetFilters = useCallback(() => {
     setSortBy('confidence');

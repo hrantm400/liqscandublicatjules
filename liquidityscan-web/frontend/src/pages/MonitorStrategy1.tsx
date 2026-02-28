@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { StatusTabs } from '../components/shared/StatusTabs';
 import { WinRatePanel } from '../components/shared/WinRatePanel';
@@ -35,7 +35,6 @@ function formatTime(dateString: string) {
 }
 
 export function MonitorStrategy1() {
-    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -105,8 +104,8 @@ export function MonitorStrategy1() {
         const long = signals.filter(s => s.signalType === 'BUY').length;
         const short = signals.filter(s => s.signalType === 'SELL').length;
         const active = signals.filter(s => s.status === 'ACTIVE').length;
-        return { long, short, active, total: signals.length };
-    }, [signals]);
+        return { long, short, active, total: filteredSignals.length };
+    }, [signals, filteredSignals]);
 
     return (
         <div className="flex flex-col h-full">
@@ -174,11 +173,11 @@ export function MonitorStrategy1() {
                     </div>
 
                     {/* Win Rate Panel */}
-                    <WinRatePanel signals={signals} accentColor="amber" />
+                    <WinRatePanel strategyType="STRATEGY_1" />
 
                     {/* Filters Section */}
                     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                        <StatusTabs activeTab={statusFilter} onTabChange={(tab) => { setStatusFilter(tab); setCurrentPage(1); }} />
+                        <StatusTabs strategyType="STRATEGY_1" activeStatus={statusFilter} onStatusChange={(tab) => { setStatusFilter(tab); setCurrentPage(1); }} />
 
                         <div className="flex items-center gap-3">
                             {/* Direction Filter */}
@@ -319,7 +318,7 @@ export function MonitorStrategy1() {
                                     </span>
 
                                     {/* Status */}
-                                    <SignalStatusBadge status={signal.status} outcome={signal.outcome} />
+                                    <SignalStatusBadge signal={signal} />
                                 </motion.div>
                             );
                         })}

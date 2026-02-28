@@ -51,19 +51,6 @@ function getRSIValue(signal: Signal): number {
   return Number(metadata?.rsiValue || metadata?.rsiHigh || metadata?.rsiLow || 50);
 }
 
-function getDivergenceType(signal: Signal): string {
-  const metadata = signal.metadata as any;
-  if (metadata?.divergenceType) {
-    return metadata.divergenceType;
-  }
-  const rsiValue = getRSIValue(signal);
-  const isBullish = signal.signalType === 'BUY';
-  if (isBullish) {
-    return rsiValue < 40 ? 'Regular Bullish' : 'Hidden Bullish';
-  } else {
-    return rsiValue > 60 ? 'Regular Bearish' : 'Hidden Bearish';
-  }
-}
 
 export function MonitorRSI() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -90,7 +77,7 @@ export function MonitorRSI() {
     enabled: isAuthenticated,
   });
   const isFreeForever = mySubscription?.subscription?.tier === 'SCOUT';
-  const contextFiltersAllowed = mySubscription?.subscription?.limits?.contextFilters !== false;
+  const isFreeForever = mySubscription?.subscription?.tier === 'SCOUT';
   const allowedPairs: string[] | undefined = mySubscription?.subscription?.limits?.pairs;
 
   // Use the new useMarketData hook
@@ -166,20 +153,23 @@ export function MonitorRSI() {
   // RSI Divergence uses only 1h, 4h, 1d timeframes
   const timeframeStats = useMemo(() => {
     const stats: Record<Timeframe | 'all', number> = {
-      all: signals.filter(s => s.status === 'ACTIVE').length,
+      all: statusFilteredSignals.length,
+      '5m': 0,
+      '15m': 0,
       '1h': 0,
       '4h': 0,
       '1d': 0,
+      '1w': 0,
     };
-    signals.forEach((signal) => {
-      if (signal.status === 'ACTIVE' && (signal.timeframe === '1h' || signal.timeframe === '4h' || signal.timeframe === '1d')) {
+    statusFilteredSignals.forEach((signal) => {
+      if (signal.timeframe === '1h' || signal.timeframe === '4h' || signal.timeframe === '1d') {
         if (stats[signal.timeframe] !== undefined) {
           stats[signal.timeframe]++;
         }
       }
     });
     return stats;
-  }, [signals]);
+  }, [statusFilteredSignals]);
 
   const handleTimeframeClick = useCallback((timeframe: Timeframe | 'all') => {
     setActiveTimeframe(timeframe);
@@ -202,26 +192,6 @@ export function MonitorRSI() {
     setSearchQuery('');
   }, []);
 
-  const getSymbolAvatar = (symbol: string) => {
-    const firstLetter = symbol.charAt(0).toUpperCase();
-    const hash = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const colors = [
-      'bg-orange-500/20 text-orange-500 ring-orange-500/40',
-      'bg-purple-500/20 text-purple-500 ring-purple-500/40',
-      'bg-teal-500/20 text-teal-500 ring-teal-500/40',
-      'bg-red-500/20 text-red-500 ring-red-500/40',
-      'bg-blue-500/20 text-blue-500 ring-blue-500/40',
-      'bg-green-500/20 text-green-500 ring-green-500/40',
-      'bg-pink-500/20 text-pink-500 ring-pink-500/40',
-      'bg-blue-600/20 text-blue-600 ring-blue-600/40',
-    ];
-    const colorClass = colors[hash % colors.length];
-    return (
-      <div className={`w-6 h-6 rounded-full ${colorClass} flex items-center justify-center text-[10px] font-bold ring-1`}>
-        {firstLetter}
-      </div>
-    );
-  };
 
   const getDivergenceType = (signal: Signal): string => {
     const metadata = signal.metadata as any;
