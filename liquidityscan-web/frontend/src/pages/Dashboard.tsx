@@ -432,7 +432,7 @@ export const Dashboard: React.FC = () => {
                   }
                 }}
               >
-                <Link to="/monitor/confluence" className="flex items-center gap-4 group">
+                <Link to="/strategies/9" className="flex items-center gap-4 group">
                   <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.15)] group-hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] group-hover:bg-cyan-500/20 transition-all duration-300">
                     <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">merge_type</span>
                   </div>
@@ -464,7 +464,7 @@ export const Dashboard: React.FC = () => {
                   {['5m', '15m'].map((tf) => (
                     <Link
                       key={tf}
-                      to={`/monitor/confluence?timeframe=${tf}`}
+                      to={`/strategies/9?timeframe=${tf}`}
                       className="w-full flex justify-between items-center p-4 rounded-xl dark:border-white/5 light:border-green-300 dark:bg-white/[0.01] hover:bg-cyan-500/5 hover:border-cyan-500/20 transition-all cursor-pointer group/item relative overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity" />

@@ -87,7 +87,6 @@ function AppRoutes() {
             <Route path="monitor/superengulfing" element={<AnimatedPage><MonitorSuperEngulfing /></AnimatedPage>} />
             <Route path="monitor/bias" element={<AnimatedPage><MonitorBias /></AnimatedPage>} />
             <Route path="monitor/rsi" element={<AnimatedPage><MonitorRSI /></AnimatedPage>} />
-            <Route path="monitor/confluence" element={<AnimatedPage><MonitorConfluence /></AnimatedPage>} />
             <Route path="signals/:id" element={<AnimatedPage><SignalDetails /></AnimatedPage>} />
             <Route path="strategies" element={<AnimatedPage><StrategiesDashboard /></AnimatedPage>} />
             <Route path="strategies/1" element={<AnimatedPage><MonitorStrategy1 /></AnimatedPage>} />

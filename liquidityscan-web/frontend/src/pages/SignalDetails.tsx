@@ -152,7 +152,7 @@ export function SignalDetails() {
 
   const getStrategyMonitorPath = () => {
     if (strategyType === 'RSI_DIVERGENCE') return '/monitor/rsi';
-    if (strategyType === 'CONFLUENCE') return '/monitor/confluence';
+    if (strategyType === 'CONFLUENCE') return '/strategies/9';
     if (strategyType === 'ICT_BIAS') return '/monitor/bias';
     return '/monitor/superengulfing';
   };

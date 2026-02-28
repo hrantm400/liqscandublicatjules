@@ -151,11 +151,6 @@ const MainLayout: React.FC = () => {
                                 <span className="material-symbols-outlined transition-colors">hub</span>
                                 <span className="text-sm font-medium">RSI Divergence</span>
                             </Link>
-
-                            <Link to="/monitor/confluence" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive('/monitor/confluence')}`}>
-                                <span className="material-symbols-outlined transition-colors text-cyan-400">merge_type</span>
-                                <span className="text-sm font-medium text-cyan-400">Confluence</span>
-                            </Link>
                         </div>
 
                         {/* STRATEGIES Dashboard */}

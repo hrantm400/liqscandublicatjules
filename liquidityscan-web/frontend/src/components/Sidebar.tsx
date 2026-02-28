@@ -10,7 +10,6 @@ export function Sidebar() {
     { path: '/monitor/superengulfing', label: 'SuperEngulfing', icon: 'candlestick_chart' },
     { path: '/monitor/bias', label: 'Bias Shifts', icon: 'timeline' },
     { path: '/monitor/rsi', label: 'RSI Divergence', icon: 'hub' },
-    { path: '/monitor/confluence', label: 'Confluence', icon: 'merge_type' },
     { path: '/risk-calculator', label: 'Risk Calculator', icon: 'calculate' },
     { path: '/settings', label: 'Settings', icon: 'settings' },
   ];
