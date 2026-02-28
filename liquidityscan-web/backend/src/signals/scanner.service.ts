@@ -15,6 +15,7 @@ import { checkStrategy1 as checkStrategy1Indicator } from './strategy1.indicator
 export class ScannerService implements OnModuleInit {
     private readonly logger = new Logger(ScannerService.name);
     private isScanning = false;
+    private isScanningStrategy1 = false;
 
     // --- Live bias cache (TTL 60 seconds per timeframe) ---
     private liveBiasCache = new Map<string, {
@@ -99,12 +100,18 @@ export class ScannerService implements OnModuleInit {
         this.logger.log('ScannerService initialized.');
         // Start scanning loop - run every 30 minutes (1800000 ms)
         setInterval(() => {
-            this.scanAll().catch((err) => this.logger.error(`Scan error: ${err.message}`));
+            this.scanAll().catch((err) => this.logger.error(`Main scan error: ${err.message}`));
         }, 30 * 60 * 1000);
 
-        // Run once on startup after a slight delay
+        // Strategy 1 scanning loop - run every 5 minutes (300000 ms)
+        setInterval(() => {
+            this.scanStrategy1All().catch((err) => this.logger.error(`Strategy 1 scan error: ${err.message}`));
+        }, 5 * 60 * 1000);
+
+        // Run both once on startup after a slight delay
         setTimeout(() => {
-            this.scanAll().catch((err) => this.logger.error(`Startup scan error: ${err.message}`));
+            this.scanAll().catch((err) => this.logger.error(`Startup main scan error: ${err.message}`));
+            this.scanStrategy1All().catch((err) => this.logger.error(`Startup Strategy 1 scan error: ${err.message}`));
         }, 10000);
     }
 
@@ -194,13 +201,46 @@ export class ScannerService implements OnModuleInit {
 
             // 4. Confluence: Daily SE/Bias + 5m/15m RSI + 5m/15m Trend Break
             count += await this.checkConfluenceSignal(symbol);
-
-            // 5. Strategy 1: 4H SE + 5M Break
-            count += await this.checkStrategy1Signal(symbol);
         } catch (e) {
             // safely ignore individual symbol errors to keep scanning
         }
         return count;
+    }
+
+    private async scanStrategy1All() {
+        if (this.isScanningStrategy1) {
+            this.logger.warn('Strategy 1 scan already in progress, skipping...');
+            return;
+        }
+        this.isScanningStrategy1 = true;
+        const start = Date.now();
+
+        try {
+            const symbols = await this.fetchSymbols();
+            if (symbols.length === 0) return;
+            this.logger.log(`Starting 5-min Strategy 1 scan for ${symbols.length} symbols...`);
+
+            let signalCount = 0;
+            const CHUNK_SIZE = 10;
+            const DELAY_MS = 500; // Faster delay for the 5-min scan
+
+            for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
+                const chunk = symbols.slice(i, i + CHUNK_SIZE);
+                const results = await Promise.all(chunk.map(symbol => this.checkStrategy1Signal(symbol)));
+                signalCount += results.reduce((a, b) => a + b, 0);
+
+                if (i + CHUNK_SIZE < symbols.length) {
+                    await new Promise(resolve => setTimeout(resolve, DELAY_MS));
+                }
+            }
+
+            const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+            this.logger.log(`Strategy 1 scan completed in ${elapsed}s. Found ${signalCount} new signals.`);
+        } catch (err) {
+            this.logger.error(`Strategy 1 scan failed: ${err.message}`);
+        } finally {
+            this.isScanningStrategy1 = false;
+        }
     }
 
     private async getCandles(symbol: string, interval: string): Promise<CandleData[]> {
