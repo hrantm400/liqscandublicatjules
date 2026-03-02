@@ -18,6 +18,7 @@ import { AnimatedList } from '../components/animations/AnimatedList';
 import { useMarketData } from '../hooks/useMarketData';
 import { fetchCandles } from '../services/candles';
 import { useSignalFilter } from '../hooks/useSignalFilter';
+import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { scaleInVariants } from '../utils/animations';
 import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
@@ -85,7 +86,7 @@ export function MonitorSuperEngulfing() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<any>('ALL'); // Used to be 'all', now TabView
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   // By default, show all timeframes (don't filter)
@@ -149,22 +150,11 @@ export function MonitorSuperEngulfing() {
     return filteredSignals.filter(s => s.timeframe.toLowerCase() === selectedTimeframe.toLowerCase());
   }, [filteredSignals, selectedTimeframe]);
 
-  // Apply status filter
-  const statusFilteredSignals = useMemo(() => {
-    let result = timeframeFilteredSignals;
-    if (statusFilter === 'active') {
-      result = result.filter(s => s.status === 'ACTIVE');
-    } else if (statusFilter === 'won') {
-      result = result.filter(s => s.status === 'HIT_TP' || s.outcome === 'HIT_TP');
-    } else if (statusFilter === 'lost') {
-      result = result.filter(s => s.status === 'HIT_SL' || s.outcome === 'HIT_SL');
-    } else if (statusFilter === 'expired') {
-      result = result.filter(s => s.status === 'EXPIRED' || s.outcome === 'EXPIRED');
-    } else if (statusFilter === 'closed') {
-      result = result.filter(s => s.status !== 'ACTIVE');
-    }
-    return result;
-  }, [timeframeFilteredSignals, statusFilter]);
+  // Use the new useLifecycleFilter hook for Lifecycle Tab filtering!
+  const statusFilteredSignals = useLifecycleFilter({
+    signals: timeframeFilteredSignals,
+    tab: statusFilter,
+  });
 
   // Free Forever (SCOUT): restrict to allowed pairs only (BTC, ETH, EURUSD, XAUUSD)
   const subscriptionFilteredSignals = useMemo(() => {
@@ -235,7 +225,7 @@ export function MonitorSuperEngulfing() {
     setMarketCapSort(null);
     setVolumeSort(null);
     setRankingFilter(null);
-    setStatusFilter('all');
+    setStatusFilter('ALL');
     setBullFilter('All');
     setBearFilter('All');
     setSearchQuery('');

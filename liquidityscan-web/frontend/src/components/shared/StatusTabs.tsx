@@ -2,15 +2,16 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSignalStats, SignalStats } from '../../services/signalsApi';
 import { StrategyType } from '../../types';
+import { TabView } from '../../hooks/useLifecycleFilter';
 
 interface StatusTabsProps {
     strategyType: StrategyType;
-    activeStatus: string;
-    onStatusChange: (status: string) => void;
+    activeStatus: TabView | 'ALL';
+    onStatusChange: (status: TabView | 'ALL') => void;
 }
 
 /**
- * Premium status tabs showing Active / Won / Lost / Expired counts.
+ * Premium status tabs showing LIVE / CLOSED / ARCHIVE counts based on the new explicit lifecycle.
  * Fetches stats from backend lifecycle service.
  */
 export function StatusTabs({ strategyType, activeStatus, onStatusChange }: StatusTabsProps) {
@@ -21,10 +22,10 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange }: Statu
         staleTime: 15000,
     });
 
-    const tabs = [
+    const tabs: Array<{ key: TabView | 'ALL', label: string, count: number, icon: string, color: string, bgActive: string, glow: string }> = [
         {
-            key: 'all',
-            label: 'All',
+            key: 'ALL',
+            label: 'All Signals',
             count: stats?.total ?? 0,
             icon: 'select_all',
             color: 'text-white',
@@ -32,49 +33,31 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange }: Statu
             glow: '',
         },
         {
-            key: 'active',
-            label: 'Active',
-            count: stats?.active ?? 0,
+            key: 'LIVE',
+            label: 'Live Signals',
+            count: stats?.live ?? 0,
             icon: 'radio_button_checked',
             color: 'text-primary',
             bgActive: 'dark:bg-primary/15 light:bg-green-100',
             glow: 'shadow-[0_0_15px_rgba(19,236,55,0.2)]',
         },
         {
-            key: 'won',
-            label: 'Won',
-            count: stats?.won ?? 0,
-            icon: 'check_circle',
-            color: 'text-emerald-400',
-            bgActive: 'dark:bg-emerald-500/15 light:bg-emerald-100',
-            glow: 'shadow-[0_0_15px_rgba(16,185,129,0.2)]',
-        },
-        {
-            key: 'lost',
-            label: 'Lost',
-            count: stats?.lost ?? 0,
-            icon: 'cancel',
-            color: 'text-red-400',
-            bgActive: 'dark:bg-red-500/15 light:bg-red-100',
-            glow: 'shadow-[0_0_15px_rgba(239,68,68,0.2)]',
-        },
-        {
-            key: 'expired',
-            label: 'Expired',
-            count: stats?.expired ?? 0,
-            icon: 'schedule',
-            color: 'dark:text-gray-400 light:text-slate-500',
-            bgActive: 'dark:bg-gray-500/15 light:bg-gray-100',
-            glow: '',
-        },
-        {
-            key: 'closed',
-            label: 'Closed',
-            count: (stats?.won ?? 0) + (stats?.lost ?? 0) + (stats?.expired ?? 0),
+            key: 'CLOSED',
+            label: 'Recent Closed',
+            count: stats?.closedSignals ?? 0,
             icon: 'inventory_2',
             color: 'text-amber-400',
             bgActive: 'dark:bg-amber-500/15 light:bg-amber-100',
             glow: 'shadow-[0_0_15px_rgba(245,158,11,0.2)]',
+        },
+        {
+            key: 'ARCHIVE',
+            label: 'Archive',
+            count: stats?.archived ?? 0,
+            icon: 'folder_open',
+            color: 'dark:text-gray-400 light:text-slate-500',
+            bgActive: 'dark:bg-gray-500/15 light:bg-gray-100',
+            glow: '',
         },
     ];
 
@@ -111,3 +94,4 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange }: Statu
         </div>
     );
 }
+

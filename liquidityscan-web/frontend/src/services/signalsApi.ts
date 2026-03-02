@@ -83,6 +83,9 @@ export interface SignalStats {
   winRate: number;
   avgWinPnl: number;
   avgLossPnl: number;
+  live: number;
+  closedSignals: number;
+  archived: number;
 }
 
 /**
@@ -95,10 +98,10 @@ export async function fetchSignalStats(strategyType?: string): Promise<SignalSta
     if (strategyType) params.set('strategyType', strategyType);
     const url = `${baseUrl}/signals/stats${params.toString() ? `?${params.toString()}` : ''}`;
     const res = await fetch(url);
-    if (!res.ok) return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0 };
+    if (!res.ok) return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0, live: 0, closedSignals: 0, archived: 0 };
     return (await res.json()) as SignalStats;
   } catch {
-    return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0 };
+    return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0, live: 0, closedSignals: 0, archived: 0 };
   }
 }
 

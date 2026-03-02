@@ -273,7 +273,8 @@ export class ScannerService implements OnModuleInit {
             signalType, // BUY / SELL
             price,
             detectedAt: new Date(detectedAt).toISOString(),
-            status: 'ACTIVE',
+            lifecycleStatus: 'ACTIVE',
+            status: 'ACTIVE', // deprecated, kept for safety
             metadata,
         };
 

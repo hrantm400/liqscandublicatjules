@@ -6,6 +6,7 @@ import { WinRatePanel } from '../components/shared/WinRatePanel';
 import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { useMarketData } from '../hooks/useMarketData';
 import { listItemVariants } from '../utils/animations';
+import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 
 // Symbol Avatar Component
 function SymbolAvatar({ symbol }: { symbol: string }) {
@@ -37,7 +38,7 @@ function formatTime(dateString: string) {
 export function MonitorStrategy1() {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<any>('ALL');
     const [directionFilter, setDirectionFilter] = useState<'all' | 'long' | 'short'>('all');
     const [pageSize] = useState(50);
     const [currentPage, setCurrentPage] = useState(1);
@@ -50,7 +51,7 @@ export function MonitorStrategy1() {
     });
 
     // Apply filters
-    const filteredSignals = useMemo(() => {
+    const baseFilteredSignals = useMemo(() => {
         let result = [...signals];
 
         if (searchQuery) {
@@ -66,20 +67,14 @@ export function MonitorStrategy1() {
             result = result.filter(s => s.signalType === 'SELL');
         }
 
-        if (statusFilter === 'active') {
-            result = result.filter(s => s.status === 'ACTIVE');
-        } else if (statusFilter === 'won') {
-            result = result.filter(s => s.status === 'HIT_TP' || s.outcome === 'HIT_TP');
-        } else if (statusFilter === 'lost') {
-            result = result.filter(s => s.status === 'HIT_SL' || s.outcome === 'HIT_SL');
-        } else if (statusFilter === 'expired') {
-            result = result.filter(s => s.status === 'EXPIRED' || s.outcome === 'EXPIRED');
-        } else if (statusFilter === 'closed') {
-            result = result.filter(s => s.status !== 'ACTIVE');
-        }
-
         return result;
-    }, [signals, searchQuery, directionFilter, statusFilter]);
+    }, [signals, searchQuery, directionFilter]);
+
+    // Use Lifecycle tabs hook
+    const filteredSignals = useLifecycleFilter({
+        signals: baseFilteredSignals,
+        tab: statusFilter,
+    });
 
     // Pagination
     const totalPages = Math.ceil(filteredSignals.length / pageSize);

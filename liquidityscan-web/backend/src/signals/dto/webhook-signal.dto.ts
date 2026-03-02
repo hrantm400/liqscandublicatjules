@@ -52,8 +52,18 @@ export class WebhookSignalDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['PENDING', 'ACTIVE', 'COMPLETED', 'EXPIRED', 'ARCHIVED'])
+  lifecycleStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['WIN', 'LOSS'])
+  result?: string;
+
+  @IsOptional()
+  @IsString()
   @IsIn(['ACTIVE', 'EXPIRED', 'FILLED', 'CLOSED', 'HIT_TP', 'HIT_SL'])
-  status?: string;
+  status?: string; // deprecated string but kept for backward compatibility if webhooks still send it
 
   @IsOptional()
   @IsObject()

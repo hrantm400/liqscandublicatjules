@@ -15,6 +15,9 @@ export type SignalType = 'BUY' | 'SELL';
 export type Timeframe = '5m' | '15m' | '1h' | '4h' | '1d' | '1w';
 export type SignalStatus = 'ACTIVE' | 'HIT_TP' | 'HIT_SL' | 'EXPIRED';
 
+export type SignalLifecycleStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'ARCHIVED';
+export type SignalResult = 'WIN' | 'LOSS' | null;
+
 export interface Signal {
   id: string;
   strategyType: StrategyType;
@@ -23,12 +26,27 @@ export interface Signal {
   signalType: SignalType;
   price: number;
   detectedAt: string;
-  status: SignalStatus;
-  metadata?: Record<string, any>;
+  lifecycleStatus: SignalLifecycleStatus;
+  result?: SignalResult;
+  status: string; // deprecated
+  metadata?: {
+    [key: string]: any; // Allow arbitrary legacy metadata properties
+    sePattern?: string;
+    seDirection?: 'RUN' | 'REV';
+    seTime?: string;
+    rsiCondition?: string;
+    triggerType?: string;
+    triggerPrice?: number;
+    // strategy 1 specific
+    setupPrice?: number;
+    stopLoss?: number;
+    tp1?: number;
+    tp2?: number;
+  };
   closedAt?: string;
   closedPrice?: number;
   pnlPercent?: number;
-  outcome?: string;
+  outcome?: string; // deprecated
 }
 
 // Candle types

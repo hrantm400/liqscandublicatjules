@@ -17,6 +17,7 @@ import { AnimatedCard } from '../components/animations/AnimatedCard';
 import { useMarketData } from '../hooks/useMarketData';
 import { fetchCandles } from '../services/candles';
 import { useSignalFilter } from '../hooks/useSignalFilter';
+import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { scaleInVariants } from '../utils/animations';
 
 // Component for signal card with static mini chart
@@ -126,7 +127,7 @@ export function MonitorBias() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<any>('ALL');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [pageSize, setPageSize] = useState(50);
@@ -189,22 +190,10 @@ export function MonitorBias() {
   });
 
   // Apply status filter
-  const statusFilteredSignals = useMemo(() => {
-    if (statusFilter === 'all') {
-      return filteredSignals;
-    } else if (statusFilter === 'active') {
-      return filteredSignals.filter(s => s.status === 'ACTIVE');
-    } else if (statusFilter === 'won') {
-      return filteredSignals.filter(s => s.status === 'HIT_TP' || s.outcome === 'HIT_TP');
-    } else if (statusFilter === 'lost') {
-      return filteredSignals.filter(s => s.status === 'HIT_SL' || s.outcome === 'HIT_SL');
-    } else if (statusFilter === 'expired') {
-      return filteredSignals.filter(s => s.status === 'EXPIRED' || s.outcome === 'EXPIRED');
-    } else if (statusFilter === 'closed') {
-      return filteredSignals.filter(s => s.status !== 'ACTIVE');
-    }
-    return filteredSignals;
-  }, [filteredSignals, statusFilter]);
+  const statusFilteredSignals = useLifecycleFilter({
+    signals: filteredSignals,
+    tab: statusFilter,
+  });
 
   // Pagination
   const totalPages = Math.ceil(statusFilteredSignals.length / pageSize);
@@ -255,7 +244,7 @@ export function MonitorBias() {
     setMarketCapSort(null);
     setVolumeSort(null);
     setRankingFilter(null);
-    setStatusFilter('all');
+    setStatusFilter('ALL');
     setBullFilter('All');
     setBearFilter('All');
     setSearchQuery('');

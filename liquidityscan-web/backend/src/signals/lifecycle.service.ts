@@ -1,15 +1,19 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SignalStateService } from './signal-state.service';
+import { SignalStatus, SignalResult } from '@prisma/client';
 
-// Thresholds per strategy
+// Thresholds per strategy for extended scanning (if needed). Assuming standard thresholds for SE
 const STRATEGY_CONFIG: Record<string, { tpPercent: number; slPercent: number; expiryCandleCount: number }> = {
     SUPER_ENGULFING: { tpPercent: 3.0, slPercent: 2.0, expiryCandleCount: 20 },
     ICT_BIAS: { tpPercent: 2.5, slPercent: 1.5, expiryCandleCount: 15 },
     RSI_DIVERGENCE: { tpPercent: 4.0, slPercent: 2.5, expiryCandleCount: 25 },
+    STRATEGY_1: { tpPercent: 3.0, slPercent: 2.0, expiryCandleCount: 20 }, // Added strategy 1 fallback
 };
 
-// Timeframe to milliseconds
 const TF_MS: Record<string, number> = {
+    '5m': 300000,
+    '15m': 900000,
     '1h': 3600000,
     '4h': 14400000,
     '1d': 86400000,
@@ -26,18 +30,17 @@ export class LifecycleService implements OnModuleInit {
     private readonly logger = new Logger(LifecycleService.name);
     private intervalRef: ReturnType<typeof setInterval> | null = null;
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly stateService: SignalStateService
+    ) { }
 
     onModuleInit() {
         this.logger.log('Signal Lifecycle Service started — checking every 5 minutes');
-        // Run immediately on start, then every 5 minutes
         setTimeout(() => this.checkAllSignals(), 10_000); // 10s after startup
         this.intervalRef = setInterval(() => this.checkAllSignals(), 5 * 60 * 1000);
     }
 
-    /**
-     * Fetch all current Binance prices in a single call.
-     */
     private async fetchAllPrices(): Promise<Map<string, number>> {
         const map = new Map<string, number>();
         try {
@@ -57,14 +60,11 @@ export class LifecycleService implements OnModuleInit {
         return map;
     }
 
-    /**
-     * Check all active signals against current prices and update outcomes.
-     */
     async checkAllSignals(): Promise<void> {
         try {
-            // 1. Load all ACTIVE signals
+            // ONLY load properties that are ACTIVE in the new lifecycle
             const activeSignals = await (this.prisma as any).superEngulfingSignal.findMany({
-                where: { status: 'ACTIVE' },
+                where: { lifecycleStatus: 'ACTIVE' },
             });
 
             if (activeSignals.length === 0) {
@@ -74,7 +74,6 @@ export class LifecycleService implements OnModuleInit {
 
             this.logger.log(`Lifecycle check: processing ${activeSignals.length} active signals...`);
 
-            // 2. Fetch current prices from Binance
             const priceMap = await this.fetchAllPrices();
             if (priceMap.size === 0) {
                 this.logger.warn('No prices fetched — skipping lifecycle check');
@@ -84,7 +83,6 @@ export class LifecycleService implements OnModuleInit {
             const now = new Date();
             let hitTp = 0, hitSl = 0, expired = 0;
 
-            // 3. Process each signal
             for (const signal of activeSignals) {
                 const config = STRATEGY_CONFIG[signal.strategyType] || STRATEGY_CONFIG.SUPER_ENGULFING;
                 const signalPrice = Number(signal.price);
@@ -92,31 +90,36 @@ export class LifecycleService implements OnModuleInit {
 
                 if (currentPrice === undefined || signalPrice === 0) continue;
 
-                // Calculate PnL based on direction
                 const isBuy = signal.signalType === 'BUY';
                 const pnl = isBuy
                     ? ((currentPrice - signalPrice) / signalPrice) * 100
                     : ((signalPrice - currentPrice) / signalPrice) * 100;
 
-                // Check TP
+                // Priority 1: Take Profit
                 if (pnl >= config.tpPercent) {
-                    await this.closeSignal(signal.id, 'HIT_TP', currentPrice, pnl, now);
+                    await this.stateService.transitionSignal(signal.id, SignalStatus.COMPLETED, {
+                        result: SignalResult.WIN, closedPrice: currentPrice, pnlPercent: pnl
+                    });
                     hitTp++;
                     continue;
                 }
 
-                // Check SL
+                // Priority 2: Stop Loss
                 if (pnl <= -config.slPercent) {
-                    await this.closeSignal(signal.id, 'HIT_SL', currentPrice, pnl, now);
+                    await this.stateService.transitionSignal(signal.id, SignalStatus.COMPLETED, {
+                        result: SignalResult.LOSS, closedPrice: currentPrice, pnlPercent: pnl
+                    });
                     hitSl++;
                     continue;
                 }
 
-                // Check Expiry
+                // Priority 3: Expiry
                 const tfMs = TF_MS[signal.timeframe.toLowerCase()] || TF_MS['4h'];
                 const expiryTime = new Date(signal.detectedAt).getTime() + config.expiryCandleCount * tfMs;
                 if (now.getTime() >= expiryTime) {
-                    await this.closeSignal(signal.id, 'EXPIRED', currentPrice, pnl, now);
+                    await this.stateService.transitionSignal(signal.id, SignalStatus.EXPIRED, {
+                        closedPrice: currentPrice, pnlPercent: pnl
+                    });
                     expired++;
                     continue;
                 }
@@ -129,33 +132,6 @@ export class LifecycleService implements OnModuleInit {
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             this.logger.error(`Lifecycle check failed: ${msg}`);
-        }
-    }
-
-    /**
-     * Update a signal's status in the database.
-     */
-    private async closeSignal(
-        id: string,
-        outcome: string,
-        closedPrice: number,
-        pnlPercent: number,
-        closedAt: Date,
-    ): Promise<void> {
-        try {
-            await (this.prisma as any).superEngulfingSignal.update({
-                where: { id },
-                data: {
-                    status: outcome,
-                    outcome,
-                    closedPrice,
-                    pnlPercent: Math.round(pnlPercent * 100) / 100, // Round to 2 decimals
-                    closedAt,
-                },
-            });
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            this.logger.error(`Failed to close signal ${id}: ${msg}`);
         }
     }
 }

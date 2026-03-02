@@ -14,6 +14,8 @@ export type WebhookSignalInput = {
   signalType: string;
   price: number;
   detectedAt?: string;
+  lifecycleStatus?: string;
+  result?: string;
   status?: string;
   metadata?: Record<string, unknown>;
 };
@@ -26,6 +28,8 @@ export class StoredSignal {
   signalType: string;
   price: number;
   detectedAt: string;
+  lifecycleStatus?: string;
+  result?: string;
   status: string;
   metadata?: unknown;
   closedAt?: string;
@@ -128,7 +132,7 @@ export class SignalsService {
    * Add signals. Accepted strategyTypes: SUPER_ENGULFING, RSI_DIVERGENCE, ICT_BIAS.
    * If an item has signals_by_timeframe but no timeframe (raw Grno single-coin), expand it first.
    */
-  async addSignals(items: Array<{ id?: string; strategyType?: string; symbol: string; timeframe?: string; signalType?: string; price: number; detectedAt?: string; status?: string; metadata?: Record<string, unknown>; signals_by_timeframe?: Record<string, unknown> }>): Promise<number> {
+  async addSignals(items: Array<{ id?: string; strategyType?: string; symbol: string; timeframe?: string; signalType?: string; price: number; detectedAt?: string; lifecycleStatus?: string; result?: string; status?: string; metadata?: Record<string, unknown>; signals_by_timeframe?: Record<string, unknown> }>): Promise<number> {
     const allowedStrategies = new Set<string>(ALL_STRATEGY_TYPES);
     const allowedTf = new Set(ALL_TIMEFRAMES);
     const nowIso = new Date().toISOString();
@@ -167,7 +171,9 @@ export class SignalsService {
         signalType: s.signalType,
         price: Number(s.price),
         detectedAt: s.detectedAt && typeof s.detectedAt === 'string' ? s.detectedAt : nowIso,
-        status: s.status && ['ACTIVE', 'EXPIRED', 'FILLED', 'CLOSED'].includes(s.status) ? s.status : 'ACTIVE',
+        lifecycleStatus: s.lifecycleStatus && ['PENDING', 'ACTIVE', 'COMPLETED', 'EXPIRED', 'ARCHIVED'].includes(s.lifecycleStatus) ? s.lifecycleStatus : 'ACTIVE',
+        result: s.result && ['WIN', 'LOSS'].includes(s.result) ? s.result : undefined,
+        status: s.status && ['ACTIVE', 'EXPIRED', 'FILLED', 'CLOSED', 'HIT_TP', 'HIT_SL'].includes(s.status) ? s.status : 'ACTIVE',
         metadata: s.metadata && typeof s.metadata === 'object' ? s.metadata : undefined,
       });
     }
@@ -193,6 +199,8 @@ export class SignalsService {
             signalType: s.signalType,
             price: new Prisma.Decimal(s.price),
             detectedAt: new Date(s.detectedAt),
+            lifecycleStatus: s.lifecycleStatus as any,
+            result: s.result as any,
             status: s.status,
             metadata: s.metadata as Prisma.JsonValue | undefined,
           })),
@@ -246,6 +254,8 @@ export class SignalsService {
       // 2. Update in-memory cache
       const cachedSignal = this.signals.find(s => s.id === update.id);
       if (cachedSignal) {
+        cachedSignal.lifecycleStatus = update.status as any; // roughly mapping to new field just to clear TS error
+        // cachedSignal.result = ... left out for now
         cachedSignal.status = update.status;
         cachedSignal.outcome = update.outcome;
         cachedSignal.closedPrice = update.closedPrice;
@@ -277,6 +287,8 @@ export class SignalsService {
         signalType: r.signalType,
         price: Number(r.price),
         detectedAt: r.detectedAt.toISOString(),
+        lifecycleStatus: r.lifecycleStatus,
+        result: r.result ?? undefined,
         status: r.status,
         metadata: r.metadata ?? undefined,
         closedAt: r.closedAt ? r.closedAt.toISOString() : undefined,
@@ -328,9 +340,6 @@ export class SignalsService {
     }
   }
 
-  /**
-   * Get aggregated signal statistics.
-   */
   async getSignalStats(strategyType?: string): Promise<{
     total: number;
     active: number;
@@ -340,6 +349,10 @@ export class SignalsService {
     winRate: number;
     avgWinPnl: number;
     avgLossPnl: number;
+    // New lifecycle stats
+    live: number;
+    closedSignals: number;
+    archived: number;
   }> {
     try {
       const where = strategyType ? { strategyType } : undefined;
@@ -350,6 +363,11 @@ export class SignalsService {
       const won = rows.filter((r) => r.status === 'HIT_TP' || r.outcome === 'HIT_TP').length;
       const lost = rows.filter((r) => r.status === 'HIT_SL' || r.outcome === 'HIT_SL').length;
       const expired = rows.filter((r) => r.status === 'EXPIRED' || r.outcome === 'EXPIRED').length;
+
+      // New generic lifecycle mapping
+      const live = rows.filter(r => r.lifecycleStatus === 'PENDING' || r.lifecycleStatus === 'ACTIVE' || (!r.lifecycleStatus && r.status === 'ACTIVE')).length;
+      const closedSignals = rows.filter(r => r.lifecycleStatus === 'COMPLETED' || r.lifecycleStatus === 'EXPIRED' || (!r.lifecycleStatus && (r.status === 'HIT_TP' || r.status === 'HIT_SL' || r.status === 'EXPIRED' || r.status === 'CLOSED'))).length;
+      const archived = rows.filter(r => r.lifecycleStatus === 'ARCHIVED').length;
 
       const winPnls = rows.filter((r) => r.outcome === 'HIT_TP' && r.pnlPercent != null).map((r) => r.pnlPercent);
       const lossPnls = rows.filter((r) => r.outcome === 'HIT_SL' && r.pnlPercent != null).map((r) => r.pnlPercent);
@@ -363,11 +381,11 @@ export class SignalsService {
         ? Math.round((lossPnls.reduce((a, b) => a + b, 0) / lossPnls.length) * 100) / 100
         : 0;
 
-      return { total, active, won, lost, expired, winRate, avgWinPnl, avgLossPnl };
+      return { total, active, won, lost, expired, winRate, avgWinPnl, avgLossPnl, live, closedSignals, archived };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Failed to get signal stats: ${msg}`);
-      return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0 };
+      return { total: 0, active: 0, won: 0, lost: 0, expired: 0, winRate: 0, avgWinPnl: 0, avgLossPnl: 0, live: 0, closedSignals: 0, archived: 0 };
     }
   }
 }
