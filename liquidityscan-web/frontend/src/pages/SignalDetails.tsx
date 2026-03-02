@@ -300,154 +300,245 @@ export function SignalDetails() {
 
           {/* Main Content Grid */}
           <div className={`grid ${isFullscreen ? 'grid-cols-1' : 'grid-cols-12'} gap-6`}>
-            {/* Left Column - Chart */}
+            {/* Left Column - Chart(s) */}
             <div className={`${isFullscreen ? 'col-span-1' : 'col-span-12 xl:col-span-8'} flex flex-col gap-6`}>
 
-              {/* Chart 1: The 4H SuperEngulfing (Only for Strategy 1) */}
+              {/* Side-by-side charts for Strategy 1 */}
               {isStrategy1 && (
-                <div className="glass-panel rounded-2xl p-1 relative overflow-hidden group h-[500px] flex flex-col">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Chart 1: The 4H SuperEngulfing */}
+                  <div className="glass-panel rounded-2xl p-1 relative overflow-hidden group h-[550px] flex flex-col">
+                    <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+                      <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
+                        4H Timeframe (SuperEngulfing Setup)
+                      </span>
+                      <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono text-primary">
+                        {signalData.symbol}
+                      </span>
+                    </div>
+
+                    {show4HCandlesLoading ? (
+                      <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="chart-spinner w-12 h-12"></div>
+                          <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading 4H chart data...</div>
+                        </div>
+                      </div>
+                    ) : chart4HCandles.length === 0 ? (
+                      <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-text-light-secondary">bar_chart</span>
+                          <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No 4H chart data available</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50">
+                        <InteractiveLiveChart
+                          candles={chart4HCandles as Candle[]}
+                          signal={mock4HSignal}
+                          symbol={signalData.symbol}
+                          timeframe="4h"
+                          height={550}
+                          isFullscreen={false}
+                          onCandleUpdate={() => { }}
+                        />
+                      </div>
+                    )}
+
+                    <motion.div
+                      className="px-5 py-3 flex items-center justify-between dark:border-t-white/5 light:border-t-green-200/30 dark:bg-[#0b140d]/50 light:bg-green-50/50"
+                    >
+                      <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">
+                        Higher Timeframe:{' '}
+                        <span className="dark:text-white light:text-text-dark font-medium">
+                          4H Super Engulfing
+                        </span>
+                      </span>
+                    </motion.div>
+                  </div>
+
+                  {/* Chart 2: The 5M Entry (inside Strategy 1 side-by-side) */}
+                  <div className="glass-panel rounded-2xl p-1 relative overflow-hidden group h-[550px] flex flex-col">
+                    <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+                      <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
+                        {getTimeframeDisplay()} Timeframe (Entry Confirmation)
+                      </span>
+                      <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono text-primary">
+                        {signalData.symbol}
+                      </span>
+                    </div>
+                    <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                      <button
+                        onClick={toggleFullscreen}
+                        className="p-2 rounded-lg dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 dark:text-gray-300 light:text-text-dark dark:hover:text-white light:hover:text-text-dark dark:hover:bg-white/10 light:hover:bg-green-100/50 transition-colors"
+                        title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                      >
+                        <span className="material-symbols-outlined text-lg">
+                          {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {showCandlesLoading ? (
+                      <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="chart-spinner w-12 h-12"></div>
+                          <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading chart data...</div>
+                        </div>
+                      </div>
+                    ) : chartCandles.length === 0 ? (
+                      <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-text-light-secondary">bar_chart</span>
+                          <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No chart data available</div>
+                          {candlesError && (
+                            <div className="text-xs text-red-400">Error loading candles. Please try again later.</div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50">
+                        <InteractiveLiveChart
+                          candles={chartCandles as Candle[]}
+                          signal={signalData}
+                          symbol={signalData.symbol}
+                          timeframe={signalData.timeframe}
+                          height={isFullscreen ? window.innerHeight - 100 : 550}
+                          isFullscreen={isFullscreen}
+                          onCandleUpdate={handleCandleUpdate}
+                        />
+                      </div>
+                    )}
+
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="px-5 py-3 flex items-center justify-between dark:border-t-white/5 light:border-t-green-200/30 dark:bg-[#0b140d]/50 light:bg-green-50/50"
+                    >
+                      <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">
+                        Interactive Live Chart:{' '}
+                        <span className="dark:text-white light:text-text-dark font-medium">
+                          {isStrategy1 ? '5M Break Entry' : getPatternType()}
+                        </span>
+                      </span>
+                      <div className="flex items-center gap-2 text-[10px] dark:text-gray-500 light:text-text-light-secondary">
+                        <motion.span
+                          className="flex items-center gap-1"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <motion.span
+                            className="w-2 h-2 rounded-full bg-primary"
+                            animate={{
+                              scale: [1, 1.2, 1],
+                              opacity: [1, 0.7, 1],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: 'easeInOut',
+                            }}
+                          />
+                          Live
+                        </motion.span>
+                        <span className="w-px h-3 dark:bg-white/10 light:bg-green-200/30"></span>
+                        <span>Zoom: Scroll | Pan: Drag</span>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              )}
+
+              {/* Single chart for non-Strategy 1 signals */}
+              {!isStrategy1 && (
+                <div className={`glass-panel rounded-2xl p-1 relative overflow-hidden group h-[600px] flex flex-col`}>
                   <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
                     <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
-                      4H Timeframe (SuperEngulfing Setup)
+                      {getTimeframeDisplay()} Timeframe
                     </span>
                     <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono text-primary">
                       {signalData.symbol}
                     </span>
                   </div>
+                  <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                    <button
+                      onClick={toggleFullscreen}
+                      className="p-2 rounded-lg dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 dark:text-gray-300 light:text-text-dark dark:hover:text-white light:hover:text-text-dark dark:hover:bg-white/10 light:hover:bg-green-100/50 transition-colors"
+                      title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                    >
+                      <span className="material-symbols-outlined text-lg">
+                        {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                      </span>
+                    </button>
+                  </div>
 
-                  {show4HCandlesLoading ? (
+                  {showCandlesLoading ? (
                     <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
                       <div className="flex flex-col items-center gap-4">
                         <div className="chart-spinner w-12 h-12"></div>
-                        <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading 4H chart data...</div>
+                        <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading chart data...</div>
                       </div>
                     </div>
-                  ) : chart4HCandles.length === 0 ? (
+                  ) : chartCandles.length === 0 ? (
                     <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
                       <div className="flex flex-col items-center gap-4">
                         <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-text-light-secondary">bar_chart</span>
-                        <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No 4H chart data available</div>
+                        <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No chart data available</div>
                       </div>
                     </div>
                   ) : (
                     <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50">
                       <InteractiveLiveChart
-                        candles={chart4HCandles as Candle[]}
-                        signal={mock4HSignal}
+                        candles={chartCandles as Candle[]}
+                        signal={signalData}
                         symbol={signalData.symbol}
-                        timeframe="4h"
-                        height={500}
-                        isFullscreen={false}
-                        onCandleUpdate={() => { }} // Only bind live updates to 5M
+                        timeframe={signalData.timeframe}
+                        height={isFullscreen ? window.innerHeight - 100 : 600}
+                        isFullscreen={isFullscreen}
+                        onCandleUpdate={handleCandleUpdate}
                       />
                     </div>
                   )}
 
                   <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
                     className="px-5 py-3 flex items-center justify-between dark:border-t-white/5 light:border-t-green-200/30 dark:bg-[#0b140d]/50 light:bg-green-50/50"
                   >
                     <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">
-                      Higher Timeframe Context:{' '}
+                      Interactive Live Chart:{' '}
                       <span className="dark:text-white light:text-text-dark font-medium">
-                        4H Super Engulfing
+                        {getPatternType()}
                       </span>
                     </span>
+                    <div className="flex items-center gap-2 text-[10px] dark:text-gray-500 light:text-text-light-secondary">
+                      <motion.span
+                        className="flex items-center gap-1"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        <motion.span
+                          className="w-2 h-2 rounded-full bg-primary"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [1, 0.7, 1],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }}
+                        />
+                        Live
+                      </motion.span>
+                      <span className="w-px h-3 dark:bg-white/10 light:bg-green-200/30"></span>
+                      <span>Zoom: Scroll | Pan: Drag</span>
+                    </div>
                   </motion.div>
                 </div>
               )}
-
-              {/* Interactive Chart Panel (Main/Lower Timeframe) */}
-              <div className={`glass-panel rounded-2xl p-1 relative overflow-hidden group ${isStrategy1 ? 'h-[500px]' : 'h-[600px]'} flex flex-col`}>
-                <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
-                  <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
-                    {getTimeframeDisplay()} Timeframe {isStrategy1 ? '(Entry Confirmation)' : ''}
-                  </span>
-                  <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono text-primary">
-                    {signalData.symbol}
-                  </span>
-                </div>
-                <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-                  <button
-                    onClick={toggleFullscreen}
-                    className="p-2 rounded-lg dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 dark:text-gray-300 light:text-text-dark dark:hover:text-white light:hover:text-text-dark dark:hover:bg-white/10 light:hover:bg-green-100/50 transition-colors"
-                    title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-                  >
-                    <span className="material-symbols-outlined text-lg">
-                      {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
-                    </span>
-                  </button>
-                </div>
-
-                {showCandlesLoading ? (
-                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="chart-spinner w-12 h-12"></div>
-                      <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading chart data...</div>
-                    </div>
-                  </div>
-                ) : chartCandles.length === 0 ? (
-                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-text-light-secondary">bar_chart</span>
-                      <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No chart data available</div>
-                      {candlesError && (
-                        <div className="text-xs text-red-400">Error loading candles. Please try again later.</div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50">
-                    <InteractiveLiveChart
-                      candles={chartCandles as Candle[]}
-                      signal={signalData}
-                      symbol={signalData.symbol}
-                      timeframe={signalData.timeframe}
-                      height={isFullscreen ? window.innerHeight - 100 : (isStrategy1 ? 500 : 600)}
-                      isFullscreen={isFullscreen}
-                      onCandleUpdate={handleCandleUpdate}
-                    />
-                  </div>
-                )}
-
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="px-5 py-3 flex items-center justify-between dark:border-t-white/5 light:border-t-green-200/30 dark:bg-[#0b140d]/50 light:bg-green-50/50"
-                >
-                  <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">
-                    Interactive Live Chart:{' '}
-                    <span className="dark:text-white light:text-text-dark font-medium">
-                      {isStrategy1 ? '5M Break Entry' : getPatternType()}
-                    </span>
-                  </span>
-                  <div className="flex items-center gap-2 text-[10px] dark:text-gray-500 light:text-text-light-secondary">
-                    <motion.span
-                      className="flex items-center gap-1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <motion.span
-                        className="w-2 h-2 rounded-full bg-primary"
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [1, 0.7, 1],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                        }}
-                      />
-                      Live
-                    </motion.span>
-                    <span className="w-px h-3 dark:bg-white/10 light:bg-green-200/30"></span>
-                    <span>Zoom: Scroll | Pan: Drag</span>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Info Cards */}
               {!isFullscreen && (
                 <motion.div
                   initial="initial"
