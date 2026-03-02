@@ -157,10 +157,9 @@ export function SignalDetails() {
   const timeAgo = Math.floor((Date.now() - detectedDate.getTime()) / 60000);
 
   // Derive strategy type from signal ID
-  const getStrategyType = (): 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS' | 'CONFLUENCE' => {
+  const getStrategyType = (): 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS' => {
     if (signalData.id?.startsWith('RSI_DIVERGENCE')) return 'RSI_DIVERGENCE';
     if (signalData.id?.startsWith('ICT_BIAS')) return 'ICT_BIAS';
-    if (signalData.id?.startsWith('CONFLUENCE')) return 'CONFLUENCE';
     return 'SUPER_ENGULFING';
   };
   const strategyType = getStrategyType();
@@ -173,7 +172,6 @@ export function SignalDetails() {
 
   const getStrategyMonitorPath = () => {
     if (strategyType === 'RSI_DIVERGENCE') return '/monitor/rsi';
-    if (strategyType === 'CONFLUENCE') return '/strategies/9';
     if (strategyType === 'ICT_BIAS') return '/monitor/bias';
     return '/monitor/superengulfing';
   };

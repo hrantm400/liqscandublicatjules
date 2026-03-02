@@ -10,7 +10,7 @@ export interface User {
 }
 
 // Signal types
-export type StrategyType = 'RSI_DIVERGENCE' | 'SUPER_ENGULFING' | 'ICT_BIAS' | 'CONFLUENCE' | 'STRATEGY_1';
+export type StrategyType = 'RSI_DIVERGENCE' | 'SUPER_ENGULFING' | 'ICT_BIAS' | 'STRATEGY_1';
 export type SignalType = 'BUY' | 'SELL';
 export type Timeframe = '5m' | '15m' | '1h' | '4h' | '1d' | '1w';
 export type SignalStatus = 'ACTIVE' | 'HIT_TP' | 'HIT_SL' | 'EXPIRED';

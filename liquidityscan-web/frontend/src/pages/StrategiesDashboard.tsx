@@ -5,7 +5,6 @@ import { useMarketData } from '../hooks/useMarketData';
 import { staggerContainer, scaleInVariants, listItemVariants } from '../utils/animations';
 
 export const StrategiesDashboard: React.FC = () => {
-  const { signals: confluenceSignals } = useMarketData({ strategyType: 'CONFLUENCE', limit: 1000 });
   const { signals: strategy1Signals } = useMarketData({ strategyType: 'STRATEGY_1', limit: 1000 });
 
   return (
@@ -49,7 +48,7 @@ export const StrategiesDashboard: React.FC = () => {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {/* Strategy Cards - 13 total */}
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((num) => {
+            {[1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13].map((num) => {
               if (num === 1) {
                 return (
                   <Link key={num} to="/strategies/1">
@@ -78,42 +77,6 @@ export const StrategiesDashboard: React.FC = () => {
                         <div className="h-8 w-16 bg-amber-500/10 rounded flex items-center justify-center border border-amber-500/20 opacity-60 group-hover:opacity-100 transition-opacity">
                           <svg className="w-full h-full text-amber-500 p-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 50 20">
                             <path d="M0 18 L8 10 L16 14 L24 4 L32 8 L40 2 L50 6"></path>
-                          </svg>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </Link>
-                );
-              }
-
-              if (num === 9) {
-                return (
-                  <Link key={num} to="/strategies/9">
-                    <motion.div
-                      variants={scaleInVariants}
-                      whileHover={{ scale: 1.05, y: -5 }}
-                      className="widget-card glass-panel rounded-2xl flex flex-col h-[200px] relative z-10 p-6 group cursor-pointer hover:bg-cyan-500/5 transition-all border dark:border-white/5 light:border-green-300 hover:border-cyan-500/30"
-                    >
-                      <div className="flex items-start justify-between mb-auto">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all">
-                            <span className="material-symbols-outlined text-xl">merge_type</span>
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-bold dark:text-white light:text-text-dark group-hover:text-cyan-500 transition-colors">SE+RSI+Trend</h3>
-                            <span className="text-[10px] dark:text-gray-400 light:text-text-light-secondary tracking-wide font-mono">STRATEGY-09</span>
-                          </div>
-                        </div>
-                        <span className="material-symbols-outlined dark:text-gray-600 light:text-text-light-secondary text-xl dark:group-hover:text-cyan-400 light:group-hover:text-cyan-500 transition-colors">arrow_outward</span>
-                      </div>
-                      <div className="flex items-end justify-between mt-4">
-                        <div>
-                          <span className="block text-2xl font-black dark:text-white light:text-text-dark tracking-tight">{confluenceSignals.length}</span>
-                          <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider">Signals Found</span>
-                        </div>
-                        <div className="h-8 w-16 bg-cyan-500/10 rounded flex items-center justify-center border border-cyan-500/20 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <svg className="w-full h-full text-cyan-500 p-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 50 20">
-                            <path d="M0 15 Q 10 5, 20 10 T 40 5 L 50 2"></path>
                           </svg>
                         </div>
                       </div>

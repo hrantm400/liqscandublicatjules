@@ -18,7 +18,7 @@ const STRATEGIES = [
     { value: 'RSI_DIVERGENCE', label: 'RSI Divergence', icon: '📊', color: '#8b5cf6', desc: 'RSI divergence signals' },
     { value: 'ICT_BIAS', label: 'ICT Bias', icon: '🧭', color: '#06b6d4', desc: 'ICT bias shift detection' },
     { value: 'STRATEGY_1', label: 'Strategy 1', icon: '⚡', color: '#13ec37', desc: '4H SE + 5M Break combo' },
-    { value: 'CONFLUENCE', label: 'Confluence', icon: '🎯', color: '#ec4899', desc: 'Multi-indicator confluence' },
+
 ];
 
 const TIMEFRAMES = ['5m', '15m', '1h', '4h', '1D'];
