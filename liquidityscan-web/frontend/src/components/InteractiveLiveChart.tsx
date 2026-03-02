@@ -604,6 +604,74 @@ export function InteractiveLiveChart({
       // Update series
       candlestickSeriesRef.current.setData(chartData);
 
+      // Clean up previous Strategy 1 Risk/Reward lines if exist
+      if ((chartRef.current as any).slLine) {
+        try { chartRef.current.removeSeries((chartRef.current as any).slLine); } catch (e) { }
+      }
+      if ((chartRef.current as any).tp1Line) {
+        try { chartRef.current.removeSeries((chartRef.current as any).tp1Line); } catch (e) { }
+      }
+      if ((chartRef.current as any).tp2Line) {
+        try { chartRef.current.removeSeries((chartRef.current as any).tp2Line); } catch (e) { }
+      }
+
+      // Draw TP and SL lines if Strategy 1
+      if (signal?.id?.startsWith('STRATEGY_1') && signal.metadata) {
+        const lineStartIdx = Math.max(0, chartData.length - 100); // Draw across recent candles
+        const lineStart = chartData[lineStartIdx].time as any;
+        const lineEnd = chartData[chartData.length - 1].time as any;
+
+        if (lineStart < lineEnd) {
+          if (signal.metadata.stopLoss) {
+            const slLine = chartRef.current.addLineSeries({
+              color: '#ff4444',
+              lineWidth: 2,
+              lineStyle: 2,
+              priceLineVisible: true,
+              lastValueVisible: true,
+              title: 'Stop Loss',
+            });
+            slLine.setData([
+              { time: lineStart, value: Number(signal.metadata.stopLoss) },
+              { time: lineEnd, value: Number(signal.metadata.stopLoss) },
+            ]);
+            (chartRef.current as any).slLine = slLine;
+          }
+
+          if (signal.metadata.tp1) {
+            const tp1Line = chartRef.current.addLineSeries({
+              color: '#13ec37',
+              lineWidth: 2,
+              lineStyle: 1, // Dotted
+              priceLineVisible: true,
+              lastValueVisible: true,
+              title: 'TP1',
+            });
+            tp1Line.setData([
+              { time: lineStart, value: Number(signal.metadata.tp1) },
+              { time: lineEnd, value: Number(signal.metadata.tp1) },
+            ]);
+            (chartRef.current as any).tp1Line = tp1Line;
+          }
+
+          if (signal.metadata.tp2) {
+            const tp2Line = chartRef.current.addLineSeries({
+              color: '#13ec37',
+              lineWidth: 2,
+              lineStyle: 0, // Solid
+              priceLineVisible: true,
+              lastValueVisible: true,
+              title: 'TP2',
+            });
+            tp2Line.setData([
+              { time: lineStart, value: Number(signal.metadata.tp2) },
+              { time: lineEnd, value: Number(signal.metadata.tp2) },
+            ]);
+            (chartRef.current as any).tp2Line = tp2Line;
+          }
+        }
+      }
+
       // Update current price
       if (candlesToUse.length > 0) {
         const lastCandle = candlesToUse[candlesToUse.length - 1];
@@ -651,7 +719,7 @@ export function InteractiveLiveChart({
 
           // Format pattern label
           let patternLabel = '';
-          if (patternType) {
+          if (typeof patternType === 'string' && patternType) {
             // Remove XL and 2X from label logic
             const formattedType = patternType
               .replace('_PLUS', '+')

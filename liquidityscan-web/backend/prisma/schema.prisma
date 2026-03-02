@@ -19,6 +19,7 @@ model User {
   googleId            String?   @unique
   avatar              String?
   isAdmin             Boolean   @default(false)
+  telegramId          String?   @unique
   subscriptionId      String?
   subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
   subscriptionExpiresAt DateTime?
@@ -29,6 +30,7 @@ model User {
   payments            Payment[]
   refreshTokens       RefreshToken[]
   userSubscriptions   UserSubscription[]
+  alertSubscriptions  AlertSubscription[]
 
   @@map("users")
 }
@@ -42,6 +44,18 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@map("refresh_tokens")
+}
+
+model AlertSubscription {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol       String   // e.g., "BTCUSDT"
+  strategyType String   // e.g., "SUPER_ENGULFING", "RSI_DIVERGENCE", "STRATEGY_1"
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, symbol, strategyType]) // Prevent duplicates
+  @@map("alert_subscriptions")
 }
 
 model Category {

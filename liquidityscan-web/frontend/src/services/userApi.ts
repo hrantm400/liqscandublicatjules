@@ -6,12 +6,12 @@ export const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
+
   // Production build or same-origin: use relative /api (Nginx proxies to backend)
   if (import.meta.env.PROD || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
     return '/api';
   }
-  
+
   // Local development: backend usually on 3000 or 3002
   return 'http://localhost:3002/api';
 };
@@ -47,9 +47,9 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const token = this.getToken();
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (token) {
@@ -334,6 +334,35 @@ class ApiClient {
 
   async getSubscriptionsStats() {
     return this.request<any>('/subscriptions/stats');
+  }
+
+  // Alerts
+  async getTelegramId() {
+    return this.request<{ telegramId: string | null }>('/alerts/telegram-id');
+  }
+
+  async saveTelegramId(telegramId: string) {
+    return this.request<any>('/alerts/telegram-id', {
+      method: 'POST',
+      body: JSON.stringify({ telegramId }),
+    });
+  }
+
+  async getAlerts() {
+    return this.request<any[]>('/alerts');
+  }
+
+  async createAlert(symbol: string, strategyType: string) {
+    return this.request<any>('/alerts', {
+      method: 'POST',
+      body: JSON.stringify({ symbol, strategyType }),
+    });
+  }
+
+  async deleteAlert(id: string) {
+    return this.request<void>(`/alerts/${id}`, {
+      method: 'DELETE',
+    });
   }
 }
 

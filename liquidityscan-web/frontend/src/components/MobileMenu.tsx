@@ -9,6 +9,7 @@ export function MobileMenu() {
     { path: '/monitor/superengulfing', label: 'SuperEngulfing', icon: 'candlestick_chart' },
     { path: '/monitor/bias', label: 'Bias Shifts', icon: 'timeline' },
     { path: '/monitor/rsi', label: 'RSI Divergence', icon: 'hub' },
+    { path: '/custom-alerts', label: 'Custom Alerts', icon: 'notifications_active' },
   ];
 
   return (

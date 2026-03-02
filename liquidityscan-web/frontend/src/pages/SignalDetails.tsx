@@ -39,6 +39,7 @@ export function SignalDetails() {
   const queryClient = useQueryClient();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [candles, setCandles] = useState<Candle[]>([]);
+  const [candles4H, setCandles4H] = useState<Candle[]>([]);
 
   const { data: signal, isLoading } = useQuery({
     queryKey: ['signal', id],
@@ -76,12 +77,32 @@ export function SignalDetails() {
     staleTime: 60000,
   });
 
+  // Fetch 4H candles strictly for Strategy 1
+  const isStrategy1 = signal?.id?.startsWith('STRATEGY_1');
+  const { data: historical4HCandles, isLoading: isLoading4HCandles, error: candles4HError } = useQuery({
+    queryKey: ['candles-4h', signal?.symbol],
+    queryFn: async () => {
+      if (!signal?.symbol) return [];
+      return fetchCandles(signal.symbol, '4h', 500);
+    },
+    enabled: !!signal?.symbol && isStrategy1,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    staleTime: 60000,
+  });
+
   // Initialize candles from historical data
   useEffect(() => {
     if (historicalCandles && historicalCandles.length > 0) {
       setCandles(historicalCandles as Candle[]);
     }
   }, [historicalCandles]);
+
+  useEffect(() => {
+    if (historical4HCandles && historical4HCandles.length > 0) {
+      setCandles4H(historical4HCandles as Candle[]);
+    }
+  }, [historical4HCandles]);
 
   // Handle candle updates from chart
   const handleCandleUpdate = useCallback((candle: Candle) => {
@@ -209,7 +230,22 @@ export function SignalDetails() {
 
   // Use candles state if available, otherwise use historicalCandles
   const chartCandles = candles.length > 0 ? candles : (historicalCandles || []);
+  const chart4HCandles = candles4H.length > 0 ? candles4H : (historical4HCandles || []);
+
   const showCandlesLoading = isLoadingCandles && chartCandles.length === 0;
+  const show4HCandlesLoading = isLoading4HCandles && chart4HCandles.length === 0;
+
+  // Derive mock signal for 4H chart if Strategy 1
+  const mock4HSignal = (isStrategy1 && signalData) ? {
+    ...signalData,
+    detectedAt: signalData.metadata?.seTime || signalData.detectedAt, // Place marker exactly on 4H SE candle
+    price: signalData.price,
+    signalType: (signalData.metadata?.seDirection || signalData.signalType) as 'BUY' | 'SELL',
+    metadata: {
+      ...signalData.metadata,
+      type: signalData.metadata?.sePattern || 'SuperEngulfing'
+    }
+  } : undefined;
 
   return (
     <>
@@ -266,11 +302,65 @@ export function SignalDetails() {
           <div className={`grid ${isFullscreen ? 'grid-cols-1' : 'grid-cols-12'} gap-6`}>
             {/* Left Column - Chart */}
             <div className={`${isFullscreen ? 'col-span-1' : 'col-span-12 xl:col-span-8'} flex flex-col gap-6`}>
-              {/* Interactive Chart Panel */}
-              <div className="glass-panel rounded-2xl p-1 relative overflow-hidden group h-[600px] flex flex-col">
+
+              {/* Chart 1: The 4H SuperEngulfing (Only for Strategy 1) */}
+              {isStrategy1 && (
+                <div className="glass-panel rounded-2xl p-1 relative overflow-hidden group h-[500px] flex flex-col">
+                  <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+                    <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
+                      4H Timeframe (SuperEngulfing Setup)
+                    </span>
+                    <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono text-primary">
+                      {signalData.symbol}
+                    </span>
+                  </div>
+
+                  {show4HCandlesLoading ? (
+                    <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="chart-spinner w-12 h-12"></div>
+                        <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading 4H chart data...</div>
+                      </div>
+                    </div>
+                  ) : chart4HCandles.length === 0 ? (
+                    <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-text-light-secondary">bar_chart</span>
+                        <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No 4H chart data available</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50">
+                      <InteractiveLiveChart
+                        candles={chart4HCandles as Candle[]}
+                        signal={mock4HSignal}
+                        symbol={signalData.symbol}
+                        timeframe="4h"
+                        height={500}
+                        isFullscreen={false}
+                        onCandleUpdate={() => { }} // Only bind live updates to 5M
+                      />
+                    </div>
+                  )}
+
+                  <motion.div
+                    className="px-5 py-3 flex items-center justify-between dark:border-t-white/5 light:border-t-green-200/30 dark:bg-[#0b140d]/50 light:bg-green-50/50"
+                  >
+                    <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">
+                      Higher Timeframe Context:{' '}
+                      <span className="dark:text-white light:text-text-dark font-medium">
+                        4H Super Engulfing
+                      </span>
+                    </span>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Interactive Chart Panel (Main/Lower Timeframe) */}
+              <div className={`glass-panel rounded-2xl p-1 relative overflow-hidden group ${isStrategy1 ? 'h-[500px]' : 'h-[600px]'} flex flex-col`}>
                 <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
                   <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
-                    {getTimeframeDisplay()} Timeframe
+                    {getTimeframeDisplay()} Timeframe {isStrategy1 ? '(Entry Confirmation)' : ''}
                   </span>
                   <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono text-primary">
                     {signalData.symbol}
@@ -289,14 +379,14 @@ export function SignalDetails() {
                 </div>
 
                 {showCandlesLoading ? (
-                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center" style={{ minHeight: isFullscreen ? 'calc(100vh - 100px)' : '600px' }}>
+                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
                       <div className="chart-spinner w-12 h-12"></div>
                       <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">Loading chart data...</div>
                     </div>
                   </div>
                 ) : chartCandles.length === 0 ? (
-                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center" style={{ minHeight: isFullscreen ? 'calc(100vh - 100px)' : '600px' }}>
+                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
                       <span className="material-symbols-outlined text-4xl dark:text-gray-600 light:text-text-light-secondary">bar_chart</span>
                       <div className="dark:text-gray-400 light:text-text-light-secondary text-sm">No chart data available</div>
@@ -306,13 +396,13 @@ export function SignalDetails() {
                     </div>
                   </div>
                 ) : (
-                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50" style={{ minHeight: isFullscreen ? 'calc(100vh - 100px)' : '600px' }}>
+                  <div className="relative flex-1 dark:bg-[#0b140d] light:bg-white rounded-xl overflow-hidden dark:border-white/5 light:border-green-200/50">
                     <InteractiveLiveChart
-                      candles={chartCandles}
+                      candles={chartCandles as Candle[]}
                       signal={signalData}
                       symbol={signalData.symbol}
                       timeframe={signalData.timeframe}
-                      height={isFullscreen ? window.innerHeight - 100 : 600}
+                      height={isFullscreen ? window.innerHeight - 100 : (isStrategy1 ? 500 : 600)}
                       isFullscreen={isFullscreen}
                       onCandleUpdate={handleCandleUpdate}
                     />
@@ -328,7 +418,7 @@ export function SignalDetails() {
                   <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">
                     Interactive Live Chart:{' '}
                     <span className="dark:text-white light:text-text-dark font-medium">
-                      {getPatternType()}{strategyType === 'RSI_DIVERGENCE' ? ' — trend lines show price vs RSI divergence' : ' with volume confirmation'}
+                      {isStrategy1 ? '5M Break Entry' : getPatternType()}
                     </span>
                   </span>
                   <div className="flex items-center gap-2 text-[10px] dark:text-gray-500 light:text-text-light-secondary">

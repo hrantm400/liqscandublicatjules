@@ -11,6 +11,8 @@ import { CoursesModule } from './courses/courses.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { CandlesModule } from './candles/candles.module';
 import { SignalsModule } from './signals/signals.module';
+import { TelegramModule } from './telegram/telegram.module';
+import { AlertsModule } from './alerts/alerts.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { SignalsModule } from './signals/signals.module';
     SubscriptionsModule,
     CandlesModule,
     SignalsModule,
+    TelegramModule,
+    AlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

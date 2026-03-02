@@ -81,12 +81,17 @@ function transformGrnoPayloadToSignals(body: unknown): WebhookSignalInput[] {
   return out;
 }
 
+import { TelegramService } from '../telegram/telegram.service';
+
 @Injectable()
 export class SignalsService {
   private readonly logger = new Logger(SignalsService.name);
   private signals: StoredSignal[] = [];
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly telegramService: TelegramService,
+  ) { }
 
   /**
    * Normalize webhook body:
@@ -193,6 +198,17 @@ export class SignalsService {
           })),
           skipDuplicates: true,
         });
+
+        // Trigger Telegram Alerts
+        for (const s of toAdd) {
+          this.telegramService.sendSignalAlert(
+            s.symbol,
+            s.strategyType,
+            s.timeframe,
+            s.signalType,
+            s.price
+          ).catch(e => this.logger.error(`Failed to dispatch alert for ${s.id}: ${e.message}`));
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         this.logger.error(`Failed to persist signals: ${msg}`);
