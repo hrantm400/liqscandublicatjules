@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -134,6 +135,20 @@ function App() {
               <Suspense fallback={<LoadingFallback />}>
                 <AppRoutes />
               </Suspense>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  style: {
+                    background: '#1a1f1c',
+                    color: '#e5e7eb',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                  },
+                  success: { iconTheme: { primary: '#13ec37', secondary: '#0a0e0b' } },
+                  error: { iconTheme: { primary: '#ff4444', secondary: '#0a0e0b' } },
+                }}
+              />
             </BrowserRouter>
           </ThemeProvider>
         </QueryClientProvider>
