@@ -9,26 +9,26 @@ export class AlertsController {
 
     @Get()
     async getMyAlerts(@Req() req) {
-        return this.alertsService.getUserAlerts(req.user.id);
+        return this.alertsService.getUserAlerts(req.user.userId);
     }
 
     @Post()
     async createAlert(@Req() req, @Body() body: { symbol: string; strategyType: string }) {
-        return this.alertsService.createAlert(req.user.id, body.symbol, body.strategyType);
+        return this.alertsService.createAlert(req.user.userId, body.symbol, body.strategyType);
     }
 
     @Delete(':id')
     async deleteAlert(@Req() req, @Param('id') id: string) {
-        return this.alertsService.deleteAlert(req.user.id, id);
+        return this.alertsService.deleteAlert(req.user.userId, id);
     }
 
     @Post('telegram-id')
     async saveTelegramId(@Req() req, @Body() body: { telegramId: string }) {
-        return this.alertsService.saveTelegramId(req.user.id, body.telegramId);
+        return this.alertsService.saveTelegramId(req.user.userId, body.telegramId);
     }
 
     @Get('telegram-id')
     async getTelegramId(@Req() req) {
-        return this.alertsService.getTelegramId(req.user.id);
+        return this.alertsService.getTelegramId(req.user.userId);
     }
 }
