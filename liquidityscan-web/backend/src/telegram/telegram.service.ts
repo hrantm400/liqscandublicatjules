@@ -184,17 +184,25 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
                 if (sub.user.telegramId) {
                     try {
                         if (imageBuffer) {
-                            await this.bot.sendPhoto(sub.user.telegramId, imageBuffer, {
-                                caption: message,
-                                parse_mode: 'Markdown'
-                            });
+                            await this.bot.sendPhoto(
+                                sub.user.telegramId,
+                                imageBuffer,
+                                {
+                                    caption: message,
+                                    parse_mode: 'Markdown'
+                                },
+                                {
+                                    filename: 'signal.png',
+                                    contentType: 'image/png',
+                                }
+                            );
                         } else {
                             // Fallback to text only if image fails
                             await this.bot.sendMessage(sub.user.telegramId, message, { parse_mode: 'Markdown' });
                         }
                         msgsSent++;
                     } catch (e) {
-                        this.logger.error(`Failed to send telegram alert to ${sub.user.telegramId}: ${e.message}`);
+                        this.logger.error(`Failed to send telegram alert to ${sub.user.telegramId}: ${e.message}`, e.stack);
                     }
                 }
             }

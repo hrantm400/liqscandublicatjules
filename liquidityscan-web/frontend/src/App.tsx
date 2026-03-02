@@ -23,7 +23,6 @@ const SignalDetails = lazy(() => import('./pages/SignalDetails').then(m => ({ de
 const StrategiesDashboard = lazy(() => import('./pages/StrategiesDashboard').then(m => ({ default: m.StrategiesDashboard })));
 const StrategyDetail = lazy(() => import('./pages/StrategyDetail').then(m => ({ default: m.StrategyDetail })));
 const ToolsDashboard = lazy(() => import('./pages/ToolsDashboard').then(m => ({ default: m.ToolsDashboard })));
-const CustomAlerts = lazy(() => import('./pages/CustomAlerts'));
 const DailyRecap = lazy(() => import('./pages/DailyRecap').then(m => ({ default: m.DailyRecap })));
 const RiskCalculator = lazy(() => import('./pages/RiskCalculator').then(m => ({ default: m.RiskCalculator })));
 const SuperEngulfing = lazy(() => import('./pages/SuperEngulfing').then(m => ({ default: m.SuperEngulfing })));
@@ -98,7 +97,6 @@ function AppRoutes() {
             <Route path="daily-recap" element={<AnimatedPage><DailyRecap /></AnimatedPage>} />
             <Route path="risk-calculator" element={<AnimatedPage><RiskCalculator /></AnimatedPage>} />
             <Route path="superengulfing" element={<SuperEngulfing />} />
-            <Route path="custom-alerts" element={<AnimatedPage><CustomAlerts /></AnimatedPage>} />
             <Route path="settings" element={<AnimatedPage><Settings /></AnimatedPage>} />
             <Route path="support" element={<AnimatedPage><Support /></AnimatedPage>} />
             <Route path="profile" element={<AnimatedPage><Profile /></AnimatedPage>} />

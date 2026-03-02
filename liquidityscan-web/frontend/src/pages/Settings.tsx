@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { pageVariants, staggerContainer, listItemVariants } from '../utils/animations';
+import { TelegramAlertsConfig } from '../components/settings/TelegramAlertsConfig';
+import { staggerContainer, listItemVariants } from '../utils/animations';
 
 export function Settings() {
-  const { theme } = useTheme();
+  useTheme(); // to keep hook structure if context is needed, though we only toggle
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -89,6 +90,11 @@ export function Settings() {
           </div>
         </motion.div>
       </div>
+
+      {/* Embedded Telegram Custom Alerts */}
+      <motion.div variants={listItemVariants}>
+        <TelegramAlertsConfig />
+      </motion.div>
     </motion.div>
   );
 }
