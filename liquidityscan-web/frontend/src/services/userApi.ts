@@ -352,10 +352,17 @@ class ApiClient {
     return this.request<any[]>('/alerts');
   }
 
-  async createAlert(symbol: string, strategyType: string) {
+  async createAlert(symbol: string, strategyType: string, timeframes?: string[], directions?: string[], minWinRate?: number) {
     return this.request<any>('/alerts', {
       method: 'POST',
-      body: JSON.stringify({ symbol, strategyType }),
+      body: JSON.stringify({ symbol, strategyType, timeframes, directions, minWinRate }),
+    });
+  }
+
+  async updateAlert(id: string, data: { timeframes?: string[]; directions?: string[]; minWinRate?: number; isActive?: boolean }) {
+    return this.request<any>(`/alerts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
   }
 

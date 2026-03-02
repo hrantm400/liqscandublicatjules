@@ -157,15 +157,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         if (!this.bot) return;
 
         try {
-            // Find all subscriptions matching this symbol and strategy
+            // Find all ACTIVE subscriptions matching this symbol and strategy
             const subs = await this.prisma.alertSubscription.findMany({
-                where: { symbol, strategyType },
+                where: { symbol, strategyType, isActive: true },
                 include: { user: true }
             });
 
             if (subs.length === 0) return;
 
             const directionEmoji = signalType.includes('BUY') ? '🟢' : '🔴';
+            const directionKey = signalType.includes('BUY') ? 'BUY' : 'SELL';
 
             const message =
                 `${directionEmoji} *NEW SIGNAL ALERT* ${directionEmoji}\n\n` +
@@ -179,7 +180,25 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             const imageBuffer = await this.generateSignalCard(symbol, strategyType, timeframe, signalType, price);
 
             let msgsSent = 0;
+            let skipped = 0;
             for (const sub of subs) {
+                // --- Apply rich filters ---
+                // 1. Timeframe filter
+                if (sub.timeframes && Array.isArray(sub.timeframes)) {
+                    if (!(sub.timeframes as string[]).includes(timeframe)) {
+                        skipped++;
+                        continue;
+                    }
+                }
+
+                // 2. Direction filter
+                if (sub.directions && Array.isArray(sub.directions)) {
+                    if (!(sub.directions as string[]).includes(directionKey)) {
+                        skipped++;
+                        continue;
+                    }
+                }
+
                 // Send alert if user has associated their telegramId
                 if (sub.user.telegramId) {
                     try {
@@ -207,7 +226,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
                 }
             }
 
-            this.logger.log(`Sent ${msgsSent} Telegram alerts for ${symbol} via ${strategyType}`);
+            this.logger.log(`Sent ${msgsSent} Telegram alerts for ${symbol} via ${strategyType} (skipped ${skipped} by filters)`);
         } catch (err) {
             this.logger.error(`Error sending signal alert block: ${err.message}`);
         }

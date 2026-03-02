@@ -52,6 +52,10 @@ model AlertSubscription {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   symbol       String   // e.g., "BTCUSDT"
   strategyType String   // e.g., "SUPER_ENGULFING", "RSI_DIVERGENCE", "STRATEGY_1"
+  timeframes   Json?    // e.g., ["5m","15m","1h","4h"] — null means ALL
+  directions   Json?    // e.g., ["BUY","SELL"] — null means ALL
+  minWinRate   Float?   // e.g., 60.0 — only alert if strategy win rate >= this
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
   @@unique([userId, symbol, strategyType]) // Prevent duplicates

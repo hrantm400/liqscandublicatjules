@@ -12,7 +12,14 @@ export class AlertsService {
         });
     }
 
-    async createAlert(userId: string, symbol: string, strategyType: string) {
+    async createAlert(
+        userId: string,
+        symbol: string,
+        strategyType: string,
+        timeframes?: string[],
+        directions?: string[],
+        minWinRate?: number,
+    ) {
         if (!symbol || !strategyType) {
             throw new BadRequestException('Symbol and strategyType are required');
         }
@@ -23,6 +30,9 @@ export class AlertsService {
                     userId,
                     symbol,
                     strategyType,
+                    timeframes: timeframes || null,
+                    directions: directions || null,
+                    minWinRate: minWinRate || null,
                 },
             });
         } catch (error) {
@@ -31,6 +41,39 @@ export class AlertsService {
             }
             throw error;
         }
+    }
+
+    async updateAlert(
+        userId: string,
+        alertId: string,
+        data: {
+            timeframes?: string[];
+            directions?: string[];
+            minWinRate?: number;
+            isActive?: boolean;
+        },
+    ) {
+        const alert = await this.prisma.alertSubscription.findUnique({
+            where: { id: alertId },
+        });
+
+        if (!alert) {
+            throw new NotFoundException('Alert subscription not found');
+        }
+
+        if (alert.userId !== userId) {
+            throw new BadRequestException('You do not own this alert subscription');
+        }
+
+        return this.prisma.alertSubscription.update({
+            where: { id: alertId },
+            data: {
+                timeframes: data.timeframes !== undefined ? data.timeframes : undefined,
+                directions: data.directions !== undefined ? data.directions : undefined,
+                minWinRate: data.minWinRate !== undefined ? data.minWinRate : undefined,
+                isActive: data.isActive !== undefined ? data.isActive : undefined,
+            },
+        });
     }
 
     async deleteAlert(userId: string, alertId: string) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { AlertsService } from './alerts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -13,8 +13,38 @@ export class AlertsController {
     }
 
     @Post()
-    async createAlert(@Req() req, @Body() body: { symbol: string; strategyType: string }) {
-        return this.alertsService.createAlert(req.user.userId, body.symbol, body.strategyType);
+    async createAlert(
+        @Req() req,
+        @Body() body: {
+            symbol: string;
+            strategyType: string;
+            timeframes?: string[];
+            directions?: string[];
+            minWinRate?: number;
+        },
+    ) {
+        return this.alertsService.createAlert(
+            req.user.userId,
+            body.symbol,
+            body.strategyType,
+            body.timeframes,
+            body.directions,
+            body.minWinRate,
+        );
+    }
+
+    @Put(':id')
+    async updateAlert(
+        @Req() req,
+        @Param('id') id: string,
+        @Body() body: {
+            timeframes?: string[];
+            directions?: string[];
+            minWinRate?: number;
+            isActive?: boolean;
+        },
+    ) {
+        return this.alertsService.updateAlert(req.user.userId, id, body);
     }
 
     @Delete(':id')
