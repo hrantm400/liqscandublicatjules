@@ -47,6 +47,19 @@ export interface Signal {
   closedPrice?: number;
   pnlPercent?: number;
   outcome?: string; // deprecated
+  // SE Advanced Lifecycle
+  direction?: string;
+  se_entry_zone?: number;
+  se_sl?: number;
+  se_tp1?: number;
+  se_tp2?: number;
+  se_current_sl?: number;
+  se_r_ratio_hit?: boolean;
+  se_close_price?: number;
+  se_close_reason?: string;
+  candles_tracked?: number;
+  max_candles?: number;
+  entryConfirmedAt?: string;
 }
 
 // Candle types

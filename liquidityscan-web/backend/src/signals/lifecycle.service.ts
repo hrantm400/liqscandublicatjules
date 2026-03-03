@@ -49,17 +49,17 @@ export class LifecycleService implements OnModuleInit {
 
     async checkAllSignals(): Promise<void> {
         try {
-            // ONLY load properties that are ACTIVE in the new lifecycle
-            const activeSignals = await (this.prisma as any).superEngulfingSignal.findMany({
-                where: { lifecycleStatus: 'ACTIVE' },
+            // Process PENDING and ACTIVE signals
+            const processSignals = await (this.prisma as any).superEngulfingSignal.findMany({
+                where: { lifecycleStatus: { in: ['PENDING', 'ACTIVE'] } },
             });
 
-            if (activeSignals.length === 0) {
-                this.logger.log('Lifecycle check: 0 active signals, nothing to do.');
+            if (processSignals.length === 0) {
+                this.logger.log('Lifecycle check: 0 active/pending signals, nothing to do.');
                 return;
             }
 
-            this.logger.log(`Lifecycle check: processing ${activeSignals.length} active signals...`);
+            this.logger.log(`Lifecycle check: processing ${processSignals.length} signals...`);
 
             const priceMap = await this.fetchAllPrices();
             if (priceMap.size === 0) {
@@ -68,44 +68,141 @@ export class LifecycleService implements OnModuleInit {
             }
 
             const now = new Date();
-            let hitTp = 0, hitSl = 0, expired = 0;
+            let hitTp = 0, hitSl = 0, expired = 0, oppositeRev = 0, activated = 0;
 
-            for (const signal of activeSignals) {
-                const config = STRATEGY_CONFIG[signal.strategyType] || STRATEGY_CONFIG.SUPER_ENGULFING;
-                const signalPrice = Number(signal.price);
+            for (const signal of processSignals) {
                 const currentPrice = priceMap.get(signal.symbol);
+                if (currentPrice === undefined) continue;
 
-                if (currentPrice === undefined || signalPrice === 0) continue;
+                // 1. If PENDING, check if entry is confirmed
+                if (signal.lifecycleStatus === 'PENDING') {
+                    // Entry condition: price drops to entry zone (bull) or rallies to entry zone (bear)
+                    const isBull = signal.direction === 'BULL';
+                    const isBear = signal.direction === 'BEAR';
+                    const touched = (isBull && currentPrice <= signal.se_entry_zone) ||
+                        (isBear && currentPrice >= signal.se_entry_zone);
 
-                const isBuy = signal.signalType === 'BUY';
-                const pnl = isBuy
-                    ? ((currentPrice - signalPrice) / signalPrice) * 100
-                    : ((signalPrice - currentPrice) / signalPrice) * 100;
-
-                // Priority 1: Take Profit
-                if (pnl >= config.tpPercent) {
-                    await this.stateService.transitionSignal(signal.id, SignalStatus.COMPLETED, {
-                        result: SignalResult.WIN, closedPrice: currentPrice, pnlPercent: pnl
-                    });
-                    hitTp++;
+                    if (touched || Math.abs(currentPrice - signal.se_entry_zone) / signal.se_entry_zone < 0.001) {
+                        await (this.prisma as any).superEngulfingSignal.update({
+                            where: { id: signal.id },
+                            data: {
+                                lifecycleStatus: 'ACTIVE',
+                                entryConfirmedAt: now
+                            }
+                        });
+                        activated++;
+                    } else if (signal.candles_tracked >= signal.max_candles) {
+                        // Expire if it takes too long to enter
+                        await this.stateService.transitionSignal(signal.id, SignalStatus.EXPIRED, {
+                            closedPrice: currentPrice, pnlPercent: 0
+                        });
+                        await (this.prisma as any).superEngulfingSignal.update({
+                            where: { id: signal.id },
+                            data: { se_close_reason: 'EXPIRED' }
+                        });
+                        expired++;
+                    } else {
+                        await (this.prisma as any).superEngulfingSignal.update({
+                            where: { id: signal.id },
+                            data: { candles_tracked: { increment: 1 } }
+                        });
+                    }
                     continue;
                 }
 
-                // Priority 2: Stop Loss
-                if (pnl <= -config.slPercent) {
+                // 2. ACTIVE SIGNALS LIFECYCLE
+                const isBull = signal.direction === 'BULL';
+                const isBear = signal.direction === 'BEAR';
+
+                await (this.prisma as any).superEngulfingSignal.update({
+                    where: { id: signal.id },
+                    data: { candles_tracked: { increment: 1 } }
+                });
+
+                const candlesTracked = signal.candles_tracked + 1;
+                let resolved = false;
+
+                // Priority 1: Stop Loss
+                if ((isBull && currentPrice <= signal.se_current_sl) || (isBear && currentPrice >= signal.se_current_sl)) {
                     await this.stateService.transitionSignal(signal.id, SignalStatus.COMPLETED, {
-                        result: SignalResult.LOSS, closedPrice: currentPrice, pnlPercent: pnl
+                        result: SignalResult.LOSS, closedPrice: currentPrice, pnlPercent: this.calcPnl(isBull, signal.se_entry_zone, currentPrice)
+                    });
+                    await (this.prisma as any).superEngulfingSignal.update({
+                        where: { id: signal.id },
+                        data: { se_close_price: currentPrice, se_close_reason: 'SL', closedAt: now }
                     });
                     hitSl++;
                     continue;
                 }
 
-                // Priority 3: Expiry
-                const tfMs = TF_MS[signal.timeframe.toLowerCase()] || TF_MS['4h'];
-                const expiryTime = new Date(signal.detectedAt).getTime() + config.expiryCandleCount * tfMs;
-                if (now.getTime() >= expiryTime) {
+                // Priority 2: Breakeven (2R)
+                if (!signal.se_r_ratio_hit) {
+                    if ((isBull && currentPrice >= signal.se_tp1) || (isBear && currentPrice <= signal.se_tp1)) {
+                        await (this.prisma as any).superEngulfingSignal.update({
+                            where: { id: signal.id },
+                            data: {
+                                se_current_sl: signal.se_entry_zone,
+                                se_r_ratio_hit: true
+                            }
+                        });
+                        this.logger.log(`Signal ${signal.id} hit 2R. Stop Loss moved to Breakeven (${signal.se_entry_zone}).`);
+                        // continue processing because it could also hit TP2 in identical tick
+                    }
+                }
+
+                // Priority 3: TP2 WIN
+                if ((isBull && currentPrice >= signal.se_tp2) || (isBear && currentPrice <= signal.se_tp2)) {
+                    await this.stateService.transitionSignal(signal.id, SignalStatus.COMPLETED, {
+                        result: SignalResult.WIN, closedPrice: signal.se_tp2, pnlPercent: this.calcPnl(isBull, signal.se_entry_zone, signal.se_tp2)
+                    });
+                    await (this.prisma as any).superEngulfingSignal.update({
+                        where: { id: signal.id },
+                        data: { se_close_price: signal.se_tp2, se_close_reason: 'TP2', closedAt: now }
+                    });
+                    hitTp++;
+                    continue;
+                }
+
+                // Priority 4: Opposite REV Closure
+                if (signal.entryConfirmedAt) {
+                    const oppositeDir = isBull ? 'BEAR' : 'BULL';
+                    const oppositeRevSearch = await (this.prisma as any).superEngulfingSignal.findFirst({
+                        where: {
+                            symbol: signal.symbol,
+                            timeframe: signal.timeframe,
+                            direction: oppositeDir,
+                            signalType: { in: ['rev_bull', 'rev_bull_plus', 'rev_bear', 'rev_bear_plus'] }, // Handle untransformed types
+                            detectedAt: { gt: signal.entryConfirmedAt }
+                        }
+                    });
+
+                    if (oppositeRevSearch) {
+                        const closePrice = oppositeRevSearch.se_entry_zone;
+                        const isWin = isBull ? closePrice > signal.se_entry_zone : closePrice < signal.se_entry_zone;
+
+                        await this.stateService.transitionSignal(signal.id, SignalStatus.COMPLETED, {
+                            result: isWin ? SignalResult.WIN : SignalResult.LOSS,
+                            closedPrice: closePrice,
+                            pnlPercent: this.calcPnl(isBull, signal.se_entry_zone, closePrice)
+                        });
+
+                        await (this.prisma as any).superEngulfingSignal.update({
+                            where: { id: signal.id },
+                            data: { se_close_price: closePrice, se_close_reason: 'OPPOSITE_REV', closedAt: now }
+                        });
+                        oppositeRev++;
+                        continue;
+                    }
+                }
+
+                // Priority 5: Expiry
+                if (candlesTracked >= signal.max_candles) {
                     await this.stateService.transitionSignal(signal.id, SignalStatus.EXPIRED, {
-                        closedPrice: currentPrice, pnlPercent: pnl
+                        closedPrice: currentPrice, pnlPercent: this.calcPnl(isBull, signal.se_entry_zone, currentPrice)
+                    });
+                    await (this.prisma as any).superEngulfingSignal.update({
+                        where: { id: signal.id },
+                        data: { se_close_reason: 'EXPIRED', closedAt: now }
                     });
                     expired++;
                     continue;
@@ -113,12 +210,16 @@ export class LifecycleService implements OnModuleInit {
             }
 
             this.logger.log(
-                `Lifecycle check complete: ${hitTp} HIT_TP, ${hitSl} HIT_SL, ${expired} EXPIRED, ` +
-                `${activeSignals.length - hitTp - hitSl - expired} still ACTIVE`,
+                `Lifecycle check complete: ${activated} ACTIVATED, ${hitTp} HIT_TP, ${hitSl} HIT_SL, ${oppositeRev} OPP_REV, ${expired} EXPIRED.`
             );
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             this.logger.error(`Lifecycle check failed: ${msg}`);
         }
+    }
+
+    private calcPnl(isBull: boolean, entry: number, exit: number): number {
+        if (!entry) return 0;
+        return isBull ? ((exit - entry) / entry) * 100 : ((entry - exit) / entry) * 100;
     }
 }

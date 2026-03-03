@@ -146,9 +146,11 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
       filtered = filtered.slice(0, rankingFilter);
     }
 
-    // Status filter
+    // Status filter — use lifecycleStatus for SE lifecycle
     if (!showClosedSignals) {
-      filtered = filtered.filter((signal) => signal.status === 'ACTIVE');
+      filtered = filtered.filter((signal) =>
+        signal.lifecycleStatus === 'PENDING' || signal.lifecycleStatus === 'ACTIVE'
+      );
     }
 
     return filtered;

@@ -34,6 +34,11 @@ export interface SuperEngulfingSignal {
     price: number;
     direction: 'BUY' | 'SELL';
     pattern: 'RUN' | 'RUN_PLUS' | 'REV' | 'REV_PLUS';
+    // Advanced Tracking
+    entryZone: number;
+    sl: number;
+    tp1: number;
+    tp2: number;
 }
 
 export interface ICTBiasSignal {
@@ -286,6 +291,35 @@ export function detectRSIDivergence(
 // 2. SUPERENGULFING: REV + RUN [Plus]
 // ============================================================
 
+export function calculateATR(candles: CandleData[], period = 14): number {
+    if (candles.length <= 1) return 0;
+
+    const tr: number[] = [];
+    for (let i = 1; i < candles.length; i++) {
+        const h = candles[i].high;
+        const l = candles[i].low;
+        const pc = candles[i - 1].close;
+        const trueRange = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+        tr.push(trueRange);
+    }
+
+    if (tr.length < period) {
+        return tr.reduce((a, b) => a + b, 0) / tr.length; // fallback
+    }
+
+    let atr = 0;
+    for (let i = 0; i < period; i++) {
+        atr += tr[i];
+    }
+    atr /= period;
+
+    for (let i = period; i < tr.length; i++) {
+        atr = (atr * (period - 1) + tr[i]) / period;
+    }
+
+    return atr;
+}
+
 /**
  * Detect SuperEngulfing patterns on the last N candles.
  * Only returns signals for the most recent candle pair.
@@ -307,30 +341,57 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
     const plusBullCond = curr.close > prev.high;
     const plusBearCond = curr.close < prev.low;
 
+    // Calculate ATR for SL buffer
+    const atr = calculateATR(candles.slice(-30), 14); // Use last 30 candles for ATR calculate
+    const entry = curr.close;
+
+    // Helper to calculate targets
+    const getBullTargets = (lowestLow: number) => {
+        const sl = lowestLow - (atr * 0.1);
+        const r = entry - sl;
+        return { entry, sl, tp1: entry + (r * 2), tp2: entry + (r * 3) };
+    };
+
+    const getBearTargets = (highestHigh: number) => {
+        const sl = highestHigh + (atr * 0.1);
+        const r = sl - entry;
+        return { entry, sl, tp1: entry - (r * 2), tp2: entry - (r * 3) };
+    };
+
     // --- RUN (Continuation): same color ---
     // Bullish RUN: Green → Green, wick below prev low, close above prev close
     if (currBull && prevBull && curr.low < prev.low && curr.close > prev.close) {
         const isPlus = plusBullCond;
+        const targets = getBullTargets(Math.min(curr.low, prev.low));
         signals.push({
             type: isPlus ? 'run_bull_plus' : 'run_bull',
             barIndex: i,
             time: curr.openTime,
-            price: curr.close,
+            price: entry,
             direction: 'BUY',
             pattern: isPlus ? 'RUN_PLUS' : 'RUN',
+            entryZone: entry,
+            sl: targets.sl,
+            tp1: targets.tp1,
+            tp2: targets.tp2,
         });
     }
 
     // Bearish RUN: Red → Red, wick above prev high, close below prev close
     if (currBear && prevBear && curr.high > prev.high && curr.close < prev.close) {
         const isPlus = plusBearCond;
+        const targets = getBearTargets(Math.max(curr.high, prev.high));
         signals.push({
             type: isPlus ? 'run_bear_plus' : 'run_bear',
             barIndex: i,
             time: curr.openTime,
-            price: curr.close,
+            price: entry,
             direction: 'SELL',
             pattern: isPlus ? 'RUN_PLUS' : 'RUN',
+            entryZone: entry,
+            sl: targets.sl,
+            tp1: targets.tp1,
+            tp2: targets.tp2,
         });
     }
 
@@ -338,26 +399,36 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
     // Bullish REV: Red → Green, wick below prev low, close above prev open
     if (currBull && prevBear && curr.low < prev.low && curr.close > prev.open) {
         const isPlus = plusBullCond;
+        const targets = getBullTargets(Math.min(curr.low, prev.low));
         signals.push({
             type: isPlus ? 'rev_bull_plus' : 'rev_bull',
             barIndex: i,
             time: curr.openTime,
-            price: curr.close,
+            price: entry,
             direction: 'BUY',
             pattern: isPlus ? 'REV_PLUS' : 'REV',
+            entryZone: entry,
+            sl: targets.sl,
+            tp1: targets.tp1,
+            tp2: targets.tp2,
         });
     }
 
     // Bearish REV: Green → Red, wick above prev high, close below prev open
     if (currBear && prevBull && curr.high > prev.high && curr.close < prev.open) {
         const isPlus = plusBearCond;
+        const targets = getBearTargets(Math.max(curr.high, prev.high));
         signals.push({
             type: isPlus ? 'rev_bear_plus' : 'rev_bear',
             barIndex: i,
             time: curr.openTime,
-            price: curr.close,
+            price: entry,
             direction: 'SELL',
             pattern: isPlus ? 'REV_PLUS' : 'REV',
+            entryZone: entry,
+            sl: targets.sl,
+            tp1: targets.tp1,
+            tp2: targets.tp2,
         });
     }
 

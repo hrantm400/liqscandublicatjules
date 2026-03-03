@@ -203,6 +203,13 @@ export class SignalsService {
             result: s.result as any,
             status: s.status,
             metadata: s.metadata as Prisma.JsonValue | undefined,
+            // Advanced SE fields (mapped from metadata if present)
+            direction: (s.metadata as any)?.direction as string | undefined,
+            se_entry_zone: (s.metadata as any)?.se_entry_zone as number | undefined,
+            se_sl: (s.metadata as any)?.se_sl as number | undefined,
+            se_tp1: (s.metadata as any)?.se_tp1 as number | undefined,
+            se_tp2: (s.metadata as any)?.se_tp2 as number | undefined,
+            se_current_sl: (s.metadata as any)?.se_current_sl as number | undefined,
           })),
           skipDuplicates: true,
         });

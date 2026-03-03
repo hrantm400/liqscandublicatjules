@@ -245,9 +245,24 @@ model SuperEngulfingSignal {
   price           Decimal       @db.Decimal(20, 8)
   detectedAt      DateTime
   
-  // New Lifecycle Fields
-  lifecycleStatus SignalStatus  @default(ACTIVE)
+  // Existing Lifecycle Fields
+  lifecycleStatus SignalStatus  @default(PENDING)
   result          SignalResult?
+  
+  // NEW SE SPECIFIC TRACKING FIELDS
+  direction       String        // "BULL" or "BEAR"
+  se_entry_zone   Float         // Signal candle close (entry price)
+  se_sl           Float         // Initial wick SL
+  se_tp1          Float         // 2R target (breakeven trigger)
+  se_tp2          Float         // 3R target (WIN target)
+  se_current_sl   Float         // Starts = se_sl, updates to se_entry_zone after 2R
+  se_r_ratio_hit  Boolean       @default(false)  // Has 2R been reached?
+  se_close_price  Float?        // Actual price signal was closed at
+  se_close_reason String?       // "TP2", "SL", "OPPOSITE_REV", "EXPIRED"
+
+  candles_tracked Int           @default(0)
+  max_candles     Int           @default(20)
+  entryConfirmedAt DateTime?
   
   // Deprecated Fields
   status          String        @default("ACTIVE")

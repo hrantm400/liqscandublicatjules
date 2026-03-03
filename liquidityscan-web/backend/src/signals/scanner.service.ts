@@ -260,8 +260,8 @@ export class ScannerService implements OnModuleInit {
             signalType, // BUY / SELL
             price,
             detectedAt: new Date(detectedAt).toISOString(),
-            lifecycleStatus: 'ACTIVE',
-            status: 'ACTIVE', // deprecated, kept for safety
+            lifecycleStatus: 'PENDING',
+            status: 'PENDING', // deprecated, kept for safety
             metadata,
         };
 
@@ -282,7 +282,15 @@ export class ScannerService implements OnModuleInit {
         for (const sig of confirmedSignals) {
             added += await this.saveSignal(
                 'SUPER_ENGULFING', symbol, timeframe, sig.direction, sig.price, sig.time,
-                { pattern: sig.pattern }
+                {
+                    pattern: sig.pattern,
+                    direction: sig.direction,
+                    se_entry_zone: sig.entryZone,
+                    se_sl: sig.sl,
+                    se_tp1: sig.tp1,
+                    se_tp2: sig.tp2,
+                    se_current_sl: sig.sl
+                }
             );
         }
         return added;

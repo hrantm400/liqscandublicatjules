@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { StatusTabs } from '../components/shared/StatusTabs';
 import { WinRatePanel } from '../components/shared/WinRatePanel';
+import { SEPerformanceStats } from '../components/shared/SEPerformanceStats';
 import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 // import { fetchSignals } from '../services/signalsApi';
 import { scanSuperEngulfing } from '../services/signalsApi';
@@ -894,8 +895,9 @@ export function MonitorSuperEngulfing() {
 
             {/* Win Rate Sidebar - Only show in list view */}
             {viewMode === 'list' && (
-              <div className="hidden lg:block">
+              <div className="hidden lg:block flex flex-col gap-6">
                 <WinRatePanel strategyType="SUPER_ENGULFING" />
+                <SEPerformanceStats signals={signals} />
               </div>
             )}
           </div>

@@ -679,51 +679,150 @@ export function SignalDetails() {
                   </motion.button>
                 </motion.div>
 
-                {/* Signal Context */}
+                {/* Signal Context — SE Lifecycle Details */}
                 <motion.div
                   variants={scaleInVariants}
                   className="glass-panel rounded-2xl p-6 flex flex-col gap-5 flex-1"
                 >
                   <h3 className="text-sm font-bold dark:text-white light:text-text-dark uppercase tracking-wider mb-2">Signal Context</h3>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex justify-between text-xs font-medium dark:text-gray-400 light:text-text-light-secondary">
-                      <span>Pattern Strength</span>
-                      <span className="text-primary font-mono">85%</span>
-                    </div>
-                    <div className="w-full h-2 dark:bg-white/5 light:bg-green-100/50 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-primary shadow-[0_0_10px_rgba(19,236,55,0.4)]"
-                        initial={{ width: 0 }}
-                        animate={{ width: '85%' }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
-                      />
-                    </div>
-                  </div>
-                  <div className="h-px dark:bg-white/5 light:bg-green-200/30 my-1"></div>
+
+                  {/* Lifecycle Status */}
                   <div className="flex items-center justify-between py-1">
-                    <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Risk / Reward</span>
-                    <span className="font-mono dark:text-white light:text-text-dark text-lg font-bold">1 : 3.5</span>
-                  </div>
-                  <div className="flex items-center justify-between py-1">
-                    <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Entry Zone</span>
-                    <span className="font-mono dark:text-white light:text-text-dark font-bold tracking-tight">
-                      ${formatPrice(Number(signalData.price) * 0.996)} - ${formatPrice(Number(signalData.price) * 1.004)}
+                    <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Status</span>
+                    <span className="font-mono font-bold text-sm">
+                      {signalData.lifecycleStatus === 'COMPLETED' && signalData.result === 'WIN' && (
+                        <span className="text-emerald-400">✅ WIN</span>
+                      )}
+                      {signalData.lifecycleStatus === 'COMPLETED' && signalData.result === 'LOSS' && (
+                        <span className="text-red-400">❌ LOSS</span>
+                      )}
+                      {signalData.lifecycleStatus === 'EXPIRED' && (
+                        <span className="dark:text-gray-400 light:text-slate-500">⏳ EXPIRED</span>
+                      )}
+                      {signalData.lifecycleStatus === 'ACTIVE' && (
+                        <span className="text-primary">🟢 ACTIVE</span>
+                      )}
+                      {signalData.lifecycleStatus === 'PENDING' && (
+                        <span className="text-amber-400">🔶 PENDING</span>
+                      )}
                     </span>
                   </div>
-                  <div className="mt-auto pt-4 dark:border-t-white/5 light:border-t-green-200/30">
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="p-3 rounded-lg dark:bg-red-500/10 light:bg-red-100/50 border dark:border-red-500/20 light:border-red-200/50 flex items-start gap-3"
-                    >
-                      <span className="material-symbols-outlined text-red-500 text-lg mt-0.5">warning</span>
-                      <div>
-                        <span className="text-xs font-bold text-red-400 uppercase block mb-1">Risk Warning</span>
-                        <p className="text-[10px] dark:text-gray-400 light:text-text-light-secondary leading-relaxed">
-                          High volatility expected in the next 4H due to market opening.
-                        </p>
+
+                  {/* Close Reason */}
+                  {signalData.se_close_reason && (
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Close Reason</span>
+                      <span className={`font-mono font-bold text-sm px-2 py-0.5 rounded ${signalData.se_close_reason === 'TP2' ? 'bg-emerald-500/15 text-emerald-400' :
+                          signalData.se_close_reason === 'SL' ? 'bg-red-500/15 text-red-400' :
+                            signalData.se_close_reason === 'OPPOSITE_REV' ? 'bg-blue-500/15 text-blue-400' :
+                              'bg-gray-500/15 dark:text-gray-400 light:text-slate-500'
+                        }`}>
+                        {signalData.se_close_reason === 'OPPOSITE_REV' ? 'OPP REV' : signalData.se_close_reason}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="h-px dark:bg-white/5 light:bg-green-200/30 my-1"></div>
+
+                  {/* SE Targets */}
+                  {signalData.se_entry_zone != null && (
+                    <>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Entry Zone</span>
+                        <span className="font-mono dark:text-white light:text-text-dark font-bold tracking-tight">
+                          {formatPrice(signalData.se_entry_zone)}
+                        </span>
                       </div>
-                    </motion.div>
-                  </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Stop Loss</span>
+                        <span className="font-mono text-red-400 font-bold tracking-tight">
+                          {formatPrice(signalData.se_current_sl ?? signalData.se_sl ?? 0)}
+                          {signalData.se_r_ratio_hit && (
+                            <span className="ml-1 text-[9px] text-amber-400">(BE)</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">TP1 (2R)</span>
+                        <span className="font-mono text-amber-400 font-bold tracking-tight">
+                          {formatPrice(signalData.se_tp1 ?? 0)}
+                          {signalData.se_r_ratio_hit && <span className="ml-1 text-[9px]">✓</span>}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">TP2 (3R)</span>
+                        <span className="font-mono text-emerald-400 font-bold tracking-tight">
+                          {formatPrice(signalData.se_tp2 ?? 0)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* R:R Ratio */}
+                  {signalData.se_entry_zone != null && signalData.se_sl != null && signalData.se_tp2 != null && (
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Risk / Reward</span>
+                      <span className="font-mono dark:text-white light:text-text-dark text-lg font-bold">1 : 3</span>
+                    </div>
+                  )}
+
+                  {/* Candle Tracking Progress */}
+                  {signalData.candles_tracked != null && signalData.max_candles != null && (
+                    <div className="flex flex-col gap-2 mt-1">
+                      <div className="flex justify-between text-xs font-medium dark:text-gray-400 light:text-text-light-secondary">
+                        <span>Candles Tracked</span>
+                        <span className="text-primary font-mono">{signalData.candles_tracked} / {signalData.max_candles}</span>
+                      </div>
+                      <div className="w-full h-2 dark:bg-white/5 light:bg-green-100/50 rounded-full overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${(signalData.candles_tracked / signalData.max_candles) > 0.8
+                              ? 'bg-red-400 shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                              : 'bg-primary shadow-[0_0_10px_rgba(19,236,55,0.4)]'
+                            }`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min((signalData.candles_tracked / signalData.max_candles) * 100, 100)}%` }}
+                          transition={{ duration: 1, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Close Price */}
+                  {signalData.se_close_price != null && (
+                    <div className="mt-auto pt-4 dark:border-t-white/5 light:border-t-green-200/30">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Closed At</span>
+                        <span className="font-mono dark:text-white light:text-text-dark font-bold">{formatPrice(signalData.se_close_price)}</span>
+                      </div>
+                      {signalData.pnlPercent != null && (
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">PnL</span>
+                          <span className={`font-mono font-bold ${signalData.pnlPercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {signalData.pnlPercent >= 0 ? '+' : ''}{signalData.pnlPercent.toFixed(2)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Risk Warning - only for ACTIVE/PENDING */}
+                  {(signalData.lifecycleStatus === 'ACTIVE' || signalData.lifecycleStatus === 'PENDING') && (
+                    <div className="mt-auto pt-4 dark:border-t-white/5 light:border-t-green-200/30">
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        className="p-3 rounded-lg dark:bg-red-500/10 light:bg-red-100/50 border dark:border-red-500/20 light:border-red-200/50 flex items-start gap-3"
+                      >
+                        <span className="material-symbols-outlined text-red-500 text-lg mt-0.5">warning</span>
+                        <div>
+                          <span className="text-xs font-bold text-red-400 uppercase block mb-1">Risk Warning</span>
+                          <p className="text-[10px] dark:text-gray-400 light:text-text-light-secondary leading-relaxed">
+                            Signal is being tracked. SL at {formatPrice(signalData.se_current_sl ?? signalData.se_sl ?? 0)}.
+                            {signalData.se_r_ratio_hit ? ' Breakeven activated.' : ''}
+                          </p>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
                 </motion.div>
               </motion.div>
             )}
