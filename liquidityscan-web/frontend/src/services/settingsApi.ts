@@ -11,10 +11,25 @@ export interface SystemSettings {
     updatedAt: string;
 }
 
+const getToken = () => {
+    try {
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+            const parsed = JSON.parse(authStorage);
+            if (parsed?.state?.token) {
+                return parsed.state.token;
+            }
+        }
+    } catch (e) {
+        console.error('Error parsing auth token', e);
+    }
+    return localStorage.getItem('token');
+};
+
 export const settingsApi = {
     getSettings: async (): Promise<SystemSettings> => {
         const baseUrl = getApiBaseUrl();
-        const token = localStorage.getItem('auth_token');
+        const token = getToken();
         const res = await fetch(`${baseUrl}/settings`, {
             method: 'GET',
             headers: {
@@ -28,7 +43,7 @@ export const settingsApi = {
 
     updateProvider: async (provider: DataProvider): Promise<SystemSettings> => {
         const baseUrl = getApiBaseUrl();
-        const token = localStorage.getItem('auth_token');
+        const token = getToken();
         const res = await fetch(`${baseUrl}/settings/provider`, {
             method: 'PUT',
             headers: {

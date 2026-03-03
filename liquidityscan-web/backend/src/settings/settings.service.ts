@@ -12,7 +12,7 @@ export class SettingsService {
         let settings = await this.prisma.settings.findUnique({ where: { id: 'singleton' } });
         if (!settings) {
             settings = await this.prisma.settings.create({
-                data: { id: 'singleton', activeProvider: DataProvider.BINANCE }
+                data: { id: 'singleton', activeProvider: DataProvider.COINRAY }
             });
         }
         return settings;
