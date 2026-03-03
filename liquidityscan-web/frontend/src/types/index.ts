@@ -4,6 +4,11 @@ export interface User {
   email: string;
   name?: string;
   subscriptionId?: string;
+  subscriptionStatus?: string;
+  subscriptionExpiresAt?: string;
+  tier?: string;            // FREE, PAID_MONTHLY, PAID_ANNUAL
+  referrerId?: string;
+  affiliateCode?: string;
   isAdmin?: boolean;
   createdAt: string;
   updatedAt: string;

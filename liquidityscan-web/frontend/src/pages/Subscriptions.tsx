@@ -1,221 +1,183 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { userApi } from '../services/userApi';
-import { SubscriptionCard } from '../components/subscriptions/SubscriptionCard';
-import { FeatureComparison } from '../components/subscriptions/FeatureComparison';
-import { BackgroundEffects } from '../components/subscriptions/BackgroundEffects';
 import { useAuthStore } from '../store/authStore';
+import { userApi } from '../services/userApi';
+import { PaymentWidget } from '../components/PaymentWidget';
 
-const faqs = [
-  {
-    question: 'Is Free Forever really free?',
-    answer:
-      'Yes. Free Forever is free forever. No credit card required. You get BTC, ETH, EURUSD, XAUUSD on 4H and Daily with standard REV/RUN signals.',
-  },
-  {
-    question: 'What pairs and timeframes are included?',
-    answer:
-      'Free Forever includes BTC, ETH (crypto) and EURUSD, XAUUSD (forex) on 4H and Daily timeframes only.',
-  },
-  {
-    question: 'What are the limits?',
-    answer:
-      'No Order Blocks or RSI Divergence filters on Free Forever. Only standard REV/RUN signals.',
-  },
+const FREE_FEATURES = [
+  { text: 'BTC, ETH, XAU, XAG only', included: true },
+  { text: '1 RSI signal / day', included: true },
+  { text: '1 ICT Bias signal / day', included: true },
+  { text: '24h history', included: true },
+  { text: '400+ pairs', included: false },
+  { text: 'All strategies', included: false },
+  { text: 'Telegram alerts', included: false },
+  { text: 'Full archive & stats', included: false },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-  },
-};
+const PRO_FEATURES = [
+  { text: '500+ pairs (all markets)', included: true },
+  { text: 'Unlimited RSI signals', included: true },
+  { text: 'Unlimited ICT Bias signals', included: true },
+  { text: 'Full history & archive', included: true },
+  { text: 'All SE variants (Plus/Fractals)', included: true },
+  { text: '15+ strategy presets', included: true },
+  { text: 'Telegram God Mode alerts', included: true },
+  { text: 'Priority support', included: true },
+];
 
 export function Subscriptions() {
-  const { isAuthenticated } = useAuthStore();
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const { user } = useAuthStore();
+  const [showPayment, setShowPayment] = useState(false);
+  const [tier, setTier] = useState<any>(null);
 
-  const { data: subscriptions, isLoading: subscriptionsLoading } = useQuery({
-    queryKey: ['subscriptions'],
-    queryFn: () => userApi.getSubscriptions(),
-  });
+  useEffect(() => {
+    userApi.getTier().then(setTier).catch(() => { });
+  }, []);
 
-  const { data: mySubscription } = useQuery({
-    queryKey: ['mySubscription'],
-    queryFn: () => userApi.getMySubscription(),
-    enabled: isAuthenticated,
-  });
-
-  if (subscriptionsLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0a] flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-10 h-10 border-2 border-emerald-400/40 border-t-emerald-500 rounded-full"
-        />
-      </div>
-    );
-  }
-
-  const plans =
-    subscriptions?.filter((s: any) => ['SCOUT', 'FULL_ACCESS'].includes(s.tier)).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)) || [];
+  const isPaid = tier?.isPaid || user?.subscriptionId;
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-[#0a0a0a]">
-      <BackgroundEffects />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-6 md:p-8 max-w-5xl mx-auto space-y-8"
+    >
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-3xl md:text-4xl font-black dark:text-white light:text-text-dark mb-2">
+          {isPaid ? '🎉 You\'re Pro!' : 'Upgrade to Pro'}
+        </h1>
+        <p className="dark:text-gray-400 light:text-text-light-secondary max-w-lg mx-auto">
+          {isPaid
+            ? 'Full access unlocked. All strategies, unlimited signals, Telegram alerts.'
+            : 'Unlock 500+ pairs, all strategies, and Telegram God Mode alerts.'
+          }
+        </p>
+      </div>
 
-      {/* Hero: calm, readable */}
-      <section className="relative z-10 pt-28 pb-16 md:pt-32 md:pb-20 px-6 sm:px-8">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-4"
-          >
-            <motion.span
-              variants={itemVariants}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-medium tracking-wide"
-            >
-              No credit card · Start in seconds
-            </motion.span>
-            <motion.h1
-              variants={itemVariants}
-              className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white tracking-tight"
-            >
-              Simple pricing
-            </motion.h1>
-            <motion.p
-              variants={itemVariants}
-              className="text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto"
-            >
-              Free Forever to try, or Full Access for all pairs and filters.
-            </motion.p>
-          </motion.div>
-        </div>
-      </section>
+      {/* Current Status */}
+      {isPaid && (
+        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="glass-panel rounded-2xl p-6 border border-primary/30 bg-primary/5 text-center">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <span className="material-symbols-outlined text-primary text-3xl">workspace_premium</span>
+            <span className="text-2xl font-black text-primary">PRO ACTIVE</span>
+          </div>
+          <p className="text-sm dark:text-gray-400 light:text-gray-500">
+            Tier: <strong className="text-primary">{tier?.tier || 'PAID'}</strong>
+            {user?.subscriptionExpiresAt && (
+              <> · Expires: <strong className="dark:text-white light:text-text-dark">{new Date(user.subscriptionExpiresAt as string).toLocaleDateString()}</strong></>
+            )}
+          </p>
+        </motion.div>
+      )}
 
-      {/* Plans */}
-      {plans.length > 0 && (
-        <section className="relative z-10 px-6 sm:px-8 pb-20 md:pb-28">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              {plans.map((subscription: any, index: number) => (
-                <SubscriptionCard
-                  key={subscription.id}
-                  subscription={subscription}
-                  currentSubscriptionId={mySubscription?.subscription?.id}
-                  index={index}
-                />
+      {/* Plan Comparison */}
+      {!showPayment && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* FREE Card */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+            className="glass-panel rounded-2xl overflow-hidden border dark:border-white/10 light:border-gray-200">
+            <div className="p-6 border-b dark:border-white/5 light:border-gray-100">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl dark:bg-white/5 light:bg-gray-100 flex items-center justify-center">
+                  <span className="material-symbols-outlined dark:text-gray-400 light:text-gray-500">person</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold dark:text-white light:text-text-dark">Free</h3>
+                  <p className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest">Starter</p>
+                </div>
+              </div>
+              <div className="text-3xl font-black dark:text-white light:text-text-dark">$0<span className="text-sm font-normal dark:text-gray-500 light:text-gray-400">/forever</span></div>
+            </div>
+            <div className="p-6 space-y-3">
+              {FREE_FEATURES.map(f => (
+                <div key={f.text} className="flex items-center gap-3 text-sm">
+                  <span className={`material-symbols-outlined text-base ${f.included ? 'text-primary' : 'dark:text-gray-700 light:text-gray-300'}`}>
+                    {f.included ? 'check_circle' : 'cancel'}
+                  </span>
+                  <span className={f.included ? 'dark:text-gray-300 light:text-gray-600' : 'dark:text-gray-600 light:text-gray-400 line-through'}>
+                    {f.text}
+                  </span>
+                </div>
               ))}
             </div>
           </motion.div>
-        </section>
-      )}
 
-      {/* Comparison */}
-      {plans.length > 0 && (
-        <section className="relative z-10 px-6 sm:px-8 pb-20 md:pb-28">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-40px' }}
-            transition={{ duration: 0.45 }}
-            className="max-w-4xl mx-auto"
-          >
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white text-center mb-8">
-              What&apos;s included
-            </h2>
-            <FeatureComparison subscriptions={plans} />
-          </motion.div>
-        </section>
-      )}
-
-      {/* FAQ */}
-      <section className="relative z-10 px-6 sm:px-8 pb-24 md:pb-32">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white text-center mb-10">
-            FAQ
-          </h2>
-          <motion.div
-            className="space-y-2"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-40px' }}
-          >
-            {faqs.map((faq, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 overflow-hidden transition-colors hover:border-slate-300 dark:hover:border-slate-700"
-                onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-              >
+          {/* PRO Card */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+            className="glass-panel rounded-2xl overflow-hidden border-2 border-primary/40 relative">
+            {/* Popular Badge */}
+            <div className="absolute top-4 right-4 bg-primary text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              Most Popular
+            </div>
+            <div className="p-6 border-b border-primary/10 bg-primary/[0.03]">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                  <span className="material-symbols-outlined text-primary">diamond</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold dark:text-white light:text-text-dark">Pro</h3>
+                  <p className="text-[10px] text-primary uppercase tracking-widest font-bold">Full Access</p>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black dark:text-white light:text-text-dark">$24.50</span>
+                <span className="text-sm dark:text-gray-500 light:text-gray-400 line-through">$49</span>
+                <span className="text-sm dark:text-gray-400 light:text-gray-500">/1st month</span>
+              </div>
+              <p className="text-xs text-primary mt-1">50% OFF first month • Then $49/mo</p>
+            </div>
+            <div className="p-6 space-y-3">
+              {PRO_FEATURES.map(f => (
+                <div key={f.text} className="flex items-center gap-3 text-sm">
+                  <span className="material-symbols-outlined text-base text-primary">check_circle</span>
+                  <span className="dark:text-gray-300 light:text-gray-600">{f.text}</span>
+                </div>
+              ))}
+              {!isPaid && (
                 <button
-                  type="button"
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
+                  onClick={() => setShowPayment(true)}
+                  className="w-full mt-4 py-3 rounded-2xl bg-primary text-black font-bold text-sm transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(19,236,55,0.2)] flex items-center justify-center gap-2"
                 >
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {faq.question}
-                  </span>
-                  <motion.span
-                    animate={{ rotate: expandedFaq === index ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-slate-400 dark:text-slate-500 flex-shrink-0"
-                  >
-                    <span className="material-symbols-outlined text-xl">expand_more</span>
-                  </motion.span>
+                  <span className="material-symbols-outlined text-base">bolt</span>
+                  Upgrade Now
                 </button>
-                <motion.div
-                  initial={false}
-                  animate={{
-                    height: expandedFaq === index ? 'auto' : 0,
-                    opacity: expandedFaq === index ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  <p className="px-5 pb-4 pt-0 text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </motion.div>
-              </motion.div>
-            ))}
+              )}
+            </div>
           </motion.div>
         </div>
-      </section>
+      )}
 
-      {/* Footer */}
-      <footer className="relative z-10 px-6 sm:px-8 py-10 border-t border-slate-200 dark:border-slate-800">
-        <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500 dark:text-slate-500">
-          <span className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span>
-            Free Forever
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-lg">lock_open</span>
-            No credit card
-          </span>
-          <span>Cancel anytime</span>
+      {/* Payment Widget */}
+      {showPayment && !isPaid && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <PaymentWidget
+            onSuccess={() => { setShowPayment(false); window.location.reload(); }}
+            onClose={() => setShowPayment(false)}
+          />
+        </motion.div>
+      )}
+
+      {/* Value Proposition */}
+      {!isPaid && !showPayment && (
+        <div className="glass-panel rounded-2xl p-6 border dark:border-white/5 light:border-gray-200">
+          <h3 className="text-sm font-black dark:text-gray-400 light:text-gray-500 uppercase tracking-widest mb-4">Why Pro?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { icon: 'trending_up', title: '90%+ Win Rate', desc: 'Proven on majors with SE + ICT Bias strategies' },
+              { icon: 'notifications_active', title: 'Telegram Alerts', desc: 'Real-time PNG signal cards pushed to your phone' },
+              { icon: 'query_stats', title: '15+ Strategies', desc: 'SE, RSI Divergence, ICT Bias, Strategy 1, and more' },
+            ].map(item => (
+              <div key={item.title} className="p-4 rounded-xl dark:bg-white/[0.02] light:bg-gray-50 border dark:border-white/5 light:border-gray-200">
+                <span className="material-symbols-outlined text-primary text-2xl mb-2 block">{item.icon}</span>
+                <h4 className="font-bold dark:text-white light:text-text-dark text-sm mb-1">{item.title}</h4>
+                <p className="text-xs dark:text-gray-400 light:text-gray-500">{item.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </footer>
-    </div>
+      )}
+    </motion.div>
   );
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
 
@@ -6,7 +6,8 @@ const NOWPAYMENTS_API_BASE = 'https://api.nowpayments.io/v1';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(PaymentsService.name);
+  constructor(private prisma: PrismaService) { }
 
   async createPayment(userId: string, amount: number, currency: string = 'USD', subscriptionId?: string) {
     const payment = await this.prisma.payment.create({
@@ -124,9 +125,16 @@ export class PaymentsService {
       throw new NotFoundException('Subscription not found');
     }
 
+    // Determine plan type from payment metadata or amount
+    const meta = (payment.metadata as any) || {};
+    const payAmount = Number(payment.amount);
+    const isAnnual = meta.plan === 'annual' || payAmount >= 400;
+    const tier = isAnnual ? 'PAID_ANNUAL' : 'PAID_MONTHLY';
+    const durationDays = isAnnual ? 365 : 30;
+
     // Calculate expiration date
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + subscription.duration);
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
 
     // Update payment status
     await this.prisma.payment.update({
@@ -134,13 +142,14 @@ export class PaymentsService {
       data: { status: 'completed' },
     });
 
-    // Assign subscription to user
+    // Assign subscription + upgrade tier
     await this.prisma.user.update({
       where: { id: payment.userId },
       data: {
         subscriptionId: subscription.id,
         subscriptionStatus: 'active',
         subscriptionExpiresAt: expiresAt,
+        tier,
       },
     });
 
@@ -156,9 +165,36 @@ export class PaymentsService {
       },
     });
 
+    // Credit affiliate commission if user was referred
+    try {
+      const referral = await this.prisma.affiliateReferral.findUnique({
+        where: { referredUserId: payment.userId },
+        include: { affiliate: true },
+      });
+      if (referral && referral.affiliate) {
+        const RATES: Record<string, number> = { STANDARD: 0.30, ELITE: 0.40, AGENCY: 0.20 };
+        const rate = RATES[referral.affiliate.tier] || 0.30;
+        const commission = payAmount * rate;
+        await this.prisma.affiliateReferral.update({
+          where: { id: referral.id },
+          data: { paymentAmount: payAmount, commission, status: 'CONVERTED' },
+        });
+        await this.prisma.affiliate.update({
+          where: { id: referral.affiliateId },
+          data: { totalSales: { increment: 1 }, totalEarned: { increment: commission } },
+        });
+        this.logger.log(`Affiliate commission: $${commission.toFixed(2)} to ${referral.affiliate.code}`);
+      }
+    } catch (e) {
+      this.logger.error(`Affiliate commission error: ${e}`);
+    }
+
+    this.logger.log(`User ${payment.userId} upgraded to ${tier}, expires ${expiresAt.toISOString()}`);
+
     return {
       success: true,
       subscription,
+      tier,
       expiresAt,
     };
   }

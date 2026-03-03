@@ -45,6 +45,7 @@ const CoursesManagement = lazy(() => import('./pages/admin/CoursesManagement').t
 const AdminCourseDetail = lazy(() => import('./pages/admin/AdminCourseDetail').then(m => ({ default: m.AdminCourseDetail })));
 const Courses = lazy(() => import('./pages/Courses').then(m => ({ default: m.Courses })));
 const CourseDetail = lazy(() => import('./pages/CourseDetail').then(m => ({ default: m.CourseDetail })));
+const AffiliateDashboard = lazy(() => import('./pages/AffiliateDashboard').then(m => ({ default: m.AffiliateDashboard })));
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen w-full bg-background-dark">
@@ -104,6 +105,7 @@ function AppRoutes() {
             <Route path="courses/:id" element={<AnimatedPage><CourseDetail /></AnimatedPage>} />
             <Route path="subscription" element={<AnimatedPage><Subscriptions /></AnimatedPage>} />
             <Route path="subscriptions" element={<AnimatedPage><Subscriptions /></AnimatedPage>} />
+            <Route path="affiliate" element={<AnimatedPage><AffiliateDashboard /></AnimatedPage>} />
             <Route path="payment/:id" element={<AnimatedPage><Payment /></AnimatedPage>} />
           </Route>
 

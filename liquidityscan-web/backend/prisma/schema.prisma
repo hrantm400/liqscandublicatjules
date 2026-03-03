@@ -51,6 +51,17 @@ model User {
   subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
   subscriptionExpiresAt DateTime?
   subscriptionStatus  String    @default("none") // none, active, expired, cancelled
+
+  // Pricing tier
+  tier              String    @default("FREE")  // FREE, PAID_MONTHLY, PAID_ANNUAL
+  dailyRsiUsed      Int       @default(0)
+  dailyBiasUsed     Int       @default(0)
+  dailyQuotaResetAt DateTime  @default(now())
+
+  // Affiliate
+  referrerId        String?   // userId of who referred this user
+  affiliateCode     String?   @unique  // unique code for sharing
+
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -58,6 +69,7 @@ model User {
   refreshTokens       RefreshToken[]
   userSubscriptions   UserSubscription[]
   alertSubscriptions  AlertSubscription[]
+  affiliate           Affiliate?
 
   @@map("users")
 }
@@ -282,4 +294,54 @@ model SuperEngulfingSignal {
   updatedAt       DateTime      @updatedAt
 
   @@map("super_engulfing_signals")
+}
+
+// ==========================================
+// AFFILIATE PROGRAM
+// ==========================================
+
+model Affiliate {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code        String   @unique  // e.g. "TRADER123"
+  tier        String   @default("STANDARD")  // STANDARD(30%), ELITE(40%), AGENCY(20%)
+  totalSales  Int      @default(0)
+  totalEarned Float    @default(0)
+  cookieDays  Int      @default(90)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  referrals   AffiliateReferral[]
+  payouts     AffiliatePayout[]
+
+  @@map("affiliates")
+}
+
+model AffiliateReferral {
+  id             String   @id @default(uuid())
+  affiliateId    String
+  affiliate      Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  referredUserId String   @unique
+  paymentAmount  Float?
+  commission     Float?
+  status         String   @default("REGISTERED") // REGISTERED, CONVERTED, CHURNED
+  createdAt      DateTime @default(now())
+
+  @@map("affiliate_referrals")
+}
+
+model AffiliatePayout {
+  id          String   @id @default(uuid())
+  affiliateId String
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  amount      Float
+  currency    String   @default("USDT")
+  network     String   @default("TRC20")
+  walletAddr  String?
+  txHash      String?
+  status      String   @default("PENDING") // PENDING, PROCESSED, FAILED
+  createdAt   DateTime @default(now())
+
+  @@map("affiliate_payouts")
 }

@@ -371,6 +371,27 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Pricing / Tier
+  async getTier() {
+    return this.request<any>('/pricing/tier');
+  }
+
+  // Affiliate
+  async getAffiliateStats() {
+    return this.request<any>('/affiliate/stats');
+  }
+
+  async createAffiliate(code?: string) {
+    return this.request<any>('/affiliate/create', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async validateAffiliateCode(code: string) {
+    return this.request<any>(`/affiliate/validate/${code}`);
+  }
 }
 
 export const userApi = new ApiClient(API_BASE_URL);
