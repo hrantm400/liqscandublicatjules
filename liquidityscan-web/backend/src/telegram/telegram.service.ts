@@ -54,8 +54,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         });
 
         // Handle incoming errors to prevent crashes
-        this.bot.on('polling_error', (error) => {
-            this.logger.error(`Polling error: ${error.message}`);
+        this.bot.on('polling_error', (error: any) => {
+            if (error.code === 'EFATAL' || error.message?.includes('ETIMEDOUT')) {
+                // Telegram long-polling timeouts are normal, just log as debug
+                this.logger.debug(`Telegram polling timeout (auto-reconnecting)...`);
+            } else {
+                this.logger.error(`Polling error: ${error.message || error}`);
+            }
         });
     }
 
