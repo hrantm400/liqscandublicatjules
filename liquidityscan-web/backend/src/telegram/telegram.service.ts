@@ -167,19 +167,59 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         strategyType: string,
         timeframe: string,
         signalType: string,
-        price: number
+        price: number,
+        metadata?: Record<string, any>
     ): Promise<Buffer | null> {
         if (!this.fontBuffer) return null;
 
         const isBuy = signalType.includes('BUY');
-        const color = isBuy ? '#13ec37' : '#ff3b30'; // Primary green / Red
+        const color = isBuy ? '#13ec37' : '#ff3b30';
         const bgGradientStart = isBuy ? '#0a1f0f' : '#1f0a0a';
 
         const candles = await this.candlesService.getKlines(symbol, timeframe, 50);
         const chartHtml = this.generateSvgChart(candles, 800, 200, color, price);
 
+        // Build strategy-specific info row
+        let infoRowHtml = '';
+        if (strategyType === 'SUPER_ENGULFING' && metadata) {
+            const pattern = metadata.pattern || '';
+            const sl = metadata.se_sl ? `$${Number(metadata.se_sl).toFixed(4)}` : '—';
+            const tp2 = metadata.se_tp2 ? `$${Number(metadata.se_tp2).toFixed(4)}` : '—';
+            infoRowHtml = `
+                <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 8px; padding: 12px 0; border-top: 1px dashed rgba(255,255,255,0.08);">
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 2px;">PATTERN</span>
+                        <span style="font-size: 18px; font-weight: bold; color: ${color};">${pattern}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 2px;">STOP LOSS</span>
+                        <span style="font-size: 18px; font-weight: bold; color: #ff4444;">${sl}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 2px;">TARGET</span>
+                        <span style="font-size: 18px; font-weight: bold; color: #13ec37;">${tp2}</span>
+                    </div>
+                </div>`;
+        } else if (strategyType === 'ICT_BIAS' && metadata) {
+            const bias = metadata.bias || '';
+            const level = metadata.bias_level ? `$${Number(metadata.bias_level).toFixed(4)}` : '—';
+            infoRowHtml = `
+                <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 8px; padding: 12px 0; border-top: 1px dashed rgba(255,255,255,0.08);">
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 2px;">BIAS</span>
+                        <span style="font-size: 18px; font-weight: bold; color: ${color};">${bias}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 2px;">BIAS LEVEL</span>
+                        <span style="font-size: 18px; font-weight: bold; color: #00bcd4;">${level}</span>
+                    </div>
+                </div>`;
+        }
+
+        const displayDirection = isBuy ? '▲ LONG' : '▼ SHORT';
+
         const markupHtml = `
-            <div style="display: flex; flex-direction: column; width: 800px; height: 500px; background: linear-gradient(135deg, #0b140d 0%, ${bgGradientStart} 100%); color: white; padding: 40px; font-family: 'Roboto'; border: 3px solid ${color}; box-sizing: border-box; border-radius: 16px;">
+            <div style="display: flex; flex-direction: column; width: 800px; height: 520px; background: linear-gradient(135deg, #0b140d 0%, ${bgGradientStart} 100%); color: white; padding: 40px; font-family: 'Roboto'; border: 3px solid ${color}; box-sizing: border-box; border-radius: 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; width: 100%;">
                     <div style="display: flex; align-items: center;">
                         <span style="font-size: 28px; font-weight: bold; color: rgba(255,255,255,0.6); margin-right: 10px;">LIQUIDITY</span>
@@ -187,31 +227,33 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
                     </div>
                     <div style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);">
                         <span style="font-size: 20px; color: ${color}; font-weight: bold; margin-right: 12px;">●</span>
-                        <span style="font-size: 20px; color: rgba(255,255,255,0.9);">${strategyType.replace('_', ' ')}</span>
+                        <span style="font-size: 20px; color: rgba(255,255,255,0.9);">${strategyType.replace(/_/g, ' ')}</span>
                     </div>
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 20px;">
-                     <div style="display: flex; font-size: 64px; font-weight: bold; letter-spacing: -2px; color: white;">
+                     <div style="display: flex; font-size: 56px; font-weight: bold; letter-spacing: -2px; color: white;">
                         ${symbol}
                     </div>
-                    <div style="display: flex; font-size: 36px; font-weight: bold; color: ${color}; letter-spacing: 2px;">
-                        ${signalType.replace('_SIGNAL', '')}
+                    <div style="display: flex; font-size: 32px; font-weight: bold; color: ${color}; letter-spacing: 2px;">
+                        ${displayDirection}
                     </div>
                 </div>
 
-                <div style="display: flex; width: 100%; height: 200px; margin-top: 10px;">
+                <div style="display: flex; width: 100%; height: 180px; margin-top: 8px;">
                     ${chartHtml}
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                ${infoRowHtml}
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 8px;">
                     <div style="display: flex; flex-direction: column;">
-                        <span style="font-size: 16px; color: rgba(255,255,255,0.5); margin-bottom: 5px; letter-spacing: 1px;">ENTRY PRICE</span>
-                        <span style="font-size: 32px; font-weight: bold; color: white;">$${price}</span>
+                        <span style="font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 4px; letter-spacing: 1px;">ENTRY PRICE</span>
+                        <span style="font-size: 28px; font-weight: bold; color: white;">$${price}</span>
                     </div>
                     <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                        <span style="font-size: 16px; color: rgba(255,255,255,0.5); margin-bottom: 5px; letter-spacing: 1px;">TIMEFRAME</span>
-                        <span style="font-size: 32px; font-weight: bold; color: white;">${timeframe}</span>
+                        <span style="font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 4px; letter-spacing: 1px;">TIMEFRAME</span>
+                        <span style="font-size: 28px; font-weight: bold; color: white;">${timeframe.toUpperCase()}</span>
                     </div>
                 </div>
             </div>
@@ -222,7 +264,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         try {
             const svg = await satori(markup, {
                 width: 800,
-                height: 500,
+                height: 520,
                 fonts: [
                     {
                         name: 'Roboto',
@@ -254,7 +296,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         strategyType: string,
         timeframe: string,
         signalType: string,
-        price: number
+        price: number,
+        metadata?: Record<string, any>
     ) {
         if (!this.bot) return;
 
@@ -269,17 +312,32 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
             const directionEmoji = signalType.includes('BUY') ? '🟢' : '🔴';
             const directionKey = signalType.includes('BUY') ? 'BUY' : 'SELL';
+            const direction = signalType.includes('BUY') ? '▲ LONG' : '▼ SHORT';
+
+            // Build strategy-specific details
+            let details = '';
+            if (strategyType === 'SUPER_ENGULFING' && metadata) {
+                const pattern = metadata.pattern || '';
+                if (metadata.se_sl) details += `🛑 *SL:* ${Number(metadata.se_sl).toFixed(4)}\n`;
+                if (metadata.se_tp1) details += `🎯 *TP1 (2R):* ${Number(metadata.se_tp1).toFixed(4)}\n`;
+                if (metadata.se_tp2) details += `🏆 *TP2 (3R):* ${Number(metadata.se_tp2).toFixed(4)}\n`;
+                if (pattern) details += `📋 *Pattern:* ${pattern}\n`;
+            } else if (strategyType === 'ICT_BIAS' && metadata) {
+                if (metadata.bias) details += `🧭 *Bias:* ${metadata.bias}\n`;
+                if (metadata.bias_level) details += `📍 *Bias Level:* ${Number(metadata.bias_level).toFixed(4)}\n`;
+            }
 
             const message =
                 `${directionEmoji} *NEW SIGNAL ALERT* ${directionEmoji}\n\n` +
                 `🪙 *Asset:* #${symbol}\n` +
-                `📊 *Strategy:* ${strategyType.replace('_', ' ')}\n` +
-                `⏳ *Timeframe:* ${timeframe}\n` +
-                `📈 *Direction:* ${signalType}\n` +
-                `💲 *Price:* ${price}\n\n` +
-                `[Open Monitor Dashboard](http://173.249.3.156:8080)`;
+                `📊 *Strategy:* ${strategyType.replace(/_/g, ' ')}\n` +
+                `⏳ *Timeframe:* ${timeframe.toUpperCase()}\n` +
+                `📈 *Direction:* ${direction}\n` +
+                `💲 *Price:* ${price}\n` +
+                (details ? `\n${details}` : '') +
+                `\n[Open Monitor Dashboard](http://173.249.3.156:8080)`;
 
-            const imageBuffer = await this.generateSignalCard(symbol, strategyType, timeframe, signalType, price);
+            const imageBuffer = await this.generateSignalCard(symbol, strategyType, timeframe, signalType, price, metadata);
 
             let msgsSent = 0;
             let skipped = 0;

@@ -881,23 +881,27 @@ export function InteractiveLiveChart({
             const biasUpperLevel = biasMetadata?.prevHigh;
             const biasLowerLevel = biasMetadata?.prevLow;
             const biasType = biasMetadata?.bias; // 'BULLISH' | 'BEARISH'
+            const biasLevel = signal.bias_level ?? biasMetadata?.bias_level;
 
-            if (biasUpperLevel && biasLowerLevel) {
-              // Clean up previous bias lines
-              if ((chartRef.current as any).biasUpperLine) {
-                try { chartRef.current.removeSeries((chartRef.current as any).biasUpperLine); } catch (e) { /* ignore */ }
-              }
-              if ((chartRef.current as any).biasLowerLine) {
-                try { chartRef.current.removeSeries((chartRef.current as any).biasLowerLine); } catch (e) { /* ignore */ }
-              }
+            // Clean up previous bias lines
+            if ((chartRef.current as any).biasUpperLine) {
+              try { chartRef.current.removeSeries((chartRef.current as any).biasUpperLine); } catch (e) { /* ignore */ }
+            }
+            if ((chartRef.current as any).biasLowerLine) {
+              try { chartRef.current.removeSeries((chartRef.current as any).biasLowerLine); } catch (e) { /* ignore */ }
+            }
+            if ((chartRef.current as any).biasLevelLine) {
+              try { chartRef.current.removeSeries((chartRef.current as any).biasLevelLine); } catch (e) { /* ignore */ }
+            }
 
-              // Start line ~20 candles before signal for better visual context
-              const lineStartIdx = Math.max(0, signalCandleIndex - 20);
-              const lineStart = chartData[lineStartIdx].time as any;
-              const lineEnd = chartData[chartData.length - 1].time as any;
+            // Start line ~20 candles before signal for better visual context
+            const lineStartIdx = Math.max(0, signalCandleIndex - 20);
+            const lineStart = chartData[lineStartIdx].time as any;
+            const lineEnd = chartData[chartData.length - 1].time as any;
 
-              // Strict inequality — lightweight-charts crashes if start === end
-              if (lineStart < lineEnd) {
+            // Strict inequality — lightweight-charts crashes if start === end
+            if (lineStart < lineEnd) {
+              if (biasUpperLevel && biasLowerLevel) {
                 // Upper level line (Candle B's high)
                 const biasUpperLine = chartRef.current.addLineSeries({
                   color: biasType === 'BULLISH' ? '#13ec37' : '#888888',
@@ -906,7 +910,7 @@ export function InteractiveLiveChart({
                   priceLineVisible: true,
                   lastValueVisible: true,
                   title: biasType === 'BULLISH'
-                    ? '▲ Bullish Bias — Expect touch higher'
+                    ? '▲ Bullish — Expect higher'
                     : 'Upper Level',
                 });
                 biasUpperLine.setData([
@@ -923,7 +927,7 @@ export function InteractiveLiveChart({
                   priceLineVisible: true,
                   lastValueVisible: true,
                   title: biasType === 'BEARISH'
-                    ? '▼ Bearish Bias — Expect touch lower'
+                    ? '▼ Bearish — Expect lower'
                     : 'Lower Level',
                 });
                 biasLowerLine.setData([
@@ -931,6 +935,23 @@ export function InteractiveLiveChart({
                   { time: lineEnd, value: Number(biasLowerLevel) },
                 ]);
                 (chartRef.current as any).biasLowerLine = biasLowerLine;
+              }
+
+              // Bias Level line (the close price that confirmed bias — validation level)
+              if (biasLevel) {
+                const biasLevelLine = chartRef.current.addLineSeries({
+                  color: '#00bcd4', // Cyan
+                  lineWidth: 2,
+                  lineStyle: 1, // Dotted
+                  priceLineVisible: true,
+                  lastValueVisible: true,
+                  title: '📍 Bias Level',
+                });
+                biasLevelLine.setData([
+                  { time: chartData[signalCandleIndex].time as any, value: Number(biasLevel) },
+                  { time: lineEnd, value: Number(biasLevel) },
+                ]);
+                (chartRef.current as any).biasLevelLine = biasLevelLine;
               }
             }
           }

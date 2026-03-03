@@ -224,7 +224,8 @@ export class SignalsService {
             s.strategyType,
             s.timeframe,
             s.signalType,
-            s.price
+            s.price,
+            s.metadata as Record<string, any> | undefined
           ).catch(e => this.logger.error(`Failed to dispatch alert for ${s.id}: ${e.message}`));
         }
       } catch (err) {
