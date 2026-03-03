@@ -8,10 +8,9 @@ import { fetchSignals } from '../services/signalsApi';
 
 export function Profile() {
   const navigate = useNavigate();
-  const { user, setUser, logout, token } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [profile, setProfile] = useState<User | null>(user);
   const [loading, setLoading] = useState(!user);
-  const [error, setError] = useState('');
   const [signals, setSignals] = useState<Signal[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
   const hasFetchedRef = useRef(false);
@@ -86,7 +85,7 @@ export function Profile() {
 
   // Recent closed
   const recentClosed = [...completedSignals, ...expiredSignals]
-    .sort((a, b) => new Date(b.closedAt || b.updatedAt || 0).getTime() - new Date(a.closedAt || a.updatedAt || 0).getTime())
+    .sort((a, b) => new Date(b.closedAt || b.detectedAt || 0).getTime() - new Date(a.closedAt || a.detectedAt || 0).getTime())
     .slice(0, 8);
 
   if (loading) {
@@ -105,7 +104,7 @@ export function Profile() {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="dark:text-white light:text-text-dark mb-4">Not logged in</div>
-          <a href="/app/login" className="px-4 py-2 bg-primary text-black rounded-lg font-bold hover:bg-primary/90 inline-block">Go to Login</a>
+          <a href="/login" className="px-4 py-2 bg-primary text-black rounded-lg font-bold hover:bg-primary/90 inline-block">Go to Login</a>
         </div>
       </div>
     );
@@ -217,11 +216,11 @@ export function Profile() {
                     {recentClosed.map(sig => {
                       const isWin = sig.result === 'WIN';
                       const isExpired = sig.lifecycleStatus === 'EXPIRED';
-                      const closedDate = sig.closedAt || sig.updatedAt;
+                      const closedDate = sig.closedAt || sig.detectedAt;
                       const biasResult = sig.bias_result;
                       return (
                         <div key={sig.id} className="flex items-center justify-between p-3 rounded-xl dark:bg-white/5 light:bg-green-50/50 border dark:border-white/5 light:border-green-200 hover:dark:bg-white/10 hover:light:bg-green-50 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/app/signal/${sig.id}`)}>
+                          onClick={() => navigate(`/signals/${sig.id}`)}>
                           <div className="flex items-center gap-3">
                             <span className={`text-xs font-black px-2 py-1 rounded ${isWin ? 'bg-green-500/20 text-green-400' : isExpired ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
                               {biasResult || (isWin ? 'WIN' : isExpired ? 'EXPIRED' : 'LOSS')}
@@ -255,7 +254,7 @@ export function Profile() {
 
         {/* Actions */}
         <div className="flex gap-4">
-          <button onClick={() => navigate('/app/settings')} className="px-6 py-3 dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-300 border dark:text-white light:text-text-dark rounded-xl font-bold hover:dark:bg-white/10 hover:light:bg-green-100 transition-all">
+          <button onClick={() => navigate('/settings')} className="px-6 py-3 dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-300 border dark:text-white light:text-text-dark rounded-xl font-bold hover:dark:bg-white/10 hover:light:bg-green-100 transition-all">
             ⚙️ Settings
           </button>
           <button
