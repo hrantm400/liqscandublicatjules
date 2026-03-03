@@ -511,8 +511,14 @@ export function InteractiveLiveChart({
           if (chartRef.current) {
             try {
               // Clean up special lines
-              if ((chartRef.current as any).liquiditySweepLine) {
-                chartRef.current.removeSeries((chartRef.current as any).liquiditySweepLine);
+              if ((chartRef.current as any).seSLLine) {
+                chartRef.current.removeSeries((chartRef.current as any).seSLLine);
+              }
+              if ((chartRef.current as any).seTP1Line) {
+                chartRef.current.removeSeries((chartRef.current as any).seTP1Line);
+              }
+              if ((chartRef.current as any).seTP2Line) {
+                chartRef.current.removeSeries((chartRef.current as any).seTP2Line);
               }
               if ((chartRef.current as any).displacementLine) {
                 chartRef.current.removeSeries((chartRef.current as any).displacementLine);
@@ -749,43 +755,81 @@ export function InteractiveLiveChart({
             console.error('Error setting marker:', error);
           }
 
-          // Add liquidity sweep line (lowest point before signal)
-          if (signalCandleIndex > 0) {
-            const candlesBeforeSignal = chartData.slice(0, signalCandleIndex);
-            const lowestCandle = candlesBeforeSignal.reduce((min, c) => c.low < min.low ? c : min, candlesBeforeSignal[0]);
+          // Add SL / TP1 / TP2 lines for SuperEngulfing signals
+          const isSESignal = signal?.id?.startsWith('SUPER_ENGULFING');
+          if (isSESignal && signal && chartRef.current && signalCandleIndex >= 0) {
+            // Get SE targets from signal root fields or metadata
+            const seSL = signal.se_sl ?? (signal.metadata as any)?.se_sl;
+            const seTP1 = signal.se_tp1 ?? (signal.metadata as any)?.se_tp1;
+            const seTP2 = signal.se_tp2 ?? (signal.metadata as any)?.se_tp2;
+            const seCurrentSL = signal.se_current_sl ?? seSL;
 
-            // Clean up previous line if exists
-            if ((chartRef.current as any).liquiditySweepLine) {
-              try {
-                chartRef.current.removeSeries((chartRef.current as any).liquiditySweepLine);
-              } catch (e) {
-                // Ignore cleanup errors
-              }
+            const lineStartIdx = Math.max(0, signalCandleIndex - 5);
+            const lineStart = chartData[lineStartIdx].time as any;
+            const lineEnd = chartData[chartData.length - 1].time as any;
+
+            // Clean up previous SE lines
+            if ((chartRef.current as any).seSLLine) {
+              try { chartRef.current.removeSeries((chartRef.current as any).seSLLine); } catch (e) { }
+            }
+            if ((chartRef.current as any).seTP1Line) {
+              try { chartRef.current.removeSeries((chartRef.current as any).seTP1Line); } catch (e) { }
+            }
+            if ((chartRef.current as any).seTP2Line) {
+              try { chartRef.current.removeSeries((chartRef.current as any).seTP2Line); } catch (e) { }
             }
 
-            // In v4 addLineSeries exists
-            const liquiditySweepLine = chartRef.current.addLineSeries({
-              color: '#ff4444',
-              lineWidth: 1,
-              lineStyle: 2, // Dashed
-              priceLineVisible: true,
-              lastValueVisible: true,
-              title: 'Liquidity Sweep',
-            });
+            if (lineStart < lineEnd) {
+              // SL line (red dashed)
+              if (seCurrentSL) {
+                const slLine = chartRef.current.addLineSeries({
+                  color: '#ff4444',
+                  lineWidth: 2,
+                  lineStyle: 2, // Dashed
+                  priceLineVisible: true,
+                  lastValueVisible: true,
+                  title: 'SL',
+                });
+                slLine.setData([
+                  { time: lineStart, value: Number(seCurrentSL) },
+                  { time: lineEnd, value: Number(seCurrentSL) },
+                ]);
+                (chartRef.current as any).seSLLine = slLine;
+              }
 
-            // Fix type error for Time arithmetic in v4
-            const startTime = chartData[0].time as any;
-            const endTime = signalTime as any;
+              // TP1 line (amber dotted)
+              if (seTP1) {
+                const tp1Line = chartRef.current.addLineSeries({
+                  color: '#f59e0b',
+                  lineWidth: 1,
+                  lineStyle: 1, // Dotted
+                  priceLineVisible: true,
+                  lastValueVisible: true,
+                  title: 'TP1 (2R)',
+                });
+                tp1Line.setData([
+                  { time: lineStart, value: Number(seTP1) },
+                  { time: lineEnd, value: Number(seTP1) },
+                ]);
+                (chartRef.current as any).seTP1Line = tp1Line;
+              }
 
-            if (startTime < endTime) {
-              liquiditySweepLine.setData([
-                { time: startTime, value: lowestCandle.low },
-                { time: endTime, value: lowestCandle.low },
-              ]);
-              // Store reference for cleanup
-              (chartRef.current as any).liquiditySweepLine = liquiditySweepLine;
-            } else {
-              chartRef.current.removeSeries(liquiditySweepLine);
+              // TP2 line (green solid)
+              if (seTP2) {
+                const tp2Line = chartRef.current.addLineSeries({
+                  color: '#13ec37',
+                  lineWidth: 2,
+                  lineStyle: 0, // Solid
+                  priceLineVisible: true,
+                  lastValueVisible: true,
+                  title: 'TP2 (3R)',
+                });
+                tp2Line.setData([
+                  { time: lineStart, value: Number(seTP2) },
+                  { time: lineEnd, value: Number(seTP2) },
+                ]);
+                (chartRef.current as any).seTP2Line = tp2Line;
+              }
             }
           }
 

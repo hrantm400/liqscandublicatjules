@@ -284,7 +284,7 @@ export class ScannerService implements OnModuleInit {
                 'SUPER_ENGULFING', symbol, timeframe, sig.direction, sig.price, sig.time,
                 {
                     pattern: sig.pattern,
-                    direction: sig.direction,
+                    direction: sig.direction === 'BUY' ? 'BULL' : 'BEAR',
                     se_entry_zone: sig.entryZone,
                     se_sl: sig.sl,
                     se_tp1: sig.tp1,
