@@ -44,7 +44,7 @@ export class LifecycleService implements OnModuleInit {
     private async fetchAllPrices(): Promise<Map<string, number>> {
         const map = new Map<string, number>();
         try {
-            const res = await fetch('https://api.binance.com/api/v3/ticker/price');
+            const res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price');
             if (!res.ok) {
                 this.logger.error(`Binance ticker API returned ${res.status}`);
                 return map;

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-const BINANCE_KLINES_URL = 'https://api.binance.com/api/v3/klines';
+const BINANCE_KLINES_URL = 'https://fapi.binance.com/fapi/v1/klines';
 
 /** Valid Binance interval strings (our frontend uses 5m, 15m, 1h, 4h, 1d, 1w). */
 const VALID_INTERVALS = new Set([

@@ -120,13 +120,13 @@ export class ScannerService implements OnModuleInit {
      */
     async fetchSymbols(): Promise<string[]> {
         try {
-            const res = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+            const res = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
             if (!res.ok) throw new Error(`Failed to fetch exchange info: ${res.statusText}`);
             const data = await res.json();
             const symbols = (data.symbols as any[])
-                .filter((s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && s.isSpotTradingAllowed)
+                .filter((s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && s.contractType === 'PERPETUAL')
                 .map((s) => s.symbol);
-            this.logger.log(`Fetched ${symbols.length} USDT pairs from Binance.`);
+            this.logger.log(`Fetched ${symbols.length} USDT Futures pairs from Binance.`);
             return symbols;
         } catch (error) {
             this.logger.error(`Error fetching symbols: ${error.message}`);
