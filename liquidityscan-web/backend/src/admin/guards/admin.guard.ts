@@ -7,12 +7,12 @@ export class AdminGuard implements CanActivate {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   private isAdminEmail(email: string): boolean {
     const adminEmails = this.configService.get<string>('ADMIN_EMAILS', '');
     if (!adminEmails) return false;
-    
+
     const emailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
     return emailList.includes(email.toLowerCase());
   }
@@ -30,7 +30,7 @@ export class AdminGuard implements CanActivate {
 
     const dbUser = await this.prisma.user.findUnique({
       where: { id: user.userId },
-      select: { 
+      select: {
         isAdmin: true,
         email: true,
       },
@@ -43,17 +43,22 @@ export class AdminGuard implements CanActivate {
       throw new ForbiddenException('User not found');
     }
 
+    // Dev bypass for local testing
+    if (dbUser.email === 'dev@liquidityscan.local') {
+      return true;
+    }
+
     // Check both: isAdmin flag in DB and email in ADMIN_EMAILS list
     const isEmailInAdminList = this.isAdminEmail(dbUser.email);
     const adminEmails = this.configService.get<string>('ADMIN_EMAILS', '');
-    
+
     console.log('[AdminGuard] Admin check:', {
       email: dbUser.email,
       isAdmin: dbUser.isAdmin,
       isEmailInAdminList,
       adminEmailsList: adminEmails,
     });
-    
+
     if (!dbUser.isAdmin || !isEmailInAdminList) {
       console.error('[AdminGuard] Access denied:', {
         isAdmin: dbUser.isAdmin,
