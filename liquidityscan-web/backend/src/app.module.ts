@@ -10,7 +10,6 @@ import { PaymentsModule } from './payments/payments.module';
 import { CoursesModule } from './courses/courses.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { CandlesModule } from './candles/candles.module';
-import { SupportModule } from './support/support.module';
 import { SignalsModule } from './signals/signals.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { AlertsModule } from './alerts/alerts.module';
@@ -30,7 +29,6 @@ import { SettingsModule } from './settings/settings.module';
     CoursesModule,
     SubscriptionsModule,
     CandlesModule,
-    SupportModule,
     SignalsModule,
     TelegramModule,
     AlertsModule,
