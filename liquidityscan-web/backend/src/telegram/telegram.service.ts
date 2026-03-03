@@ -23,6 +23,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         this.isEnabled = !!token;
 
         if (this.isEnabled && token) {
+            // Suppress the node-telegram-bot-api deprecation warning regarding file buffers
+            process.env.NTBA_FIX_350 = '1';
+
             // Use polling for local/simple deployments, configure webhooks for high scale if needed
             this.bot = new TelegramBot(token, { polling: true });
         } else {
