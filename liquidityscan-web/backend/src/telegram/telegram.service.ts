@@ -75,22 +75,51 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    private generateSvgChart(candles: CandleDto[], width: number, height: number, signalColor: string): string {
+    private generateSvgChart(candles: CandleDto[], width: number, height: number, signalColor: string, entryPrice: number): string {
         if (!candles || candles.length === 0) return '';
         const min = Math.min(...candles.map(c => c.low));
         const max = Math.max(...candles.map(c => c.high));
         const range = max - min || 1;
-        const padding = range * 0.1;
+        const padding = range * 0.15; // Increased padding for clearer top/bottom
         const actualMin = min - padding;
         const actualMax = max + padding;
         const actualRange = actualMax - actualMin;
 
-        const candleWidth = width / candles.length;
+        // Reserve 100px on the right for price labels
+        const chartWidth = width - 100;
+        const candleWidth = chartWidth / candles.length;
         const spacing = candleWidth * 0.2;
         const rectWidth = candleWidth - spacing;
 
         let svgHtml = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="display: flex;">`;
 
+        // 1. Draw Grid Lines & Y-Axis Labels (3 horizontal lines)
+        const numLabels = 3;
+        for (let i = 0; i < numLabels; i++) {
+            const priceVal = actualMax - (i * (actualRange / (numLabels - 1)));
+            const y = height - ((priceVal - actualMin) / actualRange) * height;
+
+            // Grid line
+            svgHtml += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4 4" />`;
+
+            // Label
+            const formattedPrice = priceVal > 10 ? priceVal.toFixed(2) : priceVal > 0.1 ? priceVal.toFixed(4) : priceVal.toFixed(6);
+            svgHtml += `<text x="${chartWidth + 10}" y="${y + 5}" fill="rgba(255,255,255,0.5)" font-size="14" font-family="Roboto">${formattedPrice}</text>`;
+        }
+
+        // 2. Draw Entry Price Line (Dashed, prominent)
+        const entryY = height - ((entryPrice - actualMin) / actualRange) * height;
+        if (entryY >= 0 && entryY <= height) {
+            svgHtml += `<line x1="0" y1="${entryY}" x2="${chartWidth}" y2="${entryY}" stroke="${signalColor}" stroke-width="2" stroke-dasharray="8 4" />`;
+            const formattedEntry = entryPrice > 10 ? entryPrice.toFixed(2) : entryPrice > 0.1 ? entryPrice.toFixed(4) : entryPrice.toFixed(6);
+
+            // Entry Price Label background
+            svgHtml += `<rect x="${chartWidth}" y="${entryY - 12}" width="100" height="24" fill="${signalColor}" opacity="0.2" rx="4" />`;
+            // Entry Price Label text
+            svgHtml += `<text x="${chartWidth + 10}" y="${entryY + 5}" fill="${signalColor}" font-size="16" font-weight="bold" font-family="Roboto">${formattedEntry}</text>`;
+        }
+
+        // 3. Draw Candles
         candles.forEach((c, i) => {
             const x = i * candleWidth + spacing / 2;
             const color = c.close >= c.open ? '#13ec37' : '#ff3b30';
@@ -103,8 +132,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             const rectY = Math.min(yOpen, yClose);
             const rectH = Math.max(Math.abs(yClose - yOpen), 1);
 
+            // Wick
             svgHtml += `<line x1="${x + rectWidth / 2}" y1="${yHigh}" x2="${x + rectWidth / 2}" y2="${yLow}" stroke="${color}" stroke-width="2" />`;
+            // Body
             svgHtml += `<rect x="${x}" y="${rectY}" width="${rectWidth}" height="${rectH}" fill="${color}" />`;
+
+            // Current Price Tracker (dot on the last candle)
+            if (i === candles.length - 1) {
+                svgHtml += `<circle cx="${x + rectWidth / 2}" cy="${yClose}" r="4" fill="${color}" />`;
+            }
         });
 
         svgHtml += `</svg>`;
@@ -128,7 +164,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const bgGradientStart = isBuy ? '#0a1f0f' : '#1f0a0a';
 
         const candles = await this.candlesService.getKlines(symbol, timeframe, 50);
-        const chartHtml = this.generateSvgChart(candles, 800, 200, color);
+        const chartHtml = this.generateSvgChart(candles, 800, 200, color, price);
 
         const markupHtml = `
             <div style="display: flex; flex-direction: column; width: 800px; height: 500px; background: linear-gradient(135deg, #0b140d 0%, ${bgGradientStart} 100%); color: white; padding: 40px; font-family: 'Roboto'; border: 3px solid ${color}; box-sizing: border-box; border-radius: 16px;">
