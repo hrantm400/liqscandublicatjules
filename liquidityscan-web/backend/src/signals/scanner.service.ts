@@ -124,7 +124,7 @@ export class ScannerService implements OnModuleInit {
             if (!res.ok) throw new Error(`Failed to fetch exchange info: ${res.statusText}`);
             const data = await res.json();
             const symbols = (data.symbols as any[])
-                .filter((s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && s.contractType === 'PERPETUAL')
+                .filter((s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && (s.contractType === 'PERPETUAL' || s.contractType === 'TRADIFI_PERPETUAL'))
                 .map((s) => s.symbol);
             this.logger.log(`Fetched ${symbols.length} USDT Futures pairs from Binance.`);
             return symbols;
@@ -152,8 +152,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting scan for ${symbols.length} symbols (chunked)...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 5; // Reduced from 10 to fit tight Futures rate limit
-            const DELAY_MS = 1500; // Increased to 1.5s delay between chunks
+            const CHUNK_SIZE = 3; // Reduced specifically to avoid Binance HTTP 418
+            const DELAY_MS = 2500; // Increased delay to 2.5s between chunks
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
@@ -220,8 +220,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting 5-min Strategy 1 scan for ${symbols.length} symbols...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 5; // Reduced from 10
-            const DELAY_MS = 1000; // Increased from 500ms to 1s delay
+            const CHUNK_SIZE = 3; // Reduced to avoid Binance HTTP 418 IP limits
+            const DELAY_MS = 1500; // Increased to 1.5s delay
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
