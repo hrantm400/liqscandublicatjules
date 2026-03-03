@@ -24,6 +24,19 @@ enum SignalResult {
   LOSS
 }
 
+enum DataProvider {
+  BINANCE
+  COINRAY
+}
+
+model Settings {
+  id              String       @id @default("singleton")
+  activeProvider  DataProvider @default(BINANCE)
+  updatedAt       DateTime     @updatedAt
+
+  @@map("settings")
+}
+
 
 model User {
   id                  String    @id @default(uuid())

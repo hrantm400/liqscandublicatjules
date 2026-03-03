@@ -116,23 +116,10 @@ export class ScannerService implements OnModuleInit {
     }
 
     /**
-     * Fetch all USDT trading pairs from Binance.
+     * Fetch all trading pairs from the active Data Provider.
      */
     async fetchSymbols(): Promise<string[]> {
-        try {
-            const res = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
-            if (!res.ok) throw new Error(`Failed to fetch exchange info: ${res.statusText}`);
-            const data = await res.json();
-            const symbols = (data.symbols as any[])
-                .filter((s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && (s.contractType === 'PERPETUAL' || s.contractType === 'TRADIFI_PERPETUAL'))
-                .map((s) => s.symbol);
-            this.logger.log(`Fetched ${symbols.length} USDT Futures pairs from Binance.`);
-            return symbols;
-        } catch (error) {
-            this.logger.error(`Error fetching symbols: ${error.message}`);
-            // Fallback if API fails
-            return ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'];
-        }
+        return this.candlesService.fetchSymbols();
     }
 
     async scanBasicStrategies() {
@@ -152,8 +139,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting scan for ${symbols.length} symbols (chunked)...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 3; // Reduced specifically to avoid Binance HTTP 418
-            const DELAY_MS = 2500; // Increased delay to 2.5s between chunks
+            const CHUNK_SIZE = 15; // Increased safely for active provider 
+            const DELAY_MS = 500; // Decreased delay for faster completion
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
@@ -220,8 +207,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting 5-min Strategy 1 scan for ${symbols.length} symbols...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 3; // Reduced to avoid Binance HTTP 418 IP limits
-            const DELAY_MS = 1500; // Increased to 1.5s delay
+            const CHUNK_SIZE = 15; // Increased to speed up 5-min scans
+            const DELAY_MS = 100; // 100ms is perfectly fine for most private APIs
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);

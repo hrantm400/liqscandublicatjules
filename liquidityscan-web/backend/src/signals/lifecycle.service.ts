@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignalStateService } from './signal-state.service';
 import { SignalStatus, SignalResult } from '@prisma/client';
+import { CandlesService } from '../candles/candles.service';
 
 // Thresholds per strategy for extended scanning (if needed). Assuming standard thresholds for SE
 const STRATEGY_CONFIG: Record<string, { tpPercent: number; slPercent: number; expiryCandleCount: number }> = {
@@ -32,7 +33,8 @@ export class LifecycleService implements OnModuleInit {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly stateService: SignalStateService
+        private readonly stateService: SignalStateService,
+        private readonly candlesService: CandlesService,
     ) { }
 
     onModuleInit() {
@@ -42,22 +44,7 @@ export class LifecycleService implements OnModuleInit {
     }
 
     private async fetchAllPrices(): Promise<Map<string, number>> {
-        const map = new Map<string, number>();
-        try {
-            const res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price');
-            if (!res.ok) {
-                this.logger.error(`Binance ticker API returned ${res.status}`);
-                return map;
-            }
-            const tickers: BinanceTicker[] = await res.json() as BinanceTicker[];
-            for (const t of tickers) {
-                map.set(t.symbol, parseFloat(t.price));
-            }
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            this.logger.error(`Failed to fetch Binance prices: ${msg}`);
-        }
-        return map;
+        return this.candlesService.getCurrentPrices();
     }
 
     async checkAllSignals(): Promise<void> {
