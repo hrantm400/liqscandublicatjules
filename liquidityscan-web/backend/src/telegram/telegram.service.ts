@@ -33,7 +33,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
         // Load the font file for Satori
         try {
-            const fontPath = path.join(__dirname, 'Roboto-Bold.ttf');
+            const fontPath = path.join(process.cwd(), 'src', 'telegram', 'Roboto-Bold.ttf');
             if (fs.existsSync(fontPath)) {
                 this.fontBuffer = fs.readFileSync(fontPath);
             } else {
