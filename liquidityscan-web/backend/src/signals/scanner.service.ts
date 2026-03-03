@@ -305,9 +305,19 @@ export class ScannerService implements OnModuleInit {
         if (!sig || sig.bias === 'RANGING') return 0;
 
         const signalType = sig.direction === 'NEUTRAL' ? 'BUY' : sig.direction;
+        const biasDirection = sig.bias === 'BULLISH' ? 'BULL' : 'BEAR';
+        // bias_level = the close of the candle that confirmed bias
+        const biasLevel = candles[candles.length - 2].close;
+
         return this.saveSignal(
             'ICT_BIAS', symbol, timeframe, signalType, candles[candles.length - 1].close, sig.time,
-            { bias: sig.bias, prevHigh: sig.prevHigh, prevLow: sig.prevLow }
+            {
+                bias: sig.bias,
+                prevHigh: sig.prevHigh,
+                prevLow: sig.prevLow,
+                bias_direction: biasDirection,
+                bias_level: biasLevel,
+            }
         );
     }
 

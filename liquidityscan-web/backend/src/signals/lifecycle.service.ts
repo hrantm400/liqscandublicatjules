@@ -210,8 +210,83 @@ export class LifecycleService implements OnModuleInit {
             }
 
             this.logger.log(
-                `Lifecycle check complete: ${activated} ACTIVATED, ${hitTp} HIT_TP, ${hitSl} HIT_SL, ${oppositeRev} OPP_REV, ${expired} EXPIRED.`
+                `SE Lifecycle check complete: ${activated} ACTIVATED, ${hitTp} HIT_TP, ${hitSl} HIT_SL, ${oppositeRev} OPP_REV, ${expired} EXPIRED.`
             );
+
+            // ============================
+            // ICT BIAS LIFECYCLE — Next Candle Body Close Validation
+            // ============================
+            const biasSignals = await (this.prisma as any).superEngulfingSignal.findMany({
+                where: {
+                    strategyType: 'ICT_BIAS',
+                    lifecycleStatus: 'PENDING',
+                    bias_level: { not: null },
+                    bias_direction: { not: null },
+                },
+            });
+
+            let biasWin = 0, biasFailed = 0;
+
+            for (const bias of biasSignals) {
+                try {
+                    // Get the latest closed candles for this TF
+                    const tfCandles = await this.candlesService.getKlines(bias.symbol, bias.timeframe, 5);
+                    if (tfCandles.length < 2) continue;
+
+                    // The bias was detected at bias.detectedAt — we need the NEXT closed candle after that
+                    const biasDetectedMs = new Date(bias.detectedAt).getTime();
+                    const tfMs = TF_MS[bias.timeframe] || 14400000;
+
+                    // Find the first candle that opened AFTER the bias detection
+                    const nextCandle = tfCandles.find(c => {
+                        const candleOpenMs = new Date(c.openTime).getTime();
+                        return candleOpenMs >= biasDetectedMs;
+                    });
+
+                    if (!nextCandle) continue; // Next candle hasn't formed yet
+
+                    // Check if this candle is CLOSED (its open time + TF duration < now)
+                    const candleCloseMs = new Date(nextCandle.openTime).getTime() + tfMs;
+                    if (candleCloseMs > Date.now()) continue; // Still forming, wait
+
+                    // BODY CLOSE VALIDATION — ignore wicks!
+                    const nextClose = nextCandle.close;
+                    let result: 'WIN' | 'FAILED';
+
+                    if (bias.bias_direction === 'BULL') {
+                        result = nextClose > bias.bias_level ? 'WIN' : 'FAILED';
+                    } else {
+                        result = nextClose < bias.bias_level ? 'WIN' : 'FAILED';
+                    }
+
+                    // Update signal
+                    const signalResult = result === 'WIN' ? SignalResult.WIN : SignalResult.LOSS;
+                    await this.stateService.transitionSignal(bias.id, SignalStatus.COMPLETED, {
+                        result: signalResult,
+                        closedPrice: nextClose,
+                        pnlPercent: this.calcPnl(bias.bias_direction === 'BULL', bias.bias_level, nextClose),
+                    });
+
+                    await (this.prisma as any).superEngulfingSignal.update({
+                        where: { id: bias.id },
+                        data: {
+                            bias_result: result,
+                            bias_validated_at: new Date(),
+                            closedAt: new Date(),
+                            se_close_price: nextClose,
+                        },
+                    });
+
+                    if (result === 'WIN') biasWin++;
+                    else biasFailed++;
+                } catch (err) {
+                    this.logger.error(`Bias lifecycle error for ${bias.id}: ${err}`);
+                }
+            }
+
+            if (biasSignals.length > 0) {
+                this.logger.log(`Bias Lifecycle: ${biasWin} WIN, ${biasFailed} FAILED out of ${biasSignals.length} pending.`);
+            }
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             this.logger.error(`Lifecycle check failed: ${msg}`);

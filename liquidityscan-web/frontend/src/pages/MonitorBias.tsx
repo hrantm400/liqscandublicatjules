@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { StatusTabs } from '../components/shared/StatusTabs';
 import { WinRatePanel } from '../components/shared/WinRatePanel';
+import { BiasPerformanceStats } from '../components/shared/BiasPerformanceStats';
 import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { Signal, Timeframe } from '../types';
 import { scanAll, fetchLiveBias } from '../services/signalsApi';
@@ -861,8 +862,9 @@ export function MonitorBias() {
 
             {/* Win Rate Sidebar - Only show in list view */}
             {viewMode === 'list' && (
-              <div className="hidden lg:block">
+              <div className="hidden lg:block flex flex-col gap-6">
                 <WinRatePanel strategyType="ICT_BIAS" />
+                <BiasPerformanceStats signals={rawSignals} />
               </div>
             )}
           </div>

@@ -210,6 +210,9 @@ export class SignalsService {
             se_tp1: (s.metadata as any)?.se_tp1 as number | undefined,
             se_tp2: (s.metadata as any)?.se_tp2 as number | undefined,
             se_current_sl: (s.metadata as any)?.se_current_sl as number | undefined,
+            // ICT Bias fields
+            bias_direction: (s.metadata as any)?.bias_direction as string | undefined,
+            bias_level: (s.metadata as any)?.bias_level as number | undefined,
           })),
           skipDuplicates: true,
         });

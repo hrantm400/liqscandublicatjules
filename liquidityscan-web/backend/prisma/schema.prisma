@@ -263,6 +263,12 @@ model SuperEngulfingSignal {
   candles_tracked Int           @default(0)
   max_candles     Int           @default(20)
   entryConfirmedAt DateTime?
+
+  // ICT BIAS FIELDS
+  bias_direction    String?       // "BULL" or "BEAR"
+  bias_level        Float?        // The close price that confirmed bias
+  bias_result       String?       // "WIN" or "FAILED"
+  bias_validated_at DateTime?     // When next candle closed
   
   // Deprecated Fields
   status          String        @default("ACTIVE")

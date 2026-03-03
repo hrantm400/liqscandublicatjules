@@ -60,6 +60,11 @@ export interface Signal {
   candles_tracked?: number;
   max_candles?: number;
   entryConfirmedAt?: string;
+  // ICT Bias Lifecycle
+  bias_direction?: string;
+  bias_level?: number;
+  bias_result?: string;
+  bias_validated_at?: string;
 }
 
 // Candle types
