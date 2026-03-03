@@ -18,9 +18,12 @@ export interface CandleDto {
 
 @Injectable()
 export class CandlesService {
+  private cache = new Map<string, { timestamp: number, data: CandleDto[] }>();
+  private readonly CACHE_TTL_MS = 30000; // 30 seconds
+
   /**
    * Fetch klines from Binance and normalize to CandleDto[].
-   * Never throws: returns empty array on error so frontend can show "No chart data".
+   * Includes a 30s memory cache to dramatically reduce API rate limit weight.
    */
   async getKlines(symbol: string, interval: string, limit = 500): Promise<CandleDto[]> {
     const sym = (symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -28,6 +31,12 @@ export class CandlesService {
     if (!sym) return [];
     const intervalParam = VALID_INTERVALS.has(int) ? int : '4h';
     const limitParam = Math.min(Math.max(1, Number(limit) || 500), 1000);
+
+    const cacheKey = `${sym}_${intervalParam}_${limitParam}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
+      return cached.data;
+    }
 
     try {
       const url = `${BINANCE_KLINES_URL}?symbol=${encodeURIComponent(sym)}&interval=${encodeURIComponent(intervalParam)}&limit=${limitParam}`;
@@ -64,6 +73,8 @@ export class CandlesService {
         if (!Number.isFinite(openTime) || !Number.isFinite(close)) continue;
         out.push({ openTime, open, high, low, close, volume });
       }
+
+      this.cache.set(cacheKey, { timestamp: Date.now(), data: out });
       return out;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

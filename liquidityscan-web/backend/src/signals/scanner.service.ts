@@ -152,8 +152,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting scan for ${symbols.length} symbols (chunked)...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 10;
-            const DELAY_MS = 1000; // 1 second delay between chunks to respect rate limits
+            const CHUNK_SIZE = 5; // Reduced from 10 to fit tight Futures rate limit
+            const DELAY_MS = 1500; // Increased to 1.5s delay between chunks
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
@@ -220,8 +220,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting 5-min Strategy 1 scan for ${symbols.length} symbols...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 10;
-            const DELAY_MS = 500; // Faster delay for the 5-min scan
+            const CHUNK_SIZE = 5; // Reduced from 10
+            const DELAY_MS = 1000; // Increased from 500ms to 1s delay
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
