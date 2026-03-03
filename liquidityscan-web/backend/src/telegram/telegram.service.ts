@@ -80,7 +80,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const min = Math.min(...candles.map(c => c.low));
         const max = Math.max(...candles.map(c => c.high));
         const range = max - min || 1;
-        const padding = range * 0.15; // Increased padding for clearer top/bottom
+        const padding = range * 0.15;
         const actualMin = min - padding;
         const actualMax = max + padding;
         const actualRange = actualMax - actualMin;
@@ -91,32 +91,34 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const spacing = candleWidth * 0.2;
         const rectWidth = candleWidth - spacing;
 
-        let svgHtml = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="display: flex;">`;
+        let svgHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="${chartWidth}" height="${height}" viewBox="0 0 ${chartWidth} ${height}" style="position: absolute; top: 0; left: 0; display: flex;">`;
+        let overlayHtml = '';
 
-        // 1. Draw Grid Lines & Y-Axis Labels (3 horizontal lines)
+        // 1. Draw Grid Lines & Y-Axis Labels
         const numLabels = 3;
         for (let i = 0; i < numLabels; i++) {
             const priceVal = actualMax - (i * (actualRange / (numLabels - 1)));
             const y = height - ((priceVal - actualMin) / actualRange) * height;
 
-            // Grid line
-            svgHtml += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4 4" />`;
+            svgHtml += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="white" stroke-opacity="0.1" stroke-width="1" stroke-dasharray="4 4" />`;
 
-            // Label
             const formattedPrice = priceVal > 10 ? priceVal.toFixed(2) : priceVal > 0.1 ? priceVal.toFixed(4) : priceVal.toFixed(6);
-            svgHtml += `<text x="${chartWidth + 10}" y="${y + 5}" fill="rgba(255,255,255,0.5)" font-size="14" font-family="Roboto">${formattedPrice}</text>`;
+            overlayHtml += `
+            <div style="position: absolute; right: 0px; top: ${y - 8}px; width: 90px; display: flex; align-items: center;">
+                <span style="color: rgba(255,255,255,0.5); font-size: 14px;">${formattedPrice}</span>
+            </div>`;
         }
 
-        // 2. Draw Entry Price Line (Dashed, prominent)
+        // 2. Draw Entry Price Line (Dashed)
         const entryY = height - ((entryPrice - actualMin) / actualRange) * height;
         if (entryY >= 0 && entryY <= height) {
             svgHtml += `<line x1="0" y1="${entryY}" x2="${chartWidth}" y2="${entryY}" stroke="${signalColor}" stroke-width="2" stroke-dasharray="8 4" />`;
             const formattedEntry = entryPrice > 10 ? entryPrice.toFixed(2) : entryPrice > 0.1 ? entryPrice.toFixed(4) : entryPrice.toFixed(6);
 
-            // Entry Price Label background
-            svgHtml += `<rect x="${chartWidth}" y="${entryY - 12}" width="100" height="24" fill="${signalColor}" opacity="0.2" rx="4" />`;
-            // Entry Price Label text
-            svgHtml += `<text x="${chartWidth + 10}" y="${entryY + 5}" fill="${signalColor}" font-size="16" font-weight="bold" font-family="Roboto">${formattedEntry}</text>`;
+            overlayHtml += `
+            <div style="position: absolute; right: 0px; top: ${entryY - 12}px; width: 90px; height: 24px; background: rgba(${signalColor === '#13ec37' ? '19,236,55,0.2' : '255,59,48,0.2'}); border-radius: 4px; display: flex; align-items: center; padding-left: 8px;">
+                <span style="color: ${signalColor}; font-size: 14px; font-weight: bold;">${formattedEntry}</span>
+            </div>`;
         }
 
         // 3. Draw Candles
@@ -144,7 +146,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         });
 
         svgHtml += `</svg>`;
-        return svgHtml;
+
+        // Return combined composition wrapped in a relative container
+        return `
+            <div style="position: relative; width: ${width}px; height: ${height}px; display: flex;">
+                ${svgHtml}
+                ${overlayHtml}
+            </div>
+        `;
     }
 
     /**
