@@ -314,26 +314,38 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             const directionKey = signalType.includes('BUY') ? 'BUY' : 'SELL';
             const direction = signalType.includes('BUY') ? '▲ LONG' : '▼ SHORT';
 
+            // Escape Markdown special characters in dynamic values
+            const esc = (s: string | number) => String(s).replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
+
             // Build strategy-specific details
             let details = '';
             if (strategyType === 'SUPER_ENGULFING' && metadata) {
                 const pattern = metadata.pattern || '';
-                if (metadata.se_sl) details += `🛑 *SL:* ${Number(metadata.se_sl).toFixed(4)}\n`;
-                if (metadata.se_tp1) details += `🎯 *TP1 (2R):* ${Number(metadata.se_tp1).toFixed(4)}\n`;
-                if (metadata.se_tp2) details += `🏆 *TP2 (3R):* ${Number(metadata.se_tp2).toFixed(4)}\n`;
-                if (pattern) details += `📋 *Pattern:* ${pattern}\n`;
+                if (metadata.se_sl) details += `🛑 *SL:* ${esc(Number(metadata.se_sl).toFixed(4))}\n`;
+                if (metadata.se_tp1) details += `🎯 *TP1 (2R):* ${esc(Number(metadata.se_tp1).toFixed(4))}\n`;
+                if (metadata.se_tp2) details += `🏆 *TP2 (3R):* ${esc(Number(metadata.se_tp2).toFixed(4))}\n`;
+                if (pattern) details += `📋 *Pattern:* ${esc(pattern)}\n`;
             } else if (strategyType === 'ICT_BIAS' && metadata) {
-                if (metadata.bias) details += `🧭 *Bias:* ${metadata.bias}\n`;
-                if (metadata.bias_level) details += `📍 *Bias Level:* ${Number(metadata.bias_level).toFixed(4)}\n`;
+                if (metadata.bias) details += `🧭 *Bias:* ${esc(metadata.bias)}\n`;
+                if (metadata.bias_level) details += `📍 *Bias Level:* ${esc(Number(metadata.bias_level).toFixed(4))}\n`;
+            } else if (strategyType === 'CRT' && metadata) {
+                const dir = metadata.crt_direction || (signalType.includes('BUY') ? 'BULLISH' : 'BEARISH');
+                details += `🎯 *CRT:* ${esc(dir)}\n`;
+                if (metadata.swept_level) details += `🔻 *Swept Level:* ${esc(Number(metadata.swept_level).toFixed(4))}\n`;
+                if (metadata.sweep_extreme) details += `📍 *Sweep Extreme:* ${esc(Number(metadata.sweep_extreme).toFixed(4))}\n`;
+                if (metadata.prev_high) details += `⬆ *Prev High:* ${esc(Number(metadata.prev_high).toFixed(4))}\n`;
+                if (metadata.prev_low) details += `⬇ *Prev Low:* ${esc(Number(metadata.prev_low).toFixed(4))}\n`;
             }
+
+            const strategyLabel = esc(strategyType.replace(/_/g, ' '));
 
             const message =
                 `${directionEmoji} *NEW SIGNAL ALERT* ${directionEmoji}\n\n` +
-                `🪙 *Asset:* #${symbol}\n` +
-                `📊 *Strategy:* ${strategyType.replace(/_/g, ' ')}\n` +
-                `⏳ *Timeframe:* ${timeframe.toUpperCase()}\n` +
+                `🪙 *Asset:* ${esc(symbol)}\n` +
+                `📊 *Strategy:* ${strategyLabel}\n` +
+                `⏳ *Timeframe:* ${esc(timeframe.toUpperCase())}\n` +
                 `📈 *Direction:* ${direction}\n` +
-                `💲 *Price:* ${price}\n` +
+                `💲 *Price:* ${esc(price)}\n` +
                 (details ? `\n${details}` : '') +
                 `\n[Open Monitor Dashboard](http://173.249.3.156:8080)`;
 
