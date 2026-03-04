@@ -6,6 +6,7 @@ import {
     detectICTBias,
     detectRSIDivergence,
     detectSuperEngulfing,
+    detectCRT,
     CandleData,
 } from './indicators';
 
@@ -186,6 +187,11 @@ export class ScannerService implements OnModuleInit {
                 count += await this.checkRSIDivergence(symbol, tf);
             }
 
+            // 4. CRT (4h, 1d, 1w)
+            for (const tf of ['4h', '1d', '1w']) {
+                count += await this.checkCRT(symbol, tf);
+            }
+
 
         } catch (e) {
             // safely ignore individual symbol errors to keep scanning
@@ -358,6 +364,29 @@ export class ScannerService implements OnModuleInit {
             }
         }
         return added;
+    }
+
+
+
+    private async checkCRT(symbol: string, timeframe: string): Promise<number> {
+        const candles = await this.getCandles(symbol, timeframe);
+        const closedCandles = candles.slice(0, -1);
+
+        if (closedCandles.length < 2) return 0;
+
+        const sig = detectCRT(closedCandles);
+        if (!sig) return 0;
+
+        return this.saveSignal(
+            'CRT', symbol, timeframe, sig.direction, sig.price, sig.time,
+            {
+                crt_direction: sig.direction === 'BUY' ? 'BULLISH' : 'BEARISH',
+                swept_level: sig.sweptLevel,
+                prev_high: sig.prevHigh,
+                prev_low: sig.prevLow,
+                sweep_extreme: sig.sweepExtreme,
+            }
+        );
     }
 
 
