@@ -304,6 +304,80 @@ export class SignalsService {
   }
 
   /**
+   * Archive old signals: for each strategy+symbol+timeframe combo,
+   * only keep the LATEST signal as ACTIVE — archive all older ones.
+   * Called after saving new signals to prevent accumulation.
+   */
+  async archiveOldSignals(strategyType: string, symbol: string, timeframe: string): Promise<number> {
+    try {
+      // Find the latest signal for this combo
+      const latest = await (this.prisma as any).superEngulfingSignal.findFirst({
+        where: { strategyType, symbol, timeframe },
+        orderBy: { detectedAt: 'desc' },
+        select: { id: true },
+      });
+
+      if (!latest) return 0;
+
+      // Archive everything else for this combo that is still ACTIVE or PENDING
+      const result = await (this.prisma as any).superEngulfingSignal.updateMany({
+        where: {
+          strategyType,
+          symbol,
+          timeframe,
+          id: { not: latest.id },
+          lifecycleStatus: { in: ['ACTIVE', 'PENDING'] },
+        },
+        data: { lifecycleStatus: 'ARCHIVED', status: 'EXPIRED' },
+      });
+
+      if (result.count > 0) {
+        // Also update in-memory cache
+        for (const s of this.signals) {
+          if (s.strategyType === strategyType && s.symbol === symbol && s.timeframe === timeframe && s.id !== latest.id) {
+            if (s.lifecycleStatus === 'ACTIVE' || s.lifecycleStatus === 'PENDING') {
+              s.lifecycleStatus = 'ARCHIVED';
+              s.status = 'EXPIRED';
+            }
+          }
+        }
+      }
+
+      return result.count;
+    } catch (err) {
+      this.logger.error(`archiveOldSignals failed for ${strategyType}-${symbol}-${timeframe}: ${err}`);
+      return 0;
+    }
+  }
+
+  /**
+   * One-time bulk cleanup: archive ALL stale signals across ALL strategies.
+   * For each strategy+symbol+timeframe combo, only the latest stays ACTIVE.
+   */
+  async archiveAllStaleSignals(): Promise<number> {
+    try {
+      // Get all unique combos
+      const combos: Array<{ strategyType: string; symbol: string; timeframe: string }> =
+        await (this.prisma as any).$queryRaw`
+          SELECT DISTINCT "strategyType", symbol, timeframe
+          FROM super_engulfing_signals
+          WHERE "lifecycleStatus" IN ('ACTIVE', 'PENDING')
+        `;
+
+      let totalArchived = 0;
+      for (const c of combos) {
+        totalArchived += await this.archiveOldSignals(c.strategyType, c.symbol, c.timeframe);
+      }
+
+      this.logger.log(`Bulk archive completed: ${totalArchived} stale signals archived`);
+      return totalArchived;
+    } catch (err) {
+      this.logger.error(`archiveAllStaleSignals failed: ${err}`);
+      return 0;
+    }
+  }
+
+  /**
    * Update the status and outcome of an existing signal.
    * Called by the Position Tracker when TP/SL/Expiry is hit.
    */

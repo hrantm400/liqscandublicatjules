@@ -111,6 +111,9 @@ export class ScannerService implements OnModuleInit {
 
         // Run both once on startup after a slight delay
         setTimeout(() => {
+            // One-time bulk cleanup: archive all stale signals
+            this.signalsService.archiveAllStaleSignals()
+                .catch((err) => this.logger.error(`Startup archive cleanup error: ${err.message}`));
             this.scanBasicStrategies().catch((err) => this.logger.error(`Startup basic scan error: ${err.message}`));
             this.scanStrategy1All().catch((err) => this.logger.error(`Startup Strategy 1 scan error: ${err.message}`));
         }, 10000);
@@ -271,7 +274,15 @@ export class ScannerService implements OnModuleInit {
             metadata,
         };
 
-        return this.signalsService.addSignals([input]);
+        const added = await this.signalsService.addSignals([input]);
+
+        // Auto-archive: keep only the latest signal per strategy+symbol+timeframe
+        if (added > 0) {
+            this.signalsService.archiveOldSignals(strategyType, symbol, timeframe)
+                .catch(() => { }); // fire-and-forget, don't block scanning
+        }
+
+        return added;
     }
 
     // --- Strategies ---
