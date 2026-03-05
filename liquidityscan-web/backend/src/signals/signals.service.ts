@@ -238,6 +238,72 @@ export class SignalsService {
   }
 
   /**
+   * Upsert a single signal by stable ID.
+   * Used for "state" strategies (like ICT_BIAS) where only the latest signal per symbol+timeframe matters.
+   * Creates if not exists, updates if already exists — prevents signal accumulation.
+   */
+  async upsertSignal(signal: {
+    id: string;
+    strategyType: string;
+    symbol: string;
+    timeframe: string;
+    signalType: string;
+    price: number;
+    detectedAt: string;
+    lifecycleStatus?: string;
+    metadata?: Record<string, any>;
+  }): Promise<number> {
+    const nowIso = new Date().toISOString();
+
+    // Update in-memory cache
+    const stored: StoredSignal = {
+      id: signal.id,
+      strategyType: signal.strategyType,
+      symbol: signal.symbol,
+      timeframe: signal.timeframe,
+      signalType: signal.signalType,
+      price: signal.price,
+      detectedAt: signal.detectedAt || nowIso,
+      lifecycleStatus: signal.lifecycleStatus || 'ACTIVE',
+      status: 'ACTIVE',
+      result: undefined,
+      metadata: signal.metadata,
+    };
+
+    const idx = this.signals.findIndex(s => s.id === signal.id);
+    if (idx >= 0) this.signals[idx] = stored;
+    else this.signals.push(stored);
+
+    // DB upsert
+    try {
+      const data = {
+        strategyType: signal.strategyType,
+        symbol: signal.symbol,
+        timeframe: signal.timeframe,
+        signalType: signal.signalType,
+        price: new Prisma.Decimal(signal.price),
+        detectedAt: new Date(signal.detectedAt || nowIso),
+        lifecycleStatus: (signal.lifecycleStatus || 'ACTIVE') as any,
+        status: 'ACTIVE',
+        metadata: signal.metadata as Prisma.JsonValue | undefined,
+        bias_direction: (signal.metadata as any)?.bias_direction as string | undefined,
+        bias_level: (signal.metadata as any)?.bias_level as number | undefined,
+      };
+
+      await (this.prisma as any).superEngulfingSignal.upsert({
+        where: { id: signal.id },
+        update: data,
+        create: { id: signal.id, ...data },
+      });
+      return 1;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to upsert signal ${signal.id}: ${msg}`);
+      return 0;
+    }
+  }
+
+  /**
    * Update the status and outcome of an existing signal.
    * Called by the Position Tracker when TP/SL/Expiry is hit.
    */

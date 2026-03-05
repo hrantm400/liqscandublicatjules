@@ -315,16 +315,25 @@ export class ScannerService implements OnModuleInit {
         // bias_level = the close of the candle that confirmed bias
         const biasLevel = candles[candles.length - 2].close;
 
-        return this.saveSignal(
-            'ICT_BIAS', symbol, timeframe, signalType, candles[candles.length - 1].close, sig.time,
-            {
+        // Use stable ID (no timestamp) + upsert: only 1 bias per symbol+timeframe
+        const stableId = `ICT_BIAS-${symbol}-${timeframe}`;
+        return this.signalsService.upsertSignal({
+            id: stableId,
+            strategyType: 'ICT_BIAS',
+            symbol,
+            timeframe,
+            signalType,
+            price: candles[candles.length - 1].close,
+            detectedAt: new Date(sig.time).toISOString(),
+            lifecycleStatus: 'ACTIVE',
+            metadata: {
                 bias: sig.bias,
                 prevHigh: sig.prevHigh,
                 prevLow: sig.prevLow,
                 bias_direction: biasDirection,
                 bias_level: biasLevel,
-            }
-        );
+            },
+        });
     }
 
     private async checkRSIDivergence(symbol: string, timeframe: string): Promise<number> {
