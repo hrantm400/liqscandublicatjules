@@ -54,7 +54,7 @@ export function MonitorCRT() {
     const [dirFilter, setDirFilter] = useState<'all' | 'BUY' | 'SELL'>('all');
     const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
     const [searchQuery, setSearchQuery] = useState('');
-    const [showLowVolumes, setShowLowVolumes] = useState(false);
+    const [showLowVolumes, setShowLowVolumes] = useState(true);
     const [volumeSort, setVolumeSort] = useState<'none' | 'high' | 'low'>('none');
 
     const { getVolume, isLowVolume, formatVolume } = useVolumeData();
