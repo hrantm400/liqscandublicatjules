@@ -90,7 +90,7 @@ export function MonitorCRT() {
     const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(searchParams.get('timeframe') || null);
     const [pageSize, setPageSize] = useState(50);
     const [currentPage, setCurrentPage] = useState(1);
-    const [showLowVolumes, setShowLowVolumes] = useState(true);
+
 
     const { volumeMap, getVolume, isLowVolume, formatVolume } = useVolumeData();
 
@@ -127,7 +127,7 @@ export function MonitorCRT() {
         rankingFilter,
         showClosedSignals: true,
         strategyType: 'CRT',
-        showLowVolumes,
+
         volumeMap,
     });
 
@@ -328,23 +328,7 @@ export function MonitorCRT() {
                                 onReset={handleResetFilters}
                             />
                         </div>
-                        <div className="w-px h-5 dark:bg-white/10 light:bg-amber-300 mx-1 shrink-0"></div>
 
-                        {/* Low Volume Toggle */}
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setShowLowVolumes(!showLowVolumes)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all whitespace-nowrap ${showLowVolumes
-                                ? 'dark:bg-yellow-500/20 light:bg-yellow-50 border-yellow-500/30 text-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.15)]'
-                                : 'dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-300 dark:text-gray-400 light:text-text-light-secondary hover:dark:text-white'
-                                }`}
-                        >
-                            <span className="material-symbols-outlined text-sm">
-                                {showLowVolumes ? 'visibility' : 'visibility_off'}
-                            </span>
-                            Low Vol
-                        </motion.button>
                         <div className="w-px h-5 dark:bg-white/10 light:bg-amber-300 mx-1 shrink-0"></div>
 
                         {/* View Toggle */}
@@ -426,8 +410,8 @@ export function MonitorCRT() {
                                                             </td>
                                                             <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">
                                                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black ${signal.signalType === 'BUY'
-                                                                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                                                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
                                                                     }`}>
                                                                     {signal.signalType === 'BUY' ? '▲ BULLISH' : '▼ BEARISH'}
                                                                 </span>

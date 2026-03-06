@@ -82,7 +82,7 @@ export function MonitorRSI() {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showLowVolumes, setShowLowVolumes] = useState(true);
+
 
   const { volumeMap } = useVolumeData();
 
@@ -116,7 +116,7 @@ export function MonitorRSI() {
     rankingFilter,
     showClosedSignals: true,
     strategyType: 'RSI_DIVERGENCE',
-    showLowVolumes,
+
     volumeMap,
   });
 
@@ -498,23 +498,7 @@ export function MonitorRSI() {
                 onReset={handleResetFilters}
               />
             </div>
-            <div className="w-px h-5 dark:bg-white/10 light:bg-green-300 mx-1 shrink-0"></div>
 
-            {/* Low Volume Toggle */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowLowVolumes(!showLowVolumes)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all whitespace-nowrap ${showLowVolumes
-                ? 'dark:bg-yellow-500/20 light:bg-yellow-50 border-yellow-500/30 text-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.15)]'
-                : 'dark:bg-white/5 light:bg-green-50 dark:border-white/10 light:border-green-300 dark:text-gray-400 light:text-text-light-secondary hover:dark:text-white'
-                }`}
-            >
-              <span className="material-symbols-outlined text-sm">
-                {showLowVolumes ? 'visibility' : 'visibility_off'}
-              </span>
-              Low Vol
-            </motion.button>
             <div className="w-px h-5 dark:bg-white/10 light:bg-green-300 mx-1 shrink-0"></div>
 
             {/* Download */}

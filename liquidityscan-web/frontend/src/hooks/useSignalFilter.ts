@@ -13,7 +13,6 @@ interface UseSignalFilterOptions {
   rankingFilter: number | null;
   showClosedSignals: boolean;
   strategyType: 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS' | 'CRT';
-  showLowVolumes?: boolean;
   volumeMap?: Map<string, number>;
 }
 
@@ -30,7 +29,6 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     rankingFilter,
     showClosedSignals,
     strategyType,
-    showLowVolumes = true,
     volumeMap,
   } = options;
 
@@ -151,8 +149,8 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
       });
     }
 
-    // Low volume filter: hide <$20M by default
-    if (!showLowVolumes && volumeMap && volumeMap.size > 0) {
+    // Hard filter: always hide coins with <$20M 24h volume
+    if (volumeMap && volumeMap.size > 0) {
       filtered = filtered.filter(s => {
         const vol = volumeMap.get(s.symbol) || 0;
         return vol >= 20_000_000;
@@ -184,7 +182,6 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     rankingFilter,
     showClosedSignals,
     strategyType,
-    showLowVolumes,
     volumeMap,
   ]);
 
