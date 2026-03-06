@@ -356,20 +356,26 @@ export class SignalsService {
    */
   async archiveAllStaleSignals(): Promise<number> {
     try {
-      // Get all unique combos
-      const combos: Array<{ strategyType: string; symbol: string; timeframe: string }> =
-        await (this.prisma as any).$queryRaw`
-          SELECT DISTINCT "strategyType", symbol, timeframe
-          FROM super_engulfing_signals
-          WHERE "lifecycleStatus" IN ('ACTIVE', 'PENDING')
-        `;
+      this.logger.log('Starting bulk archive cleanup...');
+
+      // Use Prisma groupBy instead of raw SQL to avoid enum casting issues
+      const combos = await (this.prisma as any).superEngulfingSignal.groupBy({
+        by: ['strategyType', 'symbol', 'timeframe'],
+        where: {
+          lifecycleStatus: { in: ['ACTIVE', 'PENDING'] },
+        },
+        _count: true,
+      });
+
+      this.logger.log(`Found ${combos.length} unique strategy+symbol+timeframe combos to check`);
 
       let totalArchived = 0;
       for (const c of combos) {
-        totalArchived += await this.archiveOldSignals(c.strategyType, c.symbol, c.timeframe);
+        const archived = await this.archiveOldSignals(c.strategyType, c.symbol, c.timeframe);
+        totalArchived += archived;
       }
 
-      this.logger.log(`Bulk archive completed: ${totalArchived} stale signals archived`);
+      this.logger.log(`Bulk archive completed: ${totalArchived} stale signals archived out of ${combos.length} combos`);
       return totalArchived;
     } catch (err) {
       this.logger.error(`archiveAllStaleSignals failed: ${err}`);
