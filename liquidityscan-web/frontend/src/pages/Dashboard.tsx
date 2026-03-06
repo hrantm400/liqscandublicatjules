@@ -16,6 +16,7 @@ const STRATEGY_TIMEFRAMES = {
   SUPER_ENGULFING: ['4h', '1d', '1w'] as Timeframe[],
   RSI_DIVERGENCE: ['1h', '4h', '1d'] as Timeframe[],
   ICT_BIAS: ['4h', '1d', '1w'] as Timeframe[],
+  CRT: ['4h', '1d', '1w'] as Timeframe[],
 };
 
 export const Dashboard: React.FC = () => {
@@ -32,6 +33,10 @@ export const Dashboard: React.FC = () => {
   const [rsiSummary, setRsiSummary] = useState<StrategySummary>({
     total: 0,
     timeframes: { '1h': 0, '4h': 0, '1d': 0 } as Record<Timeframe, number>
+  });
+  const [crtSummary, setCrtSummary] = useState<StrategySummary>({
+    total: 0,
+    timeframes: { '4h': 0, '1d': 0, '1w': 0 } as Record<Timeframe, number>
   });
 
 
@@ -51,6 +56,12 @@ export const Dashboard: React.FC = () => {
   const { data: rsiData } = useQuery({
     queryKey: ['signals', 'RSI_DIVERGENCE'],
     queryFn: () => fetchSignals('RSI_DIVERGENCE', 5000),
+    refetchInterval: 5 * 60 * 1000,
+  });
+
+  const { data: crtData } = useQuery({
+    queryKey: ['signals', 'CRT'],
+    queryFn: () => fetchSignals('CRT', 5000),
     refetchInterval: 5 * 60 * 1000,
   });
 
@@ -101,7 +112,6 @@ export const Dashboard: React.FC = () => {
       };
       signals.forEach((signal) => {
         const tf = signal.timeframe as Timeframe;
-        // Only count signals from relevant timeframes (1h, 4h, 1d)
         if (STRATEGY_TIMEFRAMES.RSI_DIVERGENCE.includes(tf) && summary.timeframes[tf] !== undefined) {
           summary.timeframes[tf]++;
         }
@@ -109,6 +119,23 @@ export const Dashboard: React.FC = () => {
       setRsiSummary(summary);
     }
   }, [rsiData]);
+
+  useEffect(() => {
+    if (crtData) {
+      const signals = crtData as any[];
+      const summary: StrategySummary = {
+        total: signals.length,
+        timeframes: { '4h': 0, '1d': 0, '1w': 0 } as Record<Timeframe, number>,
+      };
+      signals.forEach((signal) => {
+        const tf = signal.timeframe as Timeframe;
+        if (STRATEGY_TIMEFRAMES.CRT.includes(tf) && summary.timeframes[tf] !== undefined) {
+          summary.timeframes[tf]++;
+        }
+      });
+      setCrtSummary(summary);
+    }
+  }, [crtData]);
 
 
 
@@ -387,6 +414,78 @@ export const Dashboard: React.FC = () => {
                           {rsiSummary.timeframes[tf as Timeframe]}
                         </span>
                         <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-purple-500">arrow_forward</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* CRT (Candle Range Theory) */}
+            <motion.div
+              variants={listItemVariants}
+              whileHover={{ scale: 1.005 }}
+              className="glass-panel rounded-2xl relative z-[5] overflow-hidden group/card"
+            >
+              <div
+                className={`p-6 flex items-center justify-between cursor-pointer transition-all ${isExpanded('crt-content') ? 'accordion-header-expanded' : ''}`}
+                onClick={(e) => {
+                  if (!(e.target as HTMLElement).closest('a')) {
+                    toggleAccordion('crt-content');
+                  }
+                }}
+              >
+                <Link to="/monitor/crt" className="flex items-center gap-4 group">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.15)] group-hover:shadow-[0_0_30px_rgba(245,158,11,0.3)] group-hover:bg-amber-500/20 transition-all duration-300">
+                    <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">target</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <h3 className="text-2xl font-bold dark:text-white light:text-text-dark group-hover:text-amber-500 transition-colors tracking-tight">CRT</h3>
+                    <span className="text-xs dark:text-gray-400 light:text-text-light-secondary tracking-widest font-mono uppercase opacity-70">Strategy D-07 • Liquidity Grab</span>
+                  </div>
+                </Link>
+                <div className="flex items-center gap-4">
+                  <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[11px] font-bold border border-amber-500/20 animate-pulse">
+                    {crtSummary.total} ACTIVE
+                  </span>
+                  <button
+                    className="toggle-button w-8 h-8 flex items-center justify-center rounded-full dark:hover:bg-white/10 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleAccordion('crt-content');
+                    }}
+                  >
+                    <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${isExpanded('crt-content') ? 'rotate-180 text-amber-500' : 'dark:text-gray-500 light:text-slate-500'}`}>expand_more</span>
+                  </button>
+                </div>
+              </div>
+              <div
+                className={`accordion-content ${isExpanded('crt-content') ? 'expanded' : ''}`}
+                id="crt-content"
+              >
+                <div className="p-6 flex flex-col gap-3">
+                  {['4h', '1d', '1w'].map((tf) => (
+                    <Link
+                      key={tf}
+                      to={`/monitor/crt?timeframe=${tf}`}
+                      className="w-full flex justify-between items-center p-4 rounded-xl dark:border-white/5 light:border-green-300 dark:bg-white/[0.01] hover:bg-amber-500/5 hover:border-amber-500/20 transition-all cursor-pointer group/item relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <span className="w-12 h-8 flex items-center justify-center rounded-md text-sm font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 font-mono group-hover/item:bg-amber-500 group-hover/item:text-black transition-colors">
+                          {tf.toUpperCase()}
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium dark:text-gray-300 group-hover/item:text-white transition-colors">
+                            {tf === '4h' ? 'Mid-Term Sweep' : tf === '1d' ? 'Daily Liquidity' : 'Macro Sweep'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 relative z-10">
+                        <span className={`font-mono font-bold text-lg ${crtSummary.timeframes[tf as Timeframe] > 0 ? 'text-white' : 'dark:text-gray-600 light:text-slate-400'}`}>
+                          {crtSummary.timeframes[tf as Timeframe]}
+                        </span>
+                        <span className="material-symbols-outlined text-sm dark:text-gray-600 mr-2 group-hover/item:translate-x-1 transition-transform text-amber-500">arrow_forward</span>
                       </div>
                     </Link>
                   ))}

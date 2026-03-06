@@ -12,7 +12,9 @@ interface UseSignalFilterOptions {
   volumeSort: 'high-low' | 'low-high' | null;
   rankingFilter: number | null;
   showClosedSignals: boolean;
-  strategyType: 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS';
+  strategyType: 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS' | 'CRT';
+  showLowVolumes?: boolean;
+  volumeMap?: Map<string, number>;
 }
 
 export const useSignalFilter = (options: UseSignalFilterOptions) => {
@@ -28,6 +30,8 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     rankingFilter,
     showClosedSignals,
     strategyType,
+    showLowVolumes = true,
+    volumeMap,
   } = options;
 
   const filteredSignals = useMemo(() => {
@@ -138,8 +142,22 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
       filtered.sort((a, b) => a.symbol.localeCompare(b.symbol));
     }
 
-    // Market Cap and Volume sorting would require additional data
-    // For now, we'll skip these as they need market data integration
+    // Market Cap and Volume sorting with real Binance data
+    if (volumeSort && volumeMap && volumeMap.size > 0) {
+      filtered.sort((a, b) => {
+        const volA = volumeMap.get(a.symbol) || 0;
+        const volB = volumeMap.get(b.symbol) || 0;
+        return volumeSort === 'high-low' ? volB - volA : volA - volB;
+      });
+    }
+
+    // Low volume filter: hide <$20M by default
+    if (!showLowVolumes && volumeMap && volumeMap.size > 0) {
+      filtered = filtered.filter(s => {
+        const vol = volumeMap.get(s.symbol) || 0;
+        return vol >= 20_000_000;
+      });
+    }
 
     // Ranking filter
     if (rankingFilter) {
@@ -166,6 +184,8 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     rankingFilter,
     showClosedSignals,
     strategyType,
+    showLowVolumes,
+    volumeMap,
   ]);
 
   return filteredSignals;

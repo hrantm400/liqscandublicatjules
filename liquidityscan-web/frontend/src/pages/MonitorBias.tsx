@@ -20,6 +20,7 @@ import { fetchCandles } from '../services/candles';
 import { useSignalFilter } from '../hooks/useSignalFilter';
 import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { scaleInVariants } from '../utils/animations';
+import { useVolumeData } from '../hooks/useVolumeData';
 
 // Component for signal card with static mini chart
 function SignalCardWithChart({ signal, isLong }: { signal: Signal; isLong: boolean }) {
@@ -135,6 +136,9 @@ export function MonitorBias() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [showLowVolumes, setShowLowVolumes] = useState(false);
+
+  const { volumeMap } = useVolumeData();
 
   // Use the new useMarketData hook
   const { signals: rawSignals, isLoading, refetch } = useMarketData({
@@ -186,8 +190,10 @@ export function MonitorBias() {
     marketCapSort,
     volumeSort,
     rankingFilter,
-    showClosedSignals: true, // Always show all signals, filter by status separately
+    showClosedSignals: true,
     strategyType: 'ICT_BIAS',
+    showLowVolumes,
+    volumeMap,
   });
 
   // Apply status filter

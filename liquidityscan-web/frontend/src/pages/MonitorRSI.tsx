@@ -17,6 +17,7 @@ import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { scaleInVariants } from '../utils/animations';
 import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
+import { useVolumeData } from '../hooks/useVolumeData';
 
 // Symbol Avatar Component
 function SymbolAvatar({ symbol }: { symbol: string }) {
@@ -81,6 +82,9 @@ export function MonitorRSI() {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showLowVolumes, setShowLowVolumes] = useState(false);
+
+  const { volumeMap } = useVolumeData();
 
   const { isAuthenticated } = useAuthStore();
   const { data: mySubscription } = useQuery({
@@ -110,8 +114,10 @@ export function MonitorRSI() {
     marketCapSort,
     volumeSort,
     rankingFilter,
-    showClosedSignals: true, // Always show all signals, filter by status separately
+    showClosedSignals: true,
     strategyType: 'RSI_DIVERGENCE',
+    showLowVolumes,
+    volumeMap,
   });
 
   // Apply status filter

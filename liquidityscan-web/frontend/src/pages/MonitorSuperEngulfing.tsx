@@ -23,6 +23,7 @@ import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { scaleInVariants } from '../utils/animations';
 import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
+import { useVolumeData } from '../hooks/useVolumeData';
 
 // Component for signal card with static mini chart
 function SignalCardWithChart({ signal, isLong }: { signal: Signal; isLong: boolean }) {
@@ -96,6 +97,9 @@ export function MonitorSuperEngulfing() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [showLowVolumes, setShowLowVolumes] = useState(false);
+
+  const { volumeMap } = useVolumeData();
 
   const { isAuthenticated } = useAuthStore();
   const { data: mySubscription } = useQuery({
@@ -132,15 +136,17 @@ export function MonitorSuperEngulfing() {
   const filteredSignals = useSignalFilter({
     signals,
     searchQuery,
-    activeTimeframe: undefined, // Don't filter by timeframe - show all timeframes
+    activeTimeframe: undefined,
     bullFilter,
     bearFilter,
     sortBy,
     marketCapSort,
     volumeSort,
     rankingFilter,
-    showClosedSignals: true, // Always show all signals, filter by status separately
+    showClosedSignals: true,
     strategyType: 'SUPER_ENGULFING',
+    showLowVolumes,
+    volumeMap,
   });
 
   // Apply timeframe filter (if a specific timeframe is selected)
