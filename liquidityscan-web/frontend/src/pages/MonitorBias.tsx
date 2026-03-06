@@ -21,6 +21,7 @@ import { useSignalFilter } from '../hooks/useSignalFilter';
 import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { scaleInVariants } from '../utils/animations';
 import { useVolumeData } from '../hooks/useVolumeData';
+import { VolumeBadge } from '../components/shared/VolumeFilter';
 
 // Component for signal card with static mini chart
 function SignalCardWithChart({ signal, isLong }: { signal: Signal; isLong: boolean }) {
@@ -138,7 +139,7 @@ export function MonitorBias() {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [showLowVolumes, setShowLowVolumes] = useState(true);
 
-  const { volumeMap } = useVolumeData();
+  const { volumeMap, getVolume, isLowVolume, formatVolume } = useVolumeData();
 
   // Use the new useMarketData hook
   const { signals: rawSignals, isLoading, refetch } = useMarketData({
@@ -645,6 +646,7 @@ export function MonitorBias() {
                         <th className="px-6 py-3" scope="col">Bias Type</th>
                         <th className="px-6 py-3 text-center" scope="col">Status</th>
                         <th className="px-6 py-3 text-center" scope="col">Trend</th>
+                        <th className="px-6 py-3 text-right" scope="col">Volume (24h)</th>
                         <th className="px-6 py-3 text-right" scope="col">Detected</th>
                         <th className="px-6 py-3 text-right" scope="col">Actions</th>
                       </tr>
@@ -686,7 +688,12 @@ export function MonitorBias() {
                               <td className="px-6 py-2.5 text-center">
                                 <TrendIndicator signal={signal} />
                               </td>
-                              <td className="px-6 py-2.5 text-right font-mono dark:text-gray-400 light:text-text-light-secondary">{formatTime(signal.detectedAt)}</td>
+                              <td className="px-6 py-2.5 text-right">
+                                <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
+                              </td>
+                              <td className="px-6 py-2.5 text-right font-mono dark:text-gray-400 light:text-text-light-secondary whitespace-nowrap">
+                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                              </td>
                               <td className="px-6 py-2.5 text-right">
                                 <Link
                                   to={`/signals/${signal.id}`}
