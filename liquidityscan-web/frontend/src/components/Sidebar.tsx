@@ -30,14 +30,14 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col gap-8 pr-4 overflow-y-auto custom-scrollbar max-h-[calc(100vh-200px)]">
           <div className="flex flex-col gap-1">
-            <p className="px-6 text-[10px] font-bold tracking-widest dark:text-gray-500 light:text-slate-500 uppercase mb-2">Market Data</p>
+            <p className="px-6 text-[10px] font-bold tracking-widest dark:text-gray-400 light:text-slate-600 uppercase mb-2">Market Data</p>
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`group flex items-center gap-4 px-6 py-3 border-l-[3px] rounded-r-lg transition-all ${isActive(item.path)
                   ? 'bg-[#13ec37]/10 border-l-[#13ec37] text-white'
-                  : 'border-l-transparent dark:text-gray-500 light:text-slate-500 hover:text-white hover:bg-white/5'
+                  : 'border-l-transparent dark:text-gray-400 light:text-slate-600 hover:text-white hover:bg-white/5'
                   }`}
               >
                 <span className={`material-symbols-outlined ${!isActive(item.path) ? 'group-hover:text-primary transition-colors' : ''}`}>

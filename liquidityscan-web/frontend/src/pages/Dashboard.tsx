@@ -498,7 +498,7 @@ export const Dashboard: React.FC = () => {
 
           <motion.div
             variants={listItemVariants}
-            className="mt-8 flex justify-center opacity-30"
+            className="mt-8 flex justify-center opacity-60"
           >
             <span className="text-xs font-mono text-primary uppercase tracking-[0.5em] animate-pulse-slow">System Operational • V2.4.0</span>
           </motion.div>

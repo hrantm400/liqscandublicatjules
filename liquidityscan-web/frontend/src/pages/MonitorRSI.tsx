@@ -593,7 +593,7 @@ export function MonitorRSI() {
                             <td className="px-6 py-2.5 text-center">
                               <TrendIndicator signal={signal} />
                             </td>
-                            <td className="px-6 py-2.5 text-right font-mono dark:text-gray-400 light:text-text-light-secondary">{formatTime(signal.detectedAt)}</td>
+                            <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">{formatTime(signal.detectedAt)}</td>
                             <td className="px-6 py-2.5 text-right">
                               <Link
                                 to={`/signals/${signal.id}`}

@@ -28,7 +28,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               {crumb.path ? (
                 <Link
                   to={crumb.path}
-                  className="dark:text-gray-500 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark transition-colors cursor-pointer"
+                  className="dark:text-gray-400 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark transition-colors cursor-pointer"
                 >
                   {crumb.label}
                 </Link>
@@ -38,7 +38,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 </span>
               )}
               {index < breadcrumbs.length - 1 && (
-                <span className="material-symbols-outlined dark:text-gray-600 light:text-text-light-secondary text-sm mx-2">
+                <span className="material-symbols-outlined dark:text-gray-500 light:text-text-light-secondary text-sm mx-2">
                   chevron_right
                 </span>
               )}
@@ -46,7 +46,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           ))}
         </div>
         {lastUpdated && (
-          <div className="flex items-center gap-2 text-xs dark:text-gray-500 light:text-text-light-secondary">
+          <div className="flex items-center gap-2 text-xs dark:text-gray-400 light:text-text-light-secondary">
             <span>Last updated: {lastUpdated}</span>
             {onRefresh && (
               <button
@@ -66,11 +66,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             <button
               key={tf.timeframe}
               onClick={() => onTimeframeChange && onTimeframeChange(tf.timeframe)}
-              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                selectedTimeframe === tf.timeframe
+              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${selectedTimeframe === tf.timeframe
                   ? 'bg-primary text-black shadow-[0_0_10px_rgba(19,236,55,0.4)]'
                   : 'dark:text-gray-400 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark dark:hover:bg-white/10 light:hover:bg-green-100'
-              }`}
+                }`}
             >
               {tf.timeframe.toUpperCase()}
             </button>

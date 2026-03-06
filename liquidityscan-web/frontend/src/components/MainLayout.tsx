@@ -118,7 +118,7 @@ const MainLayout: React.FC = () => {
                     </div>
                     <Link
                         to="/"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg dark:bg-white/5 light:bg-green-50 dark:hover:bg-white/10 light:hover:bg-green-100 dark:text-gray-400 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark transition-all text-sm font-medium border dark:border-white/10 light:border-green-300/50"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg dark:bg-white/5 light:bg-green-50 dark:hover:bg-white/10 light:hover:bg-green-100 dark:text-gray-300 light:text-slate-700 dark:hover:text-white light:hover:text-black transition-all text-sm font-medium border dark:border-white/10 light:border-green-300/50"
                     >
                         <span className="material-symbols-outlined text-base">home</span>
                         <span>Back to Landing</span>
@@ -130,7 +130,7 @@ const MainLayout: React.FC = () => {
                     <div className="flex flex-col gap-8 pb-4">
                         {/* SCANNER Dashboard */}
                         <div className="flex flex-col gap-2">
-                            <p className="px-4 text-xs font-bold tracking-widest dark:text-gray-500 light:text-text-light-secondary uppercase">SCANNER Dashboard</p>
+                            <p className="px-4 text-xs font-bold tracking-widest dark:text-gray-400 light:text-slate-600 uppercase">SCANNER Dashboard</p>
 
                             <Link to="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-r-lg transition-all ${isActive('/dashboard')}`}>
                                 <span className="material-symbols-outlined transition-colors">dashboard</span>
@@ -160,7 +160,7 @@ const MainLayout: React.FC = () => {
 
                         {/* STRATEGIES Dashboard */}
                         <div className="flex flex-col gap-2">
-                            <p className="px-4 text-xs font-bold tracking-widest dark:text-gray-500 light:text-text-light-secondary uppercase">STRATEGIES Dashboard</p>
+                            <p className="px-4 text-xs font-bold tracking-widest dark:text-gray-400 light:text-slate-600 uppercase mt-4">STRATEGIES Dashboard</p>
 
                             <Link to="/strategies" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive('/strategies')}`}>
                                 <span className="material-symbols-outlined transition-colors">dashboard</span>
@@ -170,7 +170,7 @@ const MainLayout: React.FC = () => {
 
                         {/* TOOLS Dashboard */}
                         <div className="flex flex-col gap-2">
-                            <p className="px-4 text-xs font-bold tracking-widest dark:text-gray-500 light:text-text-light-secondary uppercase">TOOLS Dashboard</p>
+                            <p className="px-4 text-xs font-bold tracking-widest dark:text-gray-400 light:text-slate-600 uppercase mt-4">TOOLS Dashboard</p>
 
                             <Link to="/tools" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive('/tools')}`}>
                                 <span className="material-symbols-outlined transition-colors">dashboard</span>

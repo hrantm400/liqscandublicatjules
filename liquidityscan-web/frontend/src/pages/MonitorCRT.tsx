@@ -260,7 +260,7 @@ export function MonitorCRT() {
                                                     <SignalStatusBadge signal={signal} />
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
-                                                    <span className="text-[10px] dark:text-gray-500 light:text-gray-400 font-mono">
+                                                    <span className="text-[10px] dark:text-gray-300 light:text-slate-600 font-mono">
                                                         {formatDate(signal.detectedAt)}
                                                     </span>
                                                 </td>

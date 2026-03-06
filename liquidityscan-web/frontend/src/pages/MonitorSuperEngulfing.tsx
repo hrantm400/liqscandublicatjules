@@ -741,7 +741,7 @@ export function MonitorSuperEngulfing() {
                             <td className="px-6 py-2.5 text-right">
                               <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
                             </td>
-                            <td className="px-6 py-2.5 text-right font-mono dark:text-gray-400 light:text-text-light-secondary whitespace-nowrap">
+                            <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">
                               {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
                             </td>
                             <td className="px-6 py-2.5 text-right">
