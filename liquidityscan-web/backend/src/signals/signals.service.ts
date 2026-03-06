@@ -306,18 +306,34 @@ export class SignalsService {
   /**
    * Archive old signals: for each strategy+symbol+timeframe combo,
    * only keep the LATEST signal — archive ALL older ones (regardless of status).
+   * Also restores the latest signal to ACTIVE if it was COMPLETED/EXPIRED.
    * Called after saving new signals to prevent accumulation.
    */
   async archiveOldSignals(strategyType: string, symbol: string, timeframe: string): Promise<number> {
     try {
-      // Find the latest signal for this combo
+      // Find the latest signal for this combo (full record to check status)
       const latest = await (this.prisma as any).superEngulfingSignal.findFirst({
         where: { strategyType, symbol, timeframe },
         orderBy: { detectedAt: 'desc' },
-        select: { id: true },
+        select: { id: true, lifecycleStatus: true },
       });
 
       if (!latest) return 0;
+
+      // If the latest signal is COMPLETED or EXPIRED, restore it to ACTIVE
+      // so it shows up as a live signal in monitors
+      if (latest.lifecycleStatus === 'COMPLETED' || latest.lifecycleStatus === 'EXPIRED') {
+        await (this.prisma as any).superEngulfingSignal.update({
+          where: { id: latest.id },
+          data: { lifecycleStatus: 'ACTIVE', status: 'ACTIVE' },
+        });
+        // Update in-memory cache too
+        const cached = this.signals.find(s => s.id === latest.id);
+        if (cached) {
+          cached.lifecycleStatus = 'ACTIVE';
+          cached.status = 'ACTIVE';
+        }
+      }
 
       // Archive everything else for this combo (ALL statuses except already ARCHIVED)
       const result = await (this.prisma as any).superEngulfingSignal.updateMany({
