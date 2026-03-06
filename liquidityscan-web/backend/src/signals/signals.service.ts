@@ -305,7 +305,7 @@ export class SignalsService {
 
   /**
    * Archive old signals: for each strategy+symbol+timeframe combo,
-   * only keep the LATEST signal as ACTIVE — archive all older ones.
+   * only keep the LATEST signal — archive ALL older ones (regardless of status).
    * Called after saving new signals to prevent accumulation.
    */
   async archiveOldSignals(strategyType: string, symbol: string, timeframe: string): Promise<number> {
@@ -319,14 +319,14 @@ export class SignalsService {
 
       if (!latest) return 0;
 
-      // Archive everything else for this combo that is still ACTIVE or PENDING
+      // Archive everything else for this combo (ALL statuses except already ARCHIVED)
       const result = await (this.prisma as any).superEngulfingSignal.updateMany({
         where: {
           strategyType,
           symbol,
           timeframe,
           id: { not: latest.id },
-          lifecycleStatus: { in: ['ACTIVE', 'PENDING'] },
+          lifecycleStatus: { not: 'ARCHIVED' },
         },
         data: { lifecycleStatus: 'ARCHIVED', status: 'EXPIRED' },
       });
@@ -335,7 +335,7 @@ export class SignalsService {
         // Also update in-memory cache
         for (const s of this.signals) {
           if (s.strategyType === strategyType && s.symbol === symbol && s.timeframe === timeframe && s.id !== latest.id) {
-            if (s.lifecycleStatus === 'ACTIVE' || s.lifecycleStatus === 'PENDING') {
+            if (s.lifecycleStatus !== 'ARCHIVED') {
               s.lifecycleStatus = 'ARCHIVED';
               s.status = 'EXPIRED';
             }
@@ -358,11 +358,11 @@ export class SignalsService {
     try {
       this.logger.log('Starting bulk archive cleanup...');
 
-      // Use Prisma groupBy instead of raw SQL to avoid enum casting issues
+      // Use Prisma groupBy — include ALL statuses, not just ACTIVE/PENDING
       const combos = await (this.prisma as any).superEngulfingSignal.groupBy({
         by: ['strategyType', 'symbol', 'timeframe'],
         where: {
-          lifecycleStatus: { in: ['ACTIVE', 'PENDING'] },
+          lifecycleStatus: { not: 'ARCHIVED' },
         },
         _count: true,
       });
