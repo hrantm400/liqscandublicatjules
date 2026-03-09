@@ -9,6 +9,7 @@ import {
     detectCRT,
     CandleData,
 } from './indicators';
+import { getMaxCandlesForTimeframe } from './se-runtime';
 
 import { checkStrategy1 as checkStrategy1Indicator } from './strategy1.indicator';
 
@@ -287,6 +288,15 @@ export class ScannerService implements OnModuleInit {
 
     // --- Strategies ---
 
+    /**
+     * SE Scanner v2 - Check for Super Engulfing patterns
+     * 
+     * SPEC CHANGES:
+     * - Multiple signals CAN be live simultaneously on same symbol+timeframe
+     * - No archiving of old signals (removed archiveOldSignals call)
+     * - Signal ID includes pattern type to allow multiple signals
+     * - All new v2 fields are set on signal creation
+     */
     private async checkSuperEngulfing(symbol: string, timeframe: string): Promise<number> {
         const candles = await this.getCandles(symbol, timeframe);
         const closedCandles = candles.slice(0, -1);
@@ -294,21 +304,54 @@ export class ScannerService implements OnModuleInit {
         if (closedCandles.length < 2) return 0;
 
         const confirmedSignals = detectSuperEngulfing(closedCandles);
+        const max_candles = getMaxCandlesForTimeframe(timeframe);
+        const now = new Date();
 
         let added = 0;
         for (const sig of confirmedSignals) {
-            added += await this.saveSignal(
-                'SUPER_ENGULFING', symbol, timeframe, sig.direction, sig.price, sig.time,
-                {
+            // SE v2: Include pattern in ID to allow multiple signals per symbol+timeframe
+            // Format: SUPER_ENGULFING-BTCUSDT-4h-RUN_BULLISH-1678901234000
+            const id = `SUPER_ENGULFING-${symbol}-${timeframe}-${sig.pattern_v2}-${sig.time}`;
+
+            const input = {
+                id,
+                strategyType: 'SUPER_ENGULFING',
+                symbol,
+                timeframe,
+                signalType: sig.direction, // BUY / SELL (legacy)
+                price: sig.price,
+                detectedAt: new Date(sig.time).toISOString(),
+                lifecycleStatus: 'ACTIVE', // SE v2: no PENDING state, go directly to ACTIVE
+                status: 'ACTIVE',
+                metadata: {
+                    // Legacy fields
                     pattern: sig.pattern,
+                    type: sig.type,
                     direction: sig.direction === 'BUY' ? 'BULL' : 'BEAR',
                     se_entry_zone: sig.entryZone,
                     se_sl: sig.sl,
                     se_tp1: sig.tp1,
                     se_tp2: sig.tp2,
-                    se_current_sl: sig.sl
-                }
-            );
+                    se_current_sl: sig.sl,
+                    // SE v2 fields per spec
+                    type_v2: 'se',
+                    pattern_v2: sig.pattern_v2,
+                    direction_v2: sig.direction_v2,
+                    entry_price: sig.entry_price,
+                    sl_price: sig.sl_price,
+                    current_sl_price: sig.sl_price, // Starts at sl_price
+                    tp1_price: sig.tp1_price,
+                    tp2_price: sig.tp2_price,
+                    max_candles,
+                    candle_high: sig.candle_high,
+                    candle_low: sig.candle_low,
+                },
+            };
+
+            const addedCount = await this.signalsService.addSignals([input]);
+            added += addedCount;
+
+            // SE v2: Do NOT call archiveOldSignals - multiple signals per symbol+timeframe are allowed
         }
         return added;
     }

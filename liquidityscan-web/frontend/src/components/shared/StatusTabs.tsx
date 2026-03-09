@@ -8,13 +8,16 @@ interface StatusTabsProps {
     strategyType: StrategyType;
     activeStatus: TabView | 'ALL';
     onStatusChange: (status: TabView | 'ALL') => void;
+    hideArchive?: boolean; // SE Scanner v2: Hide archive tab for SE signals
 }
 
 /**
  * Premium status tabs showing LIVE / CLOSED / ARCHIVE counts based on the new explicit lifecycle.
  * Fetches stats from backend lifecycle service.
+ * 
+ * SE SCANNER V2: Use hideArchive=true for SUPER_ENGULFING since SE has no archive state.
  */
-export function StatusTabs({ strategyType, activeStatus, onStatusChange }: StatusTabsProps) {
+export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArchive = false }: StatusTabsProps) {
     const { data: stats } = useQuery<SignalStats>({
         queryKey: ['signal-stats', strategyType],
         queryFn: () => fetchSignalStats(strategyType),
@@ -22,7 +25,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange }: Statu
         staleTime: 15000,
     });
 
-    const tabs: Array<{ key: TabView | 'ALL', label: string, count: number, icon: string, color: string, bgActive: string, glow: string }> = [
+    const allTabs: Array<{ key: TabView | 'ALL', label: string, count: number, icon: string, color: string, bgActive: string, glow: string }> = [
         {
             key: 'ALL',
             label: 'All Signals',
@@ -60,6 +63,9 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange }: Statu
             glow: '',
         },
     ];
+    
+    // SE Scanner v2: Filter out archive tab if hideArchive is true
+    const tabs = hideArchive ? allTabs.filter(t => t.key !== 'ARCHIVE') : allTabs;
 
     return (
         <div className="flex items-center gap-1.5 p-1 rounded-xl dark:bg-white/[0.03] light:bg-green-50/50 dark:border-white/5 light:border-green-200 border">

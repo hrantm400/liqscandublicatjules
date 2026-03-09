@@ -257,24 +257,50 @@ model SuperEngulfingSignal {
   price           Decimal       @db.Decimal(20, 8)
   detectedAt      DateTime
   
-  // Existing Lifecycle Fields
+  // Existing Lifecycle Fields (kept for backward compat with other strategies)
   lifecycleStatus SignalStatus  @default(PENDING)
   result          SignalResult?
   
-  // NEW SE SPECIFIC TRACKING FIELDS
-  direction       String?       // "BULL" or "BEAR"
-  se_entry_zone   Float?        // Signal candle close (entry price)
-  se_sl           Float?        // Initial wick SL
-  se_tp1          Float?        // 2R target (breakeven trigger)
-  se_tp2          Float?        // 3R target (WIN target)
-  se_current_sl   Float?        // Starts = se_sl, updates to se_entry_zone after 2R
-  se_r_ratio_hit  Boolean       @default(false)  // Has 2R been reached?
-  se_close_price  Float?        // Actual price signal was closed at
-  se_close_reason String?       // "TP2", "SL", "OPPOSITE_REV", "EXPIRED"
+  // LEGACY SE TRACKING FIELDS (kept for backward compat)
+  direction       String?       // "BULL" or "BEAR" (legacy)
+  se_entry_zone   Float?        // Signal candle close (entry price) - legacy
+  se_sl           Float?        // Initial wick SL - legacy
+  se_tp1          Float?        // 2R target - legacy
+  se_tp2          Float?        // 3R target - legacy
+  se_current_sl   Float?        // Starts = se_sl - legacy
+  se_r_ratio_hit  Boolean       @default(false)  // Has 2R been reached? - legacy
+  se_close_price  Float?        // Actual price signal was closed at - legacy
+  se_close_reason String?       // "TP2", "SL", "OPPOSITE_REV", "EXPIRED" - legacy
 
   candles_tracked Int           @default(0)
   max_candles     Int           @default(20)
   entryConfirmedAt DateTime?
+
+  // ============================================
+  // SE SCANNER V2 FIELDS (per new specification)
+  // ============================================
+  state           String?       @default("live")  // "live" or "closed" - only these two states
+  type_v2         String?       // always "se"
+  pattern_v2      String?       // one of 8: REV_BULLISH, REV_BEARISH, REV_PLUS_BULLISH, REV_PLUS_BEARISH, RUN_BULLISH, RUN_BEARISH, RUN_PLUS_BULLISH, RUN_PLUS_BEARISH
+  direction_v2    String?       // "bullish" or "bearish"
+  
+  entry_price     Float?        // se_candle.close - THE entry price
+  sl_price        Float?        // Original SL - NEVER changes after init
+  current_sl_price Float?       // Starts at sl_price, moves to entry_price after TP1 hit
+  tp1_price       Float?        // 1:2 RR target
+  tp2_price       Float?        // 1:3 RR target (full win)
+  
+  tp1_hit         Boolean       @default(false)   // Has TP1 been reached?
+  tp2_hit         Boolean       @default(false)   // Has TP2 been reached?
+  
+  result_v2       String?       // "won" or "lost" - null while live
+  result_type     String?       // "tp1", "tp2_full", "sl", "candle_expiry" - null while live
+  
+  candle_count    Int           @default(0)       // Starts at 0, increments on each candle close
+  
+  triggered_at    DateTime?     // When signal went live
+  closed_at_v2    DateTime?     // When signal closed - null while live
+  delete_at       DateTime?     // closed_at + 48h - when to hard delete
 
   // ICT BIAS FIELDS
   bias_direction    String?       // "BULL" or "BEAR"

@@ -23,6 +23,21 @@ export type SignalStatus = 'ACTIVE' | 'HIT_TP' | 'HIT_SL' | 'EXPIRED';
 export type SignalLifecycleStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'ARCHIVED';
 export type SignalResult = 'WIN' | 'LOSS' | null;
 
+// SE Scanner v2 types
+export type SeState = 'live' | 'closed';
+export type SeResult = 'won' | 'lost';
+export type SeResultType = 'tp1' | 'tp2_full' | 'sl' | 'candle_expiry';
+export type SePatternV2 = 
+  | 'REV_BULLISH' 
+  | 'REV_BEARISH' 
+  | 'REV_PLUS_BULLISH' 
+  | 'REV_PLUS_BEARISH' 
+  | 'RUN_BULLISH' 
+  | 'RUN_BEARISH' 
+  | 'RUN_PLUS_BULLISH' 
+  | 'RUN_PLUS_BEARISH';
+export type SeDirectionV2 = 'bullish' | 'bearish';
+
 export interface Signal {
   id: string;
   strategyType: StrategyType;
@@ -52,7 +67,7 @@ export interface Signal {
   closedPrice?: number;
   pnlPercent?: number;
   outcome?: string; // deprecated
-  // SE Advanced Lifecycle
+  // SE Advanced Lifecycle (legacy)
   direction?: string;
   se_entry_zone?: number;
   se_sl?: number;
@@ -70,6 +85,26 @@ export interface Signal {
   bias_level?: number;
   bias_result?: string;
   bias_validated_at?: string;
+  // ============================================
+  // SE Scanner v2 fields (per new specification)
+  // ============================================
+  state?: SeState;
+  type_v2?: string;
+  pattern_v2?: SePatternV2;
+  direction_v2?: SeDirectionV2;
+  entry_price?: number;
+  sl_price?: number;
+  current_sl_price?: number;
+  tp1_price?: number;
+  tp2_price?: number;
+  tp1_hit?: boolean;
+  tp2_hit?: boolean;
+  result_v2?: SeResult;
+  result_type?: SeResultType;
+  candle_count?: number;
+  triggered_at?: string;
+  closed_at_v2?: string;
+  delete_at?: string;
 }
 
 // Candle types

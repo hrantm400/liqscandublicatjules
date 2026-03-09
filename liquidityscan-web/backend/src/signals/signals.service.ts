@@ -190,30 +190,59 @@ export class SignalsService {
 
     if (toAdd.length > 0) {
       try {
+        const now = new Date();
         await (this.prisma as any).superEngulfingSignal.createMany({
-          data: toAdd.map((s) => ({
-            id: s.id,
-            strategyType: s.strategyType,
-            symbol: s.symbol,
-            timeframe: s.timeframe,
-            signalType: s.signalType,
-            price: new Prisma.Decimal(s.price),
-            detectedAt: new Date(s.detectedAt),
-            lifecycleStatus: s.lifecycleStatus as any,
-            result: s.result as any,
-            status: s.status,
-            metadata: s.metadata as Prisma.JsonValue | undefined,
-            // Advanced SE fields (mapped from metadata if present)
-            direction: (s.metadata as any)?.direction as string | undefined,
-            se_entry_zone: (s.metadata as any)?.se_entry_zone as number | undefined,
-            se_sl: (s.metadata as any)?.se_sl as number | undefined,
-            se_tp1: (s.metadata as any)?.se_tp1 as number | undefined,
-            se_tp2: (s.metadata as any)?.se_tp2 as number | undefined,
-            se_current_sl: (s.metadata as any)?.se_current_sl as number | undefined,
-            // ICT Bias fields
-            bias_direction: (s.metadata as any)?.bias_direction as string | undefined,
-            bias_level: (s.metadata as any)?.bias_level as number | undefined,
-          })),
+          data: toAdd.map((s) => {
+            const meta = s.metadata as any;
+            const isSuperEngulfing = s.strategyType === 'SUPER_ENGULFING';
+            
+            return {
+              id: s.id,
+              strategyType: s.strategyType,
+              symbol: s.symbol,
+              timeframe: s.timeframe,
+              signalType: s.signalType,
+              price: new Prisma.Decimal(s.price),
+              detectedAt: new Date(s.detectedAt),
+              lifecycleStatus: s.lifecycleStatus as any,
+              result: s.result as any,
+              status: s.status,
+              metadata: s.metadata as Prisma.JsonValue | undefined,
+              // Legacy SE fields (mapped from metadata if present)
+              direction: meta?.direction as string | undefined,
+              se_entry_zone: meta?.se_entry_zone as number | undefined,
+              se_sl: meta?.se_sl as number | undefined,
+              se_tp1: meta?.se_tp1 as number | undefined,
+              se_tp2: meta?.se_tp2 as number | undefined,
+              se_current_sl: meta?.se_current_sl as number | undefined,
+              // ICT Bias fields
+              bias_direction: meta?.bias_direction as string | undefined,
+              bias_level: meta?.bias_level as number | undefined,
+              // ============================================
+              // SE Scanner v2 fields (per new specification)
+              // ============================================
+              ...(isSuperEngulfing ? {
+                state: 'live',
+                type_v2: meta?.type_v2 as string | undefined,
+                pattern_v2: meta?.pattern_v2 as string | undefined,
+                direction_v2: meta?.direction_v2 as string | undefined,
+                entry_price: meta?.entry_price as number | undefined,
+                sl_price: meta?.sl_price as number | undefined,
+                current_sl_price: meta?.current_sl_price as number | undefined,
+                tp1_price: meta?.tp1_price as number | undefined,
+                tp2_price: meta?.tp2_price as number | undefined,
+                tp1_hit: false,
+                tp2_hit: false,
+                result_v2: null,
+                result_type: null,
+                candle_count: 0,
+                max_candles: meta?.max_candles as number | undefined,
+                triggered_at: now,
+                closed_at_v2: null,
+                delete_at: null,
+              } : {}),
+            };
+          }),
           skipDuplicates: true,
         });
 
@@ -452,23 +481,61 @@ export class SignalsService {
         orderBy: { detectedAt: 'desc' },
         take: MAX_SIGNALS,
       });
-      return rows.map((r) => ({
-        id: r.id,
-        strategyType: r.strategyType,
-        symbol: r.symbol,
-        timeframe: r.timeframe,
-        signalType: r.signalType,
-        price: Number(r.price),
-        detectedAt: r.detectedAt.toISOString(),
-        lifecycleStatus: r.lifecycleStatus,
-        result: r.result ?? undefined,
-        status: r.status,
-        metadata: r.metadata ?? undefined,
-        closedAt: r.closedAt ? r.closedAt.toISOString() : undefined,
-        closedPrice: r.closedPrice ? Number(r.closedPrice) : undefined,
-        pnlPercent: r.pnlPercent ?? undefined,
-        outcome: r.outcome ?? undefined,
-      }));
+      return rows.map((r) => {
+        const isSuperEngulfing = r.strategyType === 'SUPER_ENGULFING';
+        
+        return {
+          id: r.id,
+          strategyType: r.strategyType,
+          symbol: r.symbol,
+          timeframe: r.timeframe,
+          signalType: r.signalType,
+          price: Number(r.price),
+          detectedAt: r.detectedAt.toISOString(),
+          lifecycleStatus: r.lifecycleStatus,
+          result: r.result ?? undefined,
+          status: r.status,
+          metadata: r.metadata ?? undefined,
+          closedAt: r.closedAt ? r.closedAt.toISOString() : undefined,
+          closedPrice: r.closedPrice ? Number(r.closedPrice) : undefined,
+          pnlPercent: r.pnlPercent ?? undefined,
+          outcome: r.outcome ?? undefined,
+          // Legacy SE fields
+          direction: r.direction ?? undefined,
+          se_entry_zone: r.se_entry_zone ?? undefined,
+          se_sl: r.se_sl ?? undefined,
+          se_tp1: r.se_tp1 ?? undefined,
+          se_tp2: r.se_tp2 ?? undefined,
+          se_current_sl: r.se_current_sl ?? undefined,
+          se_r_ratio_hit: r.se_r_ratio_hit ?? undefined,
+          se_close_price: r.se_close_price ?? undefined,
+          se_close_reason: r.se_close_reason ?? undefined,
+          candles_tracked: r.candles_tracked ?? undefined,
+          max_candles: r.max_candles ?? undefined,
+          // ============================================
+          // SE Scanner v2 fields (per new specification)
+          // ============================================
+          ...(isSuperEngulfing ? {
+            state: r.state ?? undefined,
+            type_v2: r.type_v2 ?? undefined,
+            pattern_v2: r.pattern_v2 ?? undefined,
+            direction_v2: r.direction_v2 ?? undefined,
+            entry_price: r.entry_price ?? undefined,
+            sl_price: r.sl_price ?? undefined,
+            current_sl_price: r.current_sl_price ?? undefined,
+            tp1_price: r.tp1_price ?? undefined,
+            tp2_price: r.tp2_price ?? undefined,
+            tp1_hit: r.tp1_hit ?? undefined,
+            tp2_hit: r.tp2_hit ?? undefined,
+            result_v2: r.result_v2 ?? undefined,
+            result_type: r.result_type ?? undefined,
+            candle_count: r.candle_count ?? undefined,
+            triggered_at: r.triggered_at ? r.triggered_at.toISOString() : undefined,
+            closed_at_v2: r.closed_at_v2 ? r.closed_at_v2.toISOString() : undefined,
+            delete_at: r.delete_at ? r.delete_at.toISOString() : undefined,
+          } : {}),
+        };
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Failed to load SuperEngulfing signals from DB: ${msg}`);
@@ -531,19 +598,45 @@ export class SignalsService {
       const where = strategyType ? { strategyType } : undefined;
       const rows = await (this.prisma as any).superEngulfingSignal.findMany({ where });
 
+      const isSuperEngulfing = strategyType === 'SUPER_ENGULFING';
+
       const total = rows.length;
-      const active = rows.filter((r) => r.status === 'ACTIVE').length;
-      const won = rows.filter((r) => r.status === 'HIT_TP' || r.outcome === 'HIT_TP').length;
-      const lost = rows.filter((r) => r.status === 'HIT_SL' || r.outcome === 'HIT_SL').length;
-      const expired = rows.filter((r) => r.status === 'EXPIRED' || r.outcome === 'EXPIRED').length;
+      
+      // For SE v2, use state field; for others, use legacy status
+      let active: number;
+      let won: number;
+      let lost: number;
+      let expired: number;
+      let live: number;
+      let closedSignals: number;
+      let archived: number;
 
-      // New generic lifecycle mapping
-      const live = rows.filter(r => r.lifecycleStatus === 'PENDING' || r.lifecycleStatus === 'ACTIVE' || (!r.lifecycleStatus && r.status === 'ACTIVE')).length;
-      const closedSignals = rows.filter(r => r.lifecycleStatus === 'COMPLETED' || r.lifecycleStatus === 'EXPIRED' || (!r.lifecycleStatus && (r.status === 'HIT_TP' || r.status === 'HIT_SL' || r.status === 'EXPIRED' || r.status === 'CLOSED'))).length;
-      const archived = rows.filter(r => r.lifecycleStatus === 'ARCHIVED').length;
+      if (isSuperEngulfing) {
+        // SE Scanner v2: Use state and result_v2 fields
+        // SPEC: No archive state for SE - only "live" and "closed"
+        live = rows.filter(r => r.state === 'live').length;
+        closedSignals = rows.filter(r => r.state === 'closed').length;
+        archived = 0; // SE v2 has no archive
+        
+        active = live; // For backward compat
+        won = rows.filter(r => r.result_v2 === 'won' || r.result === 'WIN').length;
+        lost = rows.filter(r => r.result_v2 === 'lost' || r.result === 'LOSS').length;
+        expired = rows.filter(r => r.result_type === 'candle_expiry').length;
+      } else {
+        // Legacy: Use old lifecycle fields
+        active = rows.filter((r) => r.status === 'ACTIVE').length;
+        won = rows.filter((r) => r.status === 'HIT_TP' || r.outcome === 'HIT_TP' || r.result === 'WIN').length;
+        lost = rows.filter((r) => r.status === 'HIT_SL' || r.outcome === 'HIT_SL' || r.result === 'LOSS').length;
+        expired = rows.filter((r) => r.status === 'EXPIRED' || r.outcome === 'EXPIRED' || r.lifecycleStatus === 'EXPIRED').length;
+        
+        live = rows.filter(r => r.lifecycleStatus === 'PENDING' || r.lifecycleStatus === 'ACTIVE' || (!r.lifecycleStatus && r.status === 'ACTIVE')).length;
+        closedSignals = rows.filter(r => r.lifecycleStatus === 'COMPLETED' || r.lifecycleStatus === 'EXPIRED' || (!r.lifecycleStatus && (r.status === 'HIT_TP' || r.status === 'HIT_SL' || r.status === 'EXPIRED' || r.status === 'CLOSED'))).length;
+        archived = rows.filter(r => r.lifecycleStatus === 'ARCHIVED').length;
+      }
 
-      const winPnls = rows.filter((r) => r.outcome === 'HIT_TP' && r.pnlPercent != null).map((r) => r.pnlPercent);
-      const lossPnls = rows.filter((r) => r.outcome === 'HIT_SL' && r.pnlPercent != null).map((r) => r.pnlPercent);
+      // PNL stats - works for both SE v2 and legacy
+      const winPnls = rows.filter((r) => (r.result_v2 === 'won' || r.outcome === 'HIT_TP' || r.result === 'WIN') && r.pnlPercent != null).map((r) => r.pnlPercent);
+      const lossPnls = rows.filter((r) => (r.result_v2 === 'lost' || r.outcome === 'HIT_SL' || r.result === 'LOSS') && r.pnlPercent != null).map((r) => r.pnlPercent);
 
       const closed = won + lost;
       const winRate = closed > 0 ? Math.round((won / closed) * 100) : 0;

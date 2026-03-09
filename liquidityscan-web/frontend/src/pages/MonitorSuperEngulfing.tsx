@@ -491,10 +491,12 @@ export function MonitorSuperEngulfing() {
           </div>
 
           {/* Status Tabs */}
+          {/* SE Scanner v2: No archive state for SE signals */}
           <StatusTabs
             strategyType="SUPER_ENGULFING"
             activeStatus={statusFilter}
             onStatusChange={setStatusFilter}
+            hideArchive={true}
           />
         </motion.div>
       )}

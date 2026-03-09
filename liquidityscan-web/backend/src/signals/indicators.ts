@@ -34,11 +34,20 @@ export interface SuperEngulfingSignal {
     price: number;
     direction: 'BUY' | 'SELL';
     pattern: 'RUN' | 'RUN_PLUS' | 'REV' | 'REV_PLUS';
-    // Advanced Tracking
+    // Advanced Tracking (legacy)
     entryZone: number;
     sl: number;
     tp1: number;
     tp2: number;
+    // SE Scanner v2 fields (per new spec)
+    pattern_v2: 'REV_BULLISH' | 'REV_BEARISH' | 'REV_PLUS_BULLISH' | 'REV_PLUS_BEARISH' | 'RUN_BULLISH' | 'RUN_BEARISH' | 'RUN_PLUS_BULLISH' | 'RUN_PLUS_BEARISH';
+    direction_v2: 'bullish' | 'bearish';
+    entry_price: number;
+    sl_price: number;
+    tp1_price: number;
+    tp2_price: number;
+    candle_high: number;
+    candle_low: number;
 }
 
 export interface ICTBiasSignal {
@@ -334,6 +343,16 @@ export function calculateATR(candles: CandleData[], period = 14): number {
 /**
  * Detect SuperEngulfing patterns on the last N candles.
  * Only returns signals for the most recent candle pair.
+ * 
+ * SE SCANNER V2 SPEC - SL/TP Calculation:
+ * - entry_price = se_candle.close
+ * - candle_range = se_candle.high - se_candle.low (FULL range including wicks)
+ * - buffer = candle_range * 0.1 (fixed 10%)
+ * - Bullish: sl_price = se_candle.low - buffer
+ * - Bearish: sl_price = se_candle.high + buffer
+ * - risk = ABS(entry_price - sl_price)
+ * - tp1_price = entry ± (risk * 2)  // 1:2 RR
+ * - tp2_price = entry ± (risk * 3)  // 1:3 RR
  */
 export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSignal[] {
     const signals: SuperEngulfingSignal[] = [];
@@ -341,7 +360,7 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
 
     // Only check the last candle pair (just-closed candle vs previous)
     const i = candles.length - 1;
-    const curr = candles[i];
+    const curr = candles[i];  // This is the SE candle that completes the pattern
     const prev = candles[i - 1];
 
     const currBull = curr.close > curr.open;
@@ -352,28 +371,34 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
     const plusBullCond = curr.close > prev.high;
     const plusBearCond = curr.close < prev.low;
 
-    // Calculate ATR for SL buffer
-    const atr = calculateATR(candles.slice(-30), 14); // Use last 30 candles for ATR calculate
     const entry = curr.close;
 
-    // Helper to calculate targets
-    const getBullTargets = (lowestLow: number) => {
-        const sl = lowestLow - (atr * 0.1);
-        const r = entry - sl;
-        return { entry, sl, tp1: entry + (r * 2), tp2: entry + (r * 3) };
+    // SE SCANNER V2 SPEC: Use SE candle's own range for buffer calculation
+    const candle_range = curr.high - curr.low;
+    const buffer = candle_range * 0.1;
+
+    // Helper to calculate targets per spec (using SE candle's high/low, NOT min/max of both candles)
+    const getBullTargetsV2 = () => {
+        const sl = curr.low - buffer;       // Spec: sl_price = se_candle.low - buffer
+        const risk = entry - sl;             // Spec: risk = ABS(entry_price - sl_price)
+        const tp1 = entry + (risk * 2);      // Spec: tp1_price = entry_price + (risk * 2)
+        const tp2 = entry + (risk * 3);      // Spec: tp2_price = entry_price + (risk * 3)
+        return { entry, sl, tp1, tp2 };
     };
 
-    const getBearTargets = (highestHigh: number) => {
-        const sl = highestHigh + (atr * 0.1);
-        const r = sl - entry;
-        return { entry, sl, tp1: entry - (r * 2), tp2: entry - (r * 3) };
+    const getBearTargetsV2 = () => {
+        const sl = curr.high + buffer;       // Spec: sl_price = se_candle.high + buffer
+        const risk = sl - entry;             // Spec: risk = ABS(entry_price - sl_price)
+        const tp1 = entry - (risk * 2);      // Spec: tp1_price = entry_price - (risk * 2)
+        const tp2 = entry - (risk * 3);      // Spec: tp2_price = entry_price - (risk * 3)
+        return { entry, sl, tp1, tp2 };
     };
 
     // --- RUN (Continuation): same color ---
     // Bullish RUN: Green → Green, wick below prev low, close above prev close
     if (currBull && prevBull && curr.low < prev.low && curr.close > prev.close) {
         const isPlus = plusBullCond;
-        const targets = getBullTargets(Math.min(curr.low, prev.low));
+        const targets = getBullTargetsV2();
         signals.push({
             type: isPlus ? 'run_bull_plus' : 'run_bull',
             barIndex: i,
@@ -381,17 +406,27 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             price: entry,
             direction: 'BUY',
             pattern: isPlus ? 'RUN_PLUS' : 'RUN',
+            // Legacy fields
             entryZone: entry,
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
+            // SE v2 fields per spec
+            pattern_v2: isPlus ? 'RUN_PLUS_BULLISH' : 'RUN_BULLISH',
+            direction_v2: 'bullish',
+            entry_price: targets.entry,
+            sl_price: targets.sl,
+            tp1_price: targets.tp1,
+            tp2_price: targets.tp2,
+            candle_high: curr.high,
+            candle_low: curr.low,
         });
     }
 
     // Bearish RUN: Red → Red, wick above prev high, close below prev close
     if (currBear && prevBear && curr.high > prev.high && curr.close < prev.close) {
         const isPlus = plusBearCond;
-        const targets = getBearTargets(Math.max(curr.high, prev.high));
+        const targets = getBearTargetsV2();
         signals.push({
             type: isPlus ? 'run_bear_plus' : 'run_bear',
             barIndex: i,
@@ -399,10 +434,20 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             price: entry,
             direction: 'SELL',
             pattern: isPlus ? 'RUN_PLUS' : 'RUN',
+            // Legacy fields
             entryZone: entry,
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
+            // SE v2 fields per spec
+            pattern_v2: isPlus ? 'RUN_PLUS_BEARISH' : 'RUN_BEARISH',
+            direction_v2: 'bearish',
+            entry_price: targets.entry,
+            sl_price: targets.sl,
+            tp1_price: targets.tp1,
+            tp2_price: targets.tp2,
+            candle_high: curr.high,
+            candle_low: curr.low,
         });
     }
 
@@ -410,7 +455,7 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
     // Bullish REV: Red → Green, wick below prev low, close above prev open
     if (currBull && prevBear && curr.low < prev.low && curr.close > prev.open) {
         const isPlus = plusBullCond;
-        const targets = getBullTargets(Math.min(curr.low, prev.low));
+        const targets = getBullTargetsV2();
         signals.push({
             type: isPlus ? 'rev_bull_plus' : 'rev_bull',
             barIndex: i,
@@ -418,17 +463,27 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             price: entry,
             direction: 'BUY',
             pattern: isPlus ? 'REV_PLUS' : 'REV',
+            // Legacy fields
             entryZone: entry,
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
+            // SE v2 fields per spec
+            pattern_v2: isPlus ? 'REV_PLUS_BULLISH' : 'REV_BULLISH',
+            direction_v2: 'bullish',
+            entry_price: targets.entry,
+            sl_price: targets.sl,
+            tp1_price: targets.tp1,
+            tp2_price: targets.tp2,
+            candle_high: curr.high,
+            candle_low: curr.low,
         });
     }
 
     // Bearish REV: Green → Red, wick above prev high, close below prev open
     if (currBear && prevBull && curr.high > prev.high && curr.close < prev.open) {
         const isPlus = plusBearCond;
-        const targets = getBearTargets(Math.max(curr.high, prev.high));
+        const targets = getBearTargetsV2();
         signals.push({
             type: isPlus ? 'rev_bear_plus' : 'rev_bear',
             barIndex: i,
@@ -436,10 +491,20 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             price: entry,
             direction: 'SELL',
             pattern: isPlus ? 'REV_PLUS' : 'REV',
+            // Legacy fields
             entryZone: entry,
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
+            // SE v2 fields per spec
+            pattern_v2: isPlus ? 'REV_PLUS_BEARISH' : 'REV_BEARISH',
+            direction_v2: 'bearish',
+            entry_price: targets.entry,
+            sl_price: targets.sl,
+            tp1_price: targets.tp1,
+            tp2_price: targets.tp2,
+            candle_high: curr.high,
+            candle_low: curr.low,
         });
     }
 
