@@ -191,7 +191,7 @@ export class SignalsService {
     if (toAdd.length > 0) {
       try {
         const now = new Date();
-        await (this.prisma as any).superEngulfingSignal.createMany({
+        const createResult = await (this.prisma as any).superEngulfingSignal.createMany({
           data: toAdd.map((s) => {
             const meta = s.metadata as any;
             const isSuperEngulfing = s.strategyType === 'SUPER_ENGULFING';
@@ -218,9 +218,7 @@ export class SignalsService {
               // ICT Bias fields
               bias_direction: meta?.bias_direction as string | undefined,
               bias_level: meta?.bias_level as number | undefined,
-              // ============================================
-              // SE Scanner v2 fields (per new specification)
-              // ============================================
+              // SE Scanner v2 fields
               ...(isSuperEngulfing ? {
                 state: 'live',
                 type_v2: meta?.type_v2 as string | undefined,
@@ -246,24 +244,29 @@ export class SignalsService {
           skipDuplicates: true,
         });
 
-        // Trigger Telegram Alerts
-        for (const s of toAdd) {
-          this.telegramService.sendSignalAlert(
-            s.symbol,
-            s.strategyType,
-            s.timeframe,
-            s.signalType,
-            s.price,
-            s.metadata as Record<string, any> | undefined
-          ).catch(e => this.logger.error(`Failed to dispatch alert for ${s.id}: ${e.message}`));
+        const actualInserted = createResult.count;
+
+        if (actualInserted > 0) {
+          for (const s of toAdd) {
+            this.telegramService.sendSignalAlert(
+              s.symbol,
+              s.strategyType,
+              s.timeframe,
+              s.signalType,
+              s.price,
+              s.metadata as Record<string, any> | undefined
+            ).catch(e => this.logger.error(`Failed to dispatch alert for ${s.id}: ${e.message}`));
+          }
         }
+
+        return actualInserted;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         this.logger.error(`Failed to persist signals: ${msg}`);
       }
     }
 
-    return toAdd.length;
+    return 0;
   }
 
   /**
@@ -339,6 +342,9 @@ export class SignalsService {
    * Called after saving new signals to prevent accumulation.
    */
   async archiveOldSignals(strategyType: string, symbol: string, timeframe: string): Promise<number> {
+    if (strategyType === 'SUPER_ENGULFING') {
+      return 0;
+    }
     try {
       // Find the latest signal for this combo (full record to check status)
       const latest = await (this.prisma as any).superEngulfingSignal.findFirst({
@@ -408,6 +414,7 @@ export class SignalsService {
         by: ['strategyType', 'symbol', 'timeframe'],
         where: {
           lifecycleStatus: { not: 'ARCHIVED' },
+          strategyType: { not: 'SUPER_ENGULFING' },
         },
         _count: true,
       });

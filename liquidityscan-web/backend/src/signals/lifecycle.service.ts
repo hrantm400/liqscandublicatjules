@@ -13,10 +13,10 @@ import {
 
 // Thresholds per strategy for extended scanning (if needed). Assuming standard thresholds for SE
 const STRATEGY_CONFIG: Record<string, { tpPercent: number; slPercent: number; expiryCandleCount: number }> = {
-    SUPER_ENGULFING: { tpPercent: 3.0, slPercent: 2.0, expiryCandleCount: 20 },
+    // SUPER_ENGULFING: uses se-runtime.ts processSeSignal() — NOT this config
     ICT_BIAS: { tpPercent: 2.5, slPercent: 1.5, expiryCandleCount: 15 },
     RSI_DIVERGENCE: { tpPercent: 4.0, slPercent: 2.5, expiryCandleCount: 25 },
-    STRATEGY_1: { tpPercent: 3.0, slPercent: 2.0, expiryCandleCount: 20 }, // Added strategy 1 fallback
+    STRATEGY_1: { tpPercent: 3.0, slPercent: 2.0, expiryCandleCount: 20 },
 };
 
 const TF_MS: Record<string, number> = {
@@ -299,6 +299,22 @@ export class LifecycleService implements OnModuleInit {
                 closed_at_v2: signal.closed_at_v2 ?? null,
                 delete_at: signal.delete_at ?? null,
             };
+
+            if (
+                runtimeSignal.sl_price === 0 ||
+                runtimeSignal.tp1_price === 0 ||
+                runtimeSignal.tp2_price === 0 ||
+                runtimeSignal.entry_price === 0
+            ) {
+                this.logger.warn(
+                    `SE v2 Lifecycle: Skipping signal ${signal.id} — missing price data ` +
+                    `(entry=${runtimeSignal.entry_price}, sl=${runtimeSignal.sl_price}, ` +
+                    `tp1=${runtimeSignal.tp1_price}, tp2=${runtimeSignal.tp2_price}). ` +
+                    `Signal may need manual cleanup or re-detection.`
+                );
+                unchanged++;
+                continue;
+            }
 
             // Process signal using the v2 runtime
             const result = processSeSignal(runtimeSignal, {

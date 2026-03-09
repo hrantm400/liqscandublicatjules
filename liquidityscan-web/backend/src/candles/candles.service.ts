@@ -34,6 +34,9 @@ export class CandlesService {
 
   async getKlines(symbol: string, interval: string, limit = 500): Promise<CandleDto[]> {
     const sym = (symbol || '').toUpperCase().replace(/[^A-Z0-9_]/g, '');
+    if (sym === 'USDT' || sym.length < 5) {
+      return [];
+    }
     const limitParam = Math.min(Math.max(1, Number(limit) || 500), 1000);
 
     const cacheKey = `${sym}_${interval}_${limitParam}`;
