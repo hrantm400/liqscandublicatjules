@@ -144,21 +144,18 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting scan for ${symbols.length} symbols (chunked)...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 15; // Increased safely for active provider 
-            const DELAY_MS = 500; // Decreased delay for faster completion
+            const CHUNK_SIZE = 8;
+            const DELAY_MS = 1500;
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
-                // Process chunk in parallel
                 const results = await Promise.all(chunk.map(s => this.scanSymbol(s)));
                 signalCount += results.reduce((a, b) => a + b, 0);
 
-                // Progress log every 50 symbols
-                if ((i + CHUNK_SIZE) % 50 === 0) {
-                    this.logger.log(`Scanned ${i + CHUNK_SIZE}/${symbols.length} symbols...`);
+                if ((i + CHUNK_SIZE) % 80 === 0 || i + CHUNK_SIZE >= symbols.length) {
+                    this.logger.log(`Scanned ${Math.min(i + CHUNK_SIZE, symbols.length)}/${symbols.length} symbols...`);
                 }
 
-                // Rate limit delay
                 if (i + CHUNK_SIZE < symbols.length) {
                     await new Promise(resolve => setTimeout(resolve, DELAY_MS));
                 }
@@ -217,13 +214,17 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting 5-min Strategy 1 scan for ${symbols.length} symbols...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 15; // Increased to speed up 5-min scans
-            const DELAY_MS = 100; // 100ms is perfectly fine for most private APIs
+            const CHUNK_SIZE = 10;
+            const DELAY_MS = 800;
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
                 const results = await Promise.all(chunk.map(symbol => this.checkStrategy1Signal(symbol)));
                 signalCount += results.reduce((a, b) => a + b, 0);
+
+                if ((i + CHUNK_SIZE) % 100 === 0) {
+                    this.logger.log(`Strategy 1: ${Math.min(i + CHUNK_SIZE, symbols.length)}/${symbols.length}...`);
+                }
 
                 if (i + CHUNK_SIZE < symbols.length) {
                     await new Promise(resolve => setTimeout(resolve, DELAY_MS));

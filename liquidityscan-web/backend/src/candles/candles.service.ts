@@ -11,13 +11,24 @@ export class CandlesService {
   private binanceProvider = new BinanceProvider();
 
   private cache = new Map<string, { timestamp: number, data: CandleDto[] }>();
-  private readonly CACHE_TTL_MS = 15000; // 15 seconds
+
+  private readonly CACHE_TTL_BY_INTERVAL: Record<string, number> = {
+    '5m': 15_000,
+    '15m': 30_000,
+    '1h': 60_000,
+    '4h': 120_000,
+    '1d': 300_000,
+    '1w': 900_000,
+  };
+  private readonly DEFAULT_CACHE_TTL_MS = 30_000;
 
   constructor(private readonly prisma: PrismaService) { }
 
+  private getCacheTTL(interval: string): number {
+    return this.CACHE_TTL_BY_INTERVAL[interval] || this.DEFAULT_CACHE_TTL_MS;
+  }
+
   private async getProvider(): Promise<IExchangeProvider> {
-    // Always use Binance Futures as the single data source
-    // Settings.activeProvider is ignored; Coinray integration removed.
     return this.binanceProvider;
   }
 
@@ -27,7 +38,9 @@ export class CandlesService {
 
     const cacheKey = `${sym}_${interval}_${limitParam}`;
     const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
+    const ttl = this.getCacheTTL(interval);
+
+    if (cached && Date.now() - cached.timestamp < ttl) {
       return cached.data;
     }
 
@@ -37,7 +50,8 @@ export class CandlesService {
       this.cache.set(cacheKey, { timestamp: Date.now(), data: out });
       return out;
     } catch (err) {
-      this.logger.warn(`Provider fetch error for ${sym} ${interval}: ${err.message}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Provider fetch error for ${sym} ${interval}: ${msg}`);
       return [];
     }
   }
