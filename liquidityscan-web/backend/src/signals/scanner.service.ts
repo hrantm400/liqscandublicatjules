@@ -313,6 +313,16 @@ export class ScannerService implements OnModuleInit {
             // Format: SUPER_ENGULFING-BTCUSDT-4h-RUN_BULLISH-1678901234000
             const id = `SUPER_ENGULFING-${symbol}-${timeframe}-${sig.pattern_v2}-${sig.time}`;
 
+            // Also check for OLD format ID to prevent duplicates after migration
+            const oldId = `SUPER_ENGULFING-${symbol}-${timeframe}-${sig.time}`;
+            try {
+                const existingOld = await (this.signalsService as any).prisma.superEngulfingSignal.findUnique({
+                    where: { id: oldId },
+                    select: { id: true },
+                });
+                if (existingOld) continue; // Old-format signal exists, skip
+            } catch { /* ignore - table might not have old signal */ }
+
             const input = {
                 id,
                 strategyType: 'SUPER_ENGULFING',

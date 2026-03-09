@@ -196,6 +196,34 @@ export class LifecycleService implements OnModuleInit {
     }
 
     /**
+     * Calculate the actual number of completed candles since signal triggered,
+     * based on the signal's timeframe. Only returns true for isCandleClose when
+     * a NEW candle has closed since the last check (based on stored candle_count).
+     * 
+     * SPEC: candle_count starts at 0 when the signal goes live.
+     * The SE trigger candle itself does NOT count.
+     * The first increment happens when the NEXT candle after the SE candle closes.
+     */
+    private calcCandleInfo(triggeredAt: Date, timeframe: string, currentCandleCount: number): { actualCandleCount: number; isCandleClose: boolean } {
+        const tfMs = TF_MS[timeframe] || TF_MS['4h'];
+        const nowMs = Date.now();
+        const triggeredMs = triggeredAt.getTime();
+        const elapsed = nowMs - triggeredMs;
+
+        if (elapsed <= 0) {
+            return { actualCandleCount: 0, isCandleClose: false };
+        }
+
+        // How many full candles have closed since the signal was triggered
+        const actualCandleCount = Math.floor(elapsed / tfMs);
+
+        // isCandleClose is true only if a NEW candle closed since we last checked
+        const isCandleClose = actualCandleCount > currentCandleCount;
+
+        return { actualCandleCount, isCandleClose };
+    }
+
+    /**
      * SE Scanner v2 Lifecycle Check
      * 
      * SPEC: Process all live SE signals using the new processSeSignal function.
@@ -204,8 +232,9 @@ export class LifecycleService implements OnModuleInit {
      * - Persist any changed fields to DB
      * - Also update legacy fields for backward compatibility
      * 
-     * NOTE: We treat each 5-min lifecycle check as a candle close approximation.
-     * This is acceptable since we're checking every 5 minutes and SE timeframes are 4h+.
+     * CANDLE COUNT FIX: We calculate actual candle closes based on triggered_at
+     * and the signal's timeframe, NOT treating every 5-min check as a candle close.
+     * For 4H signals, a candle closes every 4 hours. For 1D every 24 hours. etc.
      */
     private async checkSuperEngulfingV2(): Promise<void> {
         // Query SE signals with v2 state='live'
@@ -239,7 +268,18 @@ export class LifecycleService implements OnModuleInit {
                 continue;
             }
 
+            const triggeredAt = signal.triggered_at ?? signal.detectedAt;
+            const currentCandleCount = signal.candle_count ?? signal.candles_tracked ?? 0;
+
+            // Calculate actual candle closes based on timeframe, NOT every 5 minutes
+            const candleInfo = this.calcCandleInfo(
+                new Date(triggeredAt),
+                signal.timeframe,
+                currentCandleCount
+            );
+
             // Build SeRuntimeSignal from DB row
+            // IMPORTANT: Use the ACTUAL candle count, not the DB value
             const runtimeSignal: SeRuntimeSignal = {
                 id: signal.id,
                 direction_v2: (signal.direction_v2 || (signal.direction === 'BULL' ? 'bullish' : 'bearish')) as SeDirection,
@@ -253,23 +293,31 @@ export class LifecycleService implements OnModuleInit {
                 tp2_hit: signal.tp2_hit ?? false,
                 result_v2: signal.result_v2 ?? null,
                 result_type: signal.result_type ?? null,
-                candle_count: signal.candle_count ?? signal.candles_tracked ?? 0,
+                candle_count: candleInfo.isCandleClose ? candleInfo.actualCandleCount - 1 : candleInfo.actualCandleCount,
                 max_candles: signal.max_candles ?? 10,
-                triggered_at: signal.triggered_at ?? signal.detectedAt,
+                triggered_at: triggeredAt,
                 closed_at_v2: signal.closed_at_v2 ?? null,
                 delete_at: signal.delete_at ?? null,
             };
 
             // Process signal using the v2 runtime
-            // Treat each 5-min check as a candle close for simplicity
-            // (For more accuracy, we could track actual candle closes per timeframe)
             const result = processSeSignal(runtimeSignal, {
                 currentPrice,
-                isCandleClose: true, // Approximation - we check every 5 min
+                isCandleClose: candleInfo.isCandleClose,
                 now,
             });
 
             if (!result.changed) {
+                // Even if processSeSignal didn't change anything, sync candle_count if needed
+                if (candleInfo.actualCandleCount !== currentCandleCount) {
+                    await (this.prisma as any).superEngulfingSignal.update({
+                        where: { id: signal.id },
+                        data: {
+                            candle_count: candleInfo.actualCandleCount,
+                            candles_tracked: candleInfo.actualCandleCount,
+                        },
+                    });
+                }
                 unchanged++;
                 continue;
             }
@@ -284,7 +332,11 @@ export class LifecycleService implements OnModuleInit {
             if (result.current_sl_price !== undefined) updateData.current_sl_price = result.current_sl_price;
             if (result.result_v2 !== undefined) updateData.result_v2 = result.result_v2;
             if (result.result_type !== undefined) updateData.result_type = result.result_type;
-            if (result.candle_count !== undefined) updateData.candle_count = result.candle_count;
+            if (result.candle_count !== undefined) {
+                updateData.candle_count = result.candle_count;
+            } else {
+                updateData.candle_count = candleInfo.actualCandleCount;
+            }
             if (result.closed_at_v2 !== undefined) updateData.closed_at_v2 = result.closed_at_v2;
             if (result.delete_at !== undefined) updateData.delete_at = result.delete_at;
 
@@ -295,9 +347,7 @@ export class LifecycleService implements OnModuleInit {
             if (result.current_sl_price !== undefined) {
                 updateData.se_current_sl = result.current_sl_price;
             }
-            if (result.candle_count !== undefined) {
-                updateData.candles_tracked = result.candle_count;
-            }
+            updateData.candles_tracked = updateData.candle_count;
 
             // If signal closed, update legacy lifecycle fields
             if (result.state === 'closed') {
