@@ -2,8 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { IExchangeProvider, IKline } from '../providers/data-provider.interface';
 import { BinanceProvider } from '../providers/binance.provider';
-import { CoinrayProvider } from '../providers/coinray.provider';
-import { DataProvider } from '@prisma/client';
 
 export type CandleDto = IKline;
 
@@ -11,7 +9,6 @@ export type CandleDto = IKline;
 export class CandlesService {
   private readonly logger = new Logger(CandlesService.name);
   private binanceProvider = new BinanceProvider();
-  private coinrayProvider = new CoinrayProvider();
 
   private cache = new Map<string, { timestamp: number, data: CandleDto[] }>();
   private readonly CACHE_TTL_MS = 15000; // 15 seconds
@@ -19,15 +16,9 @@ export class CandlesService {
   constructor(private readonly prisma: PrismaService) { }
 
   private async getProvider(): Promise<IExchangeProvider> {
-    try {
-      const settings = await this.prisma.settings.findUnique({ where: { id: 'singleton' } });
-      if (settings?.activeProvider === DataProvider.COINRAY) {
-        return this.coinrayProvider;
-      }
-    } catch (err) {
-      this.logger.error(`Failed to get settings, defaulting to Binance: ${err.message}`);
-    }
-    return this.binanceProvider; // Default
+    // Always use Binance Futures as the single data source
+    // Settings.activeProvider is ignored; Coinray integration removed.
+    return this.binanceProvider;
   }
 
   async getKlines(symbol: string, interval: string, limit = 500): Promise<CandleDto[]> {
