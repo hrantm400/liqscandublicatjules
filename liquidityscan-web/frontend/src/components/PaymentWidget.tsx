@@ -15,7 +15,8 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
     const [timeLeft, setTimeLeft] = useState(900);
     const [copied, setCopied] = useState(false);
     const [paymentId, setPaymentId] = useState('');
-    const [paymentUrl, setPaymentUrl] = useState('');
+    const [walletAddress, setWalletAddress] = useState('');
+    const [generatedAmount, setGeneratedAmount] = useState<number>(0);
 
     useEffect(() => {
         userApi.getSubscriptions().then(plans => {
@@ -83,8 +84,9 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                 subscriptionId,
                 { plan }
             );
-            setPaymentId(result.id);
-            setPaymentUrl(result.paymentUrl || '');
+            setPaymentId(result.id || result.paymentId);
+            setGeneratedAmount(parseFloat(result.amount));
+            setWalletAddress(result.metadata?.walletAddress || '');
             setStep('awaiting');
         } catch (e: any) {
             toast.error(e.message || 'Payment failed');
@@ -241,10 +243,10 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                 <div className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest font-semibold mb-1">Send exactly</div>
                                 <div className="flex items-center justify-between">
                                     <div className="text-2xl font-black dark:text-white light:text-text-dark flex items-center gap-2">
-                                        {selected.current.toFixed(2)} <span className="text-primary text-lg">USDT</span>
+                                        {generatedAmount.toFixed(2)} <span className="text-primary text-lg">USDT</span>
                                     </div>
                                     <button
-                                        onClick={() => handleCopy(selected.current.toString())}
+                                        onClick={() => handleCopy(generatedAmount.toString())}
                                         className="w-10 h-10 flex items-center justify-center dark:bg-white/5 light:bg-gray-100 hover:bg-primary/20 rounded-xl transition-all"
                                     >
                                         <span className="material-symbols-outlined text-base dark:text-gray-400 light:text-gray-500">{copied ? 'check' : 'content_copy'}</span>
@@ -252,17 +254,21 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                 </div>
                             </div>
 
-                            {/* Payment Link */}
-                            {paymentUrl && (
-                                <a
-                                    href={paymentUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-full py-3 rounded-2xl bg-primary text-black font-bold text-center transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                                >
-                                    Open Payment Page →
-                                </a>
-                            )}
+                            {/* Payment Address */}
+                            <div className="dark:bg-white/[0.02] light:bg-gray-50 rounded-2xl p-4 border dark:border-white/5 light:border-gray-200">
+                                <div className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest font-semibold mb-2">Destination Address (TRC20)</div>
+                                <div className="flex items-center justify-between gap-3 bg-black/20 p-3 rounded-xl border border-white/5">
+                                    <div className="text-sm font-mono dark:text-gray-300 light:text-gray-600 truncate">
+                                        {walletAddress}
+                                    </div>
+                                    <button
+                                        onClick={() => handleCopy(walletAddress)}
+                                        className="shrink-0 w-8 h-8 flex items-center justify-center dark:bg-white/10 light:bg-gray-200 hover:bg-primary/20 rounded-lg transition-all"
+                                    >
+                                        <span className="material-symbols-outlined text-sm dark:text-gray-300 light:text-gray-600">{copied ? 'check' : 'content_copy'}</span>
+                                    </button>
+                                </div>
+                            </div>
 
                             <div className="dark:bg-white/[0.02] light:bg-gray-50 rounded-2xl p-4 border dark:border-white/5 light:border-gray-200">
                                 <div className="flex justify-between items-center mb-2">

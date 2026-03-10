@@ -9,77 +9,64 @@ export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
   constructor(private prisma: PrismaService) { }
 
-  async createPayment(userId: string, amount: number, currency: string = 'USD', subscriptionId?: string, metadata?: any) {
-    const payment = await this.prisma.payment.create({
-      data: {
-        userId,
-        amount,
-        currency,
+  async createPayment(userId: string, baseAmount: number, currency: string = 'USDT', subscriptionId?: string, metadata?: any) {
+    // Determine unique fractional amount
+    const tenMinutesAgo = new Date();
+    tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 15); // Check last 15 mins to be safe
+
+    const recentPendingPayments = await this.prisma.payment.findMany({
+      where: {
         status: 'pending',
-        paymentMethod: 'crypto',
-        subscriptionId: subscriptionId || null,
-        metadata: metadata || null,
+        createdAt: { gte: tenMinutesAgo },
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const paymentUrl = `${frontendUrl}/payment/${payment.id}`;
+    let uniqueAmount = baseAmount;
+    let increment = 0;
+    const maxIncrement = 99; // Allows up to .99
 
-    const apiKey = process.env.NOWPAYMENTS_API_KEY;
-    if (apiKey) {
-      try {
-        const body: Record<string, unknown> = {
-          price_amount: amount,
-          price_currency: currency.toLowerCase(),
-          order_id: payment.id,
-          order_description: subscriptionId ? 'Full Access - 30 days' : `Payment ${payment.id}`,
-          success_url: `${frontendUrl}/payment/${payment.id}?status=success`,
-          cancel_url: `${frontendUrl}/payment/${payment.id}?status=cancel`,
-        };
-        const ipnUrl = process.env.NOWPAYMENTS_IPN_CALLBACK_URL;
-        if (ipnUrl) body.ipn_callback_url = ipnUrl;
-        const res = await fetch(`${NOWPAYMENTS_API_BASE}/invoice`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-          },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`NOWPayments invoice failed: ${res.status} ${errText}`);
-        }
-        const invoice = (await res.json()) as { id?: number; invoice_id?: number; invoice_url?: string };
-        const invoiceId = String(invoice.id ?? invoice.invoice_id ?? '');
-        const invoiceUrl = invoice.invoice_url ?? '';
-        if (invoiceId) {
-          await this.prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              paymentId: invoiceId,
-              paymentUrl: invoiceUrl || paymentUrl,
-            },
-          });
-          return {
-            ...payment,
-            paymentId: invoiceId,
-            paymentUrl: paymentUrl,
-          };
-        }
-      } catch (e) {
-        if (process.env.NODE_ENV !== 'production') {
-          return { ...payment, paymentUrl };
-        }
-        throw new BadRequestException(
-          e instanceof Error ? e.message : 'Payment provider unavailable',
-        );
+    while (increment <= maxIncrement) {
+      const testAmount = parseFloat((baseAmount + increment / 100).toFixed(2));
+      const isTaken = recentPendingPayments.some(p => parseFloat(p.amount.toString()) === testAmount);
+
+      if (!isTaken) {
+        uniqueAmount = testAmount;
+        break;
       }
+      increment++;
     }
 
+    if (increment > maxIncrement) {
+      throw new BadRequestException('Too many concurrent checkout sessions. Please try again in a few minutes.');
+    }
+
+    // Set expiration 10 mins from now
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    const paymentInfoMeta = {
+      ...(metadata || {}),
+      walletAddress: process.env.TRC20_WALLET_ADDRESS || 'TMkU...', // Provide a fallback or error
+      expiresAt: expiresAt.toISOString(),
+    };
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        userId,
+        amount: uniqueAmount,
+        currency,
+        status: 'pending',
+        paymentMethod: 'crypto_trc20',
+        subscriptionId: subscriptionId || null,
+        metadata: paymentInfoMeta,
+      },
+    });
+
+    // Provide the frontend with the required info
     return {
       ...payment,
-      paymentUrl,
+      paymentId: payment.id, // We use our own DB ID now
+      paymentUrl: '', // No external URL anymore
     };
   }
 
