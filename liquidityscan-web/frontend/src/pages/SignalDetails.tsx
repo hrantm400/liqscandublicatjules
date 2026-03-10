@@ -610,6 +610,8 @@ export function SignalDetails() {
               >
                 {/* Execution Actions */}
                 <motion.div
+                  initial="initial"
+                  animate="animate"
                   variants={scaleInVariants}
                   className="glass-panel rounded-2xl p-6 flex flex-col gap-6"
                 >
@@ -681,6 +683,8 @@ export function SignalDetails() {
 
                 {/* Signal Context — SE Lifecycle Details */}
                 <motion.div
+                  initial="initial"
+                  animate="animate"
                   variants={scaleInVariants}
                   className="glass-panel rounded-2xl p-6 flex flex-col gap-5 flex-1"
                 >
@@ -713,9 +717,9 @@ export function SignalDetails() {
                     <div className="flex items-center justify-between py-1">
                       <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Close Reason</span>
                       <span className={`font-mono font-bold text-sm px-2 py-0.5 rounded ${signalData.se_close_reason === 'TP2' ? 'bg-emerald-500/15 text-emerald-400' :
-                          signalData.se_close_reason === 'SL' ? 'bg-red-500/15 text-red-400' :
-                            signalData.se_close_reason === 'OPPOSITE_REV' ? 'bg-blue-500/15 text-blue-400' :
-                              'bg-gray-500/15 dark:text-gray-400 light:text-slate-500'
+                        signalData.se_close_reason === 'SL' ? 'bg-red-500/15 text-red-400' :
+                          signalData.se_close_reason === 'OPPOSITE_REV' ? 'bg-blue-500/15 text-blue-400' :
+                            'bg-gray-500/15 dark:text-gray-400 light:text-slate-500'
                         }`}>
                         {signalData.se_close_reason === 'OPPOSITE_REV' ? 'OPP REV' : signalData.se_close_reason}
                       </span>
@@ -776,8 +780,8 @@ export function SignalDetails() {
                       <div className="w-full h-2 dark:bg-white/5 light:bg-green-100/50 rounded-full overflow-hidden">
                         <motion.div
                           className={`h-full rounded-full ${(signalData.candles_tracked / signalData.max_candles) > 0.8
-                              ? 'bg-red-400 shadow-[0_0_10px_rgba(239,68,68,0.4)]'
-                              : 'bg-primary shadow-[0_0_10px_rgba(19,236,55,0.4)]'
+                            ? 'bg-red-400 shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                            : 'bg-primary shadow-[0_0_10px_rgba(19,236,55,0.4)]'
                             }`}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min((signalData.candles_tracked / signalData.max_candles) * 100, 100)}%` }}
