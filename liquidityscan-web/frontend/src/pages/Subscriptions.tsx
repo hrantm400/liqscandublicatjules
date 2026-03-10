@@ -12,16 +12,23 @@ export function Subscriptions() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      userApi.getTier(),
-      userApi.getSubscriptions()
-    ]).then(([tierData, plansData]) => {
-      setTier(tierData);
-      setPlans(plansData);
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
+    // Fetch tier (may fail if not logged in)
+    userApi.getTier()
+      .then(setTier)
+      .catch(() => {
+        console.warn('Could not fetch user tier');
+      });
+
+    // Fetch plans independently
+    userApi.getSubscriptions()
+      .then(plansData => {
+        setPlans(plansData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch subscriptions', err);
+        setLoading(false);
+      });
   }, []);
 
   const isPaid = tier?.isPaid || user?.subscriptionId;
