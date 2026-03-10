@@ -18,6 +18,8 @@ import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
 import { useVolumeData } from '../hooks/useVolumeData';
+import { useTierGating } from '../hooks/useTierGating';
+import { ProOverlay } from '../components/ProOverlay';
 import { VolumeBadge } from '../components/shared/VolumeFilter';
 
 // Component for signal card with static mini chart
@@ -77,6 +79,7 @@ function formatPrice(price: number | string) {
 export function MonitorCRT() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { isSymbolAllowed, isPaid: isTierPaid } = useTierGating();
     const [searchQuery, setSearchQuery] = useState('');
     const [bullFilter, setBullFilter] = useState('All');
     const [bearFilter, setBearFilter] = useState('All');
@@ -383,14 +386,15 @@ export function MonitorCRT() {
                                             ) : (
                                                 paginatedSignals.map((signal, index) => {
                                                     const meta = (signal as any).metadata || {};
+                                                    const isLocked = !isTierPaid && !isSymbolAllowed(signal.symbol);
                                                     return (
                                                         <motion.tr
                                                             key={signal.id}
                                                             initial={{ opacity: 0, y: 20, scale: 0.98 }}
                                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                                             transition={{ delay: index * 0.03, duration: 0.3 }}
-                                                            className="dark:hover:bg-white/[0.03] light:hover:bg-green-50 transition-all cursor-pointer group hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] border-b border-transparent hover:border-amber-500/10 relative"
-                                                            onClick={() => navigate(`/signals/${signal.id}`)}
+                                                            className={`dark:hover:bg-white/[0.03] light:hover:bg-green-50 transition-all cursor-pointer group hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] border-b border-transparent hover:border-amber-500/10 relative ${isLocked ? 'blur-[6px] select-none pointer-events-none' : ''}`}
+                                                            onClick={() => !isLocked && navigate(`/signals/${signal.id}`)}
                                                         >
                                                             <td className="px-6 py-2.5 font-bold dark:text-white light:text-text-dark whitespace-nowrap">
                                                                 <div className="flex items-center gap-3">
@@ -445,6 +449,7 @@ export function MonitorCRT() {
                                                 const meta = (signal as any).metadata || {};
                                                 const isLong = signal.signalType === 'BUY';
                                                 const directionLabel = isLong ? '▲ BULLISH' : '▼ BEARISH';
+                                                const isLocked = !isTierPaid && !isSymbolAllowed(signal.symbol);
 
                                                 return (
                                                     <motion.div
@@ -452,9 +457,10 @@ export function MonitorCRT() {
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ delay: index * 0.02, duration: 0.2 }}
-                                                        onClick={() => navigate(`/signals/${signal.id}`)}
-                                                        className="flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all"
+                                                        onClick={() => !isLocked && navigate(`/signals/${signal.id}`)}
+                                                        className={`relative flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all ${isLocked ? 'overflow-hidden' : ''}`}
                                                     >
+                                                        {isLocked && <ProOverlay />}
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-2.5">
                                                                 <SymbolAvatar symbol={signal.symbol} />

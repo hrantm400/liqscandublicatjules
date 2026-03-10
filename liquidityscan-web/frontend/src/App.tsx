@@ -78,6 +78,7 @@ function AppRoutes() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
           <Route path="/register" element={<AnimatedPage><Register /></AnimatedPage>} />
+          <Route path="/oauth-callback" element={<Navigate to="/dashboard" replace />} />
 
           {/* Redirect /app to dashboard */}
           <Route path="/app" element={<Navigate to="/dashboard" replace />} />

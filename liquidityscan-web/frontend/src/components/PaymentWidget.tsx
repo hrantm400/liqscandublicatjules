@@ -278,10 +278,10 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                             <div className="flex justify-center mb-4">
                                 <div className="p-2 dark:bg-white light:bg-white rounded-2xl shadow-lg">
                                     <img
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${walletAddress}`}
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&ecc=M&data=${encodeURIComponent(walletAddress)}`}
                                         alt={`${network} Address QR`}
-                                        width="160"
-                                        height="160"
+                                        width="200"
+                                        height="200"
                                         className="rounded-xl"
                                     />
                                 </div>

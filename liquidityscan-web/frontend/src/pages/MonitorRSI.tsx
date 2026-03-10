@@ -19,6 +19,8 @@ import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
 import { useVolumeData } from '../hooks/useVolumeData';
 import { VolumeBadge } from '../components/shared/VolumeFilter';
+import { useTierGating } from '../hooks/useTierGating';
+import { ProOverlay } from '../components/ProOverlay';
 
 // Symbol Avatar Component
 function SymbolAvatar({ symbol }: { symbol: string }) {
@@ -44,6 +46,7 @@ function SymbolAvatar({ symbol }: { symbol: string }) {
 export function MonitorRSI() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isSymbolAllowed, isPaid: isTierPaid } = useTierGating();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [activeTimeframe, setActiveTimeframe] = useState<Timeframe | 'all'>(
     (searchParams.get('timeframe') as Timeframe) || 'all',
@@ -528,6 +531,7 @@ export function MonitorRSI() {
                     ) : (
                       paginatedSignals.map((signal, index) => {
                         const divergenceType = getDivergenceType(signal);
+                        const isLocked = !isTierPaid && !isSymbolAllowed(signal.symbol);
 
                         return (
                           <motion.tr
@@ -535,8 +539,8 @@ export function MonitorRSI() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05, duration: 0.3 }}
-                            className="dark:hover:bg-white/5 light:hover:bg-green-100 transition-colors cursor-pointer group"
-                            onClick={() => navigate(`/signals/${signal.id}`)}
+                            className={`dark:hover:bg-white/5 light:hover:bg-green-100 transition-colors cursor-pointer group ${isLocked ? 'blur-[6px] select-none pointer-events-none' : ''}`}
+                            onClick={() => !isLocked && navigate(`/signals/${signal.id}`)}
                           >
                             <td className="px-6 py-2.5 font-bold dark:text-white light:text-text-dark whitespace-nowrap">
                               <div className="flex items-center gap-3">
@@ -580,6 +584,7 @@ export function MonitorRSI() {
                     paginatedSignals.map((signal, index) => {
                       const divergenceType = getDivergenceType(signal);
                       const isLong = signal.signalType === 'BUY';
+                      const isLocked = !isTierPaid && !isSymbolAllowed(signal.symbol);
 
                       return (
                         <motion.div
@@ -587,9 +592,10 @@ export function MonitorRSI() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.02, duration: 0.2 }}
-                          onClick={() => navigate(`/signals/${signal.id}`)}
-                          className="flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all"
+                          onClick={() => !isLocked && navigate(`/signals/${signal.id}`)}
+                          className={`relative flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all ${isLocked ? 'overflow-hidden' : ''}`}
                         >
+                          {isLocked && <ProOverlay />}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                               <SymbolAvatar symbol={signal.symbol} />

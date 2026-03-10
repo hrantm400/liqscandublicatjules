@@ -25,6 +25,8 @@ import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
 import { useVolumeData } from '../hooks/useVolumeData';
 import { VolumeBadge } from '../components/shared/VolumeFilter';
+import { useTierGating } from '../hooks/useTierGating';
+import { ProOverlay } from '../components/ProOverlay';
 
 // Component for signal card with static mini chart
 function SignalCardWithChart({ signal, isLong }: { signal: Signal; isLong: boolean }) {
@@ -160,18 +162,10 @@ export function MonitorSuperEngulfing() {
     tab: statusFilter,
   });
 
-  // Free Forever (SCOUT): restrict to allowed pairs only (BTC, ETH, EURUSD, XAUUSD)
-  const subscriptionFilteredSignals = useMemo(() => {
-    if (!isFreeForever || !allowedPairs?.length) return statusFilteredSignals;
-    return statusFilteredSignals.filter((s) =>
-      allowedPairs.some(
-        (p) =>
-          s.symbol === p ||
-          s.symbol.toUpperCase().startsWith(p.toUpperCase()) ||
-          s.symbol.toUpperCase().includes(p.toUpperCase())
-      )
-    );
-  }, [statusFilteredSignals, isFreeForever, allowedPairs]);
+  // Tier gating: show ALL signals for everyone (don't filter them out)
+  // FREE users see them blurred. PAID users see them clearly.
+  const { isSymbolAllowed, isPaid: isTierPaid } = useTierGating();
+  const subscriptionFilteredSignals = statusFilteredSignals;
 
   // Pagination
   const totalPages = Math.ceil(subscriptionFilteredSignals.length / pageSize);
@@ -681,63 +675,66 @@ export function MonitorSuperEngulfing() {
                           </td>
                         </tr>
                       ) : (
-                        paginatedSignals.map((signal, index) => (
-                          <motion.tr
-                            key={signal.id}
-                            initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ delay: index * 0.03, duration: 0.3 }}
-                            className="dark:hover:bg-white/[0.03] light:hover:bg-green-50 transition-all cursor-pointer group hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] border-b border-transparent hover:border-primary/10 relative"
-                            onClick={() => navigate(`/signals/${signal.id}`)}
-                          >
-                            <td className="px-6 py-2.5 font-bold dark:text-white light:text-text-dark whitespace-nowrap">
-                              <div className="flex items-center gap-3">
-                                <SymbolAvatar symbol={signal.symbol} />
-                                <span className="text-sm">{signal.symbol}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark">
-                              Binance Perp
-                            </td>
-                            <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">
-                              {(() => {
-                                const pattern = signal.metadata?.type || signal.metadata?.pattern || 'RUN';
-                                const direction = signal.signalType === 'BUY' ? 'Bullish' : 'Bearish';
+                        paginatedSignals.map((signal, index) => {
+                          const isLocked = !isTierPaid && !isSymbolAllowed(signal.symbol);
+                          return (
+                            <motion.tr
+                              key={signal.id}
+                              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ delay: index * 0.03, duration: 0.3 }}
+                              className={`dark:hover:bg-white/[0.03] light:hover:bg-green-50 transition-all cursor-pointer group hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] border-b border-transparent hover:border-primary/10 relative ${isLocked ? 'blur-[6px] select-none pointer-events-none' : ''}`}
+                              onClick={() => !isLocked && navigate(`/signals/${signal.id}`)}
+                            >
+                              <td className="px-6 py-2.5 font-bold dark:text-white light:text-text-dark whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  <SymbolAvatar symbol={signal.symbol} />
+                                  <span className="text-sm">{signal.symbol}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark">
+                                Binance Perp
+                              </td>
+                              <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">
+                                {(() => {
+                                  const pattern = signal.metadata?.type || signal.metadata?.pattern || 'RUN';
+                                  const direction = signal.signalType === 'BUY' ? 'Bullish' : 'Bearish';
 
-                                if (pattern === 'RUN_PLUS') {
-                                  return `${direction} Run+`;
-                                }
-                                if (pattern === 'REV_PLUS') {
-                                  return `${direction} Rev+`;
-                                }
-                                if (pattern === 'REV') {
-                                  return `${direction} Rev`;
-                                }
-                                return `${direction} Run`;
-                              })()}
-                            </td>
-                            <td className="px-6 py-2.5 text-center">
-                              <SignalStatusBadge signal={signal} />
-                            </td>
-                            <td className="px-6 py-2.5 text-center">
-                              <SignalBadge signal={signal} />
-                            </td>
-                            <td className="px-6 py-2.5 text-right">
-                              <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
-                            </td>
-                            <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">
-                              {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
-                            </td>
-                            <td className="px-6 py-2.5 text-right">
-                              <Link
-                                to={`/signals/${signal.id}`}
-                                className="text-primary opacity-0 group-hover:opacity-100 transition-opacity dark:hover:text-white light:hover:text-text-dark"
-                              >
-                                Analyze
-                              </Link>
-                            </td>
-                          </motion.tr>
-                        ))
+                                  if (pattern === 'RUN_PLUS') {
+                                    return `${direction} Run+`;
+                                  }
+                                  if (pattern === 'REV_PLUS') {
+                                    return `${direction} Rev+`;
+                                  }
+                                  if (pattern === 'REV') {
+                                    return `${direction} Rev`;
+                                  }
+                                  return `${direction} Run`;
+                                })()}
+                              </td>
+                              <td className="px-6 py-2.5 text-center">
+                                <SignalStatusBadge signal={signal} />
+                              </td>
+                              <td className="px-6 py-2.5 text-center">
+                                <SignalBadge signal={signal} />
+                              </td>
+                              <td className="px-6 py-2.5 text-right">
+                                <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
+                              </td>
+                              <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">
+                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                              </td>
+                              <td className="px-6 py-2.5 text-right">
+                                <Link
+                                  to={`/signals/${signal.id}`}
+                                  className="text-primary opacity-0 group-hover:opacity-100 transition-opacity dark:hover:text-white light:hover:text-text-dark"
+                                >
+                                  Analyze
+                                </Link>
+                              </td>
+                            </motion.tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -756,6 +753,7 @@ export function MonitorSuperEngulfing() {
                         if (pattern === 'RUN_PLUS') patternLabel = `${direction} Run+`;
                         if (pattern === 'REV_PLUS') patternLabel = `${direction} Rev+`;
                         if (pattern === 'REV') patternLabel = `${direction} Rev`;
+                        const isLocked = !isTierPaid && !isSymbolAllowed(signal.symbol);
 
                         return (
                           <motion.div
@@ -763,9 +761,10 @@ export function MonitorSuperEngulfing() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.02, duration: 0.2 }}
-                            onClick={() => navigate(`/signals/${signal.id}`)}
-                            className="flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all"
+                            onClick={() => !isLocked && navigate(`/signals/${signal.id}`)}
+                            className={`relative flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all ${isLocked ? 'overflow-hidden' : ''}`}
                           >
+                            {isLocked && <ProOverlay />}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2.5">
                                 <SymbolAvatar symbol={signal.symbol} />
