@@ -426,8 +426,19 @@ export class LifecycleService implements OnModuleInit {
                     updateData.result = legacyResult;
                 }
                 updateData.closedAt = result.closed_at_v2;
-                updateData.se_close_price = effectivePrice;
-                
+
+                if (result.result_type === 'sl') {
+                    updateData.se_close_price = runtimeSignal.current_sl_price;
+                } else if (result.result_type === 'tp1') {
+                    updateData.se_close_price = runtimeSignal.tp1_price;
+                } else if (result.result_type === 'tp2_full') {
+                    updateData.se_close_price = runtimeSignal.tp2_price;
+                } else if (result.result_type === 'candle_expiry') {
+                    updateData.se_close_price = currentPrice;
+                }
+
+                const closePrice = updateData.se_close_price;
+
                 // Map result_type to legacy se_close_reason
                 if (result.result_type === 'tp2_full') {
                     updateData.se_close_reason = 'TP2';
@@ -444,7 +455,7 @@ export class LifecycleService implements OnModuleInit {
                 updateData.outcome = updateData.status;
 
                 const isBull = runtimeSignal.direction_v2 === 'bullish';
-                updateData.pnlPercent = this.calcPnl(isBull, runtimeSignal.entry_price, effectivePrice);
+                updateData.pnlPercent = this.calcPnl(isBull, runtimeSignal.entry_price, closePrice);
             }
 
             // Persist to DB
