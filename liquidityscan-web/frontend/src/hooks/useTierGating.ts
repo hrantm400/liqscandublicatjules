@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore';
 
 const FREE_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'XAUUSDT', 'XAGUSDT'];
 // Add known developer emails here for automatic premium access
-const DEV_EMAILS = ['hrantttt1996@gmail.com'];
+const DEV_EMAILS = ['hrantttt1996@gmail.com', 'dev@liquidityscan.local'];
 
 export interface TierGating {
     isPaid: boolean;
