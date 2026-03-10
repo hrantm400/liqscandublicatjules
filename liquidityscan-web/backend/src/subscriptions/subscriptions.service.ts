@@ -5,7 +5,7 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll() {
     return this.prisma.subscription.findMany({
@@ -101,7 +101,7 @@ export class SubscriptionsService {
 
   async remove(id: string) {
     const subscription = await this.findOne(id);
-    
+
     // Check if any users are using this subscription
     const userCount = await this.prisma.user.count({
       where: { subscriptionId: id },
@@ -172,6 +172,7 @@ export class SubscriptionsService {
         subscriptionId: subscriptionId,
         subscriptionStatus: 'active',
         subscriptionExpiresAt: expiresAt,
+        tier: subscription.tier === 'FULL_ACCESS' ? 'PAID_MONTHLY' : 'FREE',
       },
       include: {
         subscription: true,

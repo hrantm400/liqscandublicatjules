@@ -4,35 +4,24 @@ import { useAuthStore } from '../store/authStore';
 import { userApi } from '../services/userApi';
 import { PaymentWidget } from '../components/PaymentWidget';
 
-const FREE_FEATURES = [
-  { text: 'BTC, ETH, XAU, XAG only', included: true },
-  { text: '1 RSI signal / day', included: true },
-  { text: '1 ICT Bias signal / day', included: true },
-  { text: '24h history', included: true },
-  { text: '400+ pairs', included: false },
-  { text: 'All strategies', included: false },
-  { text: 'Telegram alerts', included: false },
-  { text: 'Full archive & stats', included: false },
-];
-
-const PRO_FEATURES = [
-  { text: '500+ pairs (all markets)', included: true },
-  { text: 'Unlimited RSI signals', included: true },
-  { text: 'Unlimited ICT Bias signals', included: true },
-  { text: 'Full history & archive', included: true },
-  { text: 'All SE variants (Plus/Fractals)', included: true },
-  { text: '15+ strategy presets', included: true },
-  { text: 'Telegram God Mode alerts', included: true },
-  { text: 'Priority support', included: true },
-];
-
 export function Subscriptions() {
   const { user } = useAuthStore();
   const [showPayment, setShowPayment] = useState(false);
   const [tier, setTier] = useState<any>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    userApi.getTier().then(setTier).catch(() => { });
+    Promise.all([
+      userApi.getTier(),
+      userApi.getSubscriptions()
+    ]).then(([tierData, plansData]) => {
+      setTier(tierData);
+      setPlans(plansData);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
   }, []);
 
   const isPaid = tier?.isPaid || user?.subscriptionId;
@@ -73,81 +62,80 @@ export function Subscriptions() {
       )}
 
       {/* Plan Comparison */}
-      {!showPayment && (
+      {!showPayment && !loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* FREE Card */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-            className="glass-panel rounded-2xl overflow-hidden border dark:border-white/10 light:border-gray-200 flex flex-col">
-            <div className="p-6 border-b dark:border-white/5 light:border-gray-100">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl dark:bg-white/5 light:bg-gray-100 flex items-center justify-center">
-                  <span className="material-symbols-outlined dark:text-gray-400 light:text-gray-500">person</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold dark:text-white light:text-text-dark">Free</h3>
-                  <p className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest">Starter</p>
-                </div>
-              </div>
-              <div className="text-3xl font-black dark:text-white light:text-text-dark">$0<span className="text-sm font-normal dark:text-gray-500 light:text-gray-400">/forever</span></div>
-            </div>
-            <div className="p-6 space-y-3">
-              {FREE_FEATURES.map(f => (
-                <div key={f.text} className="flex items-center gap-3 text-sm">
-                  <span className={`material-symbols-outlined text-base ${f.included ? 'text-primary' : 'dark:text-gray-700 light:text-gray-300'}`}>
-                    {f.included ? 'check_circle' : 'cancel'}
-                  </span>
-                  <span className={f.included ? 'dark:text-gray-300 light:text-gray-600' : 'dark:text-gray-600 light:text-gray-400 line-through'}>
-                    {f.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+          {plans.map((plan: any) => {
+            const isScout = plan.tier === 'SCOUT';
+            const isPro = plan.tier === 'FULL_ACCESS';
 
-          {/* PRO Card */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-            className="glass-panel rounded-2xl overflow-hidden border-2 border-primary/40 relative flex flex-col">
-            {/* Popular Badge */}
-            <div className="absolute top-4 right-4 bg-primary text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
-              Most Popular
-            </div>
-            <div className="p-6 border-b border-primary/10 bg-primary/[0.03]">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
-                  <span className="material-symbols-outlined text-primary">diamond</span>
+            return (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`glass-panel rounded-2xl overflow-hidden border flex flex-col relative ${isPro ? 'border-2 border-primary/40' : 'dark:border-white/10 light:border-gray-200'
+                  }`}
+              >
+                {isPro && (
+                  <div className="absolute top-4 right-4 bg-primary text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                    Most Popular
+                  </div>
+                )}
+
+                <div className={`p-6 border-b ${isPro ? 'border-primary/10 bg-primary/[0.03]' : 'dark:border-white/5 light:border-gray-100'}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isPro ? 'bg-primary/20 border border-primary/30' : 'dark:bg-white/5 light:bg-gray-100'
+                      }`}>
+                      <span className={`material-symbols-outlined ${isPro ? 'text-primary' : 'dark:text-gray-400 light:text-gray-500'}`}>
+                        {isScout ? 'person' : 'diamond'}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold dark:text-white light:text-text-dark">{plan.name}</h3>
+                      <p className={`text-[10px] uppercase tracking-widest font-bold ${isPro ? 'text-primary' : 'dark:text-gray-500 light:text-gray-400'}`}>
+                        {isScout ? 'Starter' : 'Full Access'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black dark:text-white light:text-text-dark">
+                      ${plan.priceMonthly === 0 ? '0' : plan.priceMonthly}
+                    </span>
+                    {plan.priceMonthly > 0 && (
+                      <>
+                        <span className="text-sm dark:text-gray-500 light:text-gray-400 line-through">$49</span>
+                        <span className="text-sm dark:text-gray-400 light:text-gray-500">/1st month</span>
+                      </>
+                    )}
+                    {plan.priceMonthly === 0 && <span className="text-sm font-normal dark:text-gray-500 light:text-gray-400">/forever</span>}
+                  </div>
+                  {isPro && <p className="text-xs text-primary mt-1">50% OFF first month • Then $49/mo</p>}
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold dark:text-white light:text-text-dark">Pro</h3>
-                  <p className="text-[10px] text-primary uppercase tracking-widest font-bold">Full Access</p>
+
+                <div className="p-6 space-y-3 flex-1 flex flex-col">
+                  {plan.features?.map((feature: string) => (
+                    <div key={feature} className="flex items-center gap-3 text-sm">
+                      <span className="material-symbols-outlined text-base text-primary">check_circle</span>
+                      <span className="dark:text-gray-300 light:text-gray-600">{feature}</span>
+                    </div>
+                  ))}
+
+                  <div className="flex-1" />
+
+                  {isPro && !isPaid && (
+                    <button
+                      onClick={() => setShowPayment(true)}
+                      className="w-full mt-4 py-4 md:py-3 rounded-2xl bg-primary text-black font-bold text-base transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(19,236,55,0.2)] flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-xl md:text-base">bolt</span>
+                      Upgrade Now
+                    </button>
+                  )}
                 </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black dark:text-white light:text-text-dark">$24.50</span>
-                <span className="text-sm dark:text-gray-500 light:text-gray-400 line-through">$49</span>
-                <span className="text-sm dark:text-gray-400 light:text-gray-500">/1st month</span>
-              </div>
-              <p className="text-xs text-primary mt-1">50% OFF first month • Then $49/mo</p>
-            </div>
-            <div className="p-6 space-y-3">
-              {PRO_FEATURES.map(f => (
-                <div key={f.text} className="flex items-center gap-3 text-sm">
-                  <span className="material-symbols-outlined text-base text-primary">check_circle</span>
-                  <span className="dark:text-gray-300 light:text-gray-600">{f.text}</span>
-                </div>
-              ))}
-              {/* Push button to bottom if contents are smaller */}
-              <div className="flex-1"></div>
-              {!isPaid && (
-                <button
-                  onClick={() => setShowPayment(true)}
-                  className="w-full mt-4 py-4 md:py-3 rounded-2xl bg-primary text-black font-bold text-base transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(19,236,55,0.2)] flex items-center justify-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-xl md:text-base">bolt</span>
-                  Upgrade Now
-                </button>
-              )}
-            </div>
-          </motion.div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 

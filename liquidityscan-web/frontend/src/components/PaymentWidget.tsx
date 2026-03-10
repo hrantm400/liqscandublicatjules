@@ -7,18 +7,28 @@ interface PaymentWidgetProps {
     onClose?: () => void;
 }
 
-const PRICING = {
-    monthly: { original: 49, current: 24.50, label: 'Monthly', plan: 'monthly' },
-    annual: { original: 588, current: 490, label: 'Annual', plan: 'annual' },
-};
-
 export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
     const [step, setStep] = useState<'checkout' | 'generating' | 'awaiting' | 'success'>('checkout');
     const [plan, setPlan] = useState<'monthly' | 'annual'>('monthly');
+    const [pricing, setPricing] = useState<any>(null);
+    const [subscriptionId, setSubscriptionId] = useState<string>('');
     const [timeLeft, setTimeLeft] = useState(900);
     const [copied, setCopied] = useState(false);
     const [paymentId, setPaymentId] = useState('');
     const [paymentUrl, setPaymentUrl] = useState('');
+
+    useEffect(() => {
+        userApi.getSubscriptions().then(plans => {
+            const fullAccess = plans.find(p => p.tier === 'FULL_ACCESS');
+            if (fullAccess) {
+                setSubscriptionId(fullAccess.id);
+                setPricing({
+                    monthly: { original: 49, current: Number(fullAccess.priceMonthly), label: 'Monthly', plan: 'monthly' },
+                    annual: { original: 588, current: Number(fullAccess.priceYearly || 490), label: 'Annual', plan: 'annual' },
+                });
+            }
+        }).catch(() => { });
+    }, []);
 
     // Polling for payment confirmation
     const checkPaymentStatus = useCallback(async () => {
@@ -63,13 +73,15 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
     };
 
     const handlePay = async () => {
+        if (!pricing) return;
         setStep('generating');
         try {
-            const price = PRICING[plan];
+            const price = pricing[plan];
             const result = await userApi.createPayment(
                 price.current,
                 'USD',
-                undefined
+                subscriptionId,
+                { plan }
             );
             setPaymentId(result.id);
             setPaymentUrl(result.paymentUrl || '');
@@ -80,7 +92,9 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
         }
     };
 
-    const selected = PRICING[plan];
+    const selected = pricing ? pricing[plan] : null;
+
+    if (!pricing) return null;
 
     return (
         <div className="w-full max-w-[440px] mx-auto">
@@ -114,8 +128,8 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                 <div
                                     onClick={() => setPlan('monthly')}
                                     className={`relative cursor-pointer rounded-2xl p-4 transition-all border ${plan === 'monthly'
-                                            ? 'bg-primary/[0.08] border-primary/40 shadow-[inset_0_0_20px_rgba(19,236,55,0.05)]'
-                                            : 'dark:bg-white/[0.02] light:bg-gray-50 dark:border-white/5 light:border-gray-200 hover:dark:border-white/10 hover:light:border-green-300'
+                                        ? 'bg-primary/[0.08] border-primary/40 shadow-[inset_0_0_20px_rgba(19,236,55,0.05)]'
+                                        : 'dark:bg-white/[0.02] light:bg-gray-50 dark:border-white/5 light:border-gray-200 hover:dark:border-white/10 hover:light:border-green-300'
                                         }`}
                                 >
                                     <div className="flex justify-between items-center">
@@ -127,8 +141,8 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                             <div className="text-sm dark:text-gray-400 light:text-gray-500 mt-1">Full platform features</div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-xl font-bold dark:text-white light:text-text-dark">${PRICING.monthly.current.toFixed(2)}</div>
-                                            <div className="text-xs dark:text-gray-600 light:text-gray-400 line-through">${PRICING.monthly.original.toFixed(2)}</div>
+                                            <div className="text-xl font-bold dark:text-white light:text-text-dark">${pricing.monthly.current.toFixed(2)}</div>
+                                            <div className="text-xs dark:text-gray-600 light:text-gray-400 line-through">${pricing.monthly.original.toFixed(2)}</div>
                                         </div>
                                     </div>
                                     <div className={`absolute top-1/2 -left-px -translate-y-1/2 w-1 h-8 rounded-r-full transition-all ${plan === 'monthly' ? 'bg-primary shadow-[0_0_10px_rgba(19,236,55,0.8)]' : 'bg-transparent'}`} />
@@ -138,8 +152,8 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                 <div
                                     onClick={() => setPlan('annual')}
                                     className={`relative cursor-pointer rounded-2xl p-4 transition-all border ${plan === 'annual'
-                                            ? 'bg-primary/[0.08] border-primary/40 shadow-[inset_0_0_20px_rgba(19,236,55,0.05)]'
-                                            : 'dark:bg-white/[0.02] light:bg-gray-50 dark:border-white/5 light:border-gray-200 hover:dark:border-white/10 hover:light:border-green-300'
+                                        ? 'bg-primary/[0.08] border-primary/40 shadow-[inset_0_0_20px_rgba(19,236,55,0.05)]'
+                                        : 'dark:bg-white/[0.02] light:bg-gray-50 dark:border-white/5 light:border-gray-200 hover:dark:border-white/10 hover:light:border-green-300'
                                         }`}
                                 >
                                     <div className="flex justify-between items-center">
@@ -148,8 +162,8 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                             <div className="text-sm text-primary mt-1">Save $98 per year</div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-xl font-bold dark:text-white light:text-text-dark">${PRICING.annual.current}</div>
-                                            <div className="text-xs dark:text-gray-600 light:text-gray-400 line-through">${PRICING.annual.original}</div>
+                                            <div className="text-xl font-bold dark:text-white light:text-text-dark">${pricing.annual.current}</div>
+                                            <div className="text-xs dark:text-gray-600 light:text-gray-400 line-through">${pricing.annual.original}</div>
                                         </div>
                                     </div>
                                     <div className={`absolute top-1/2 -left-px -translate-y-1/2 w-1 h-8 rounded-r-full transition-all ${plan === 'annual' ? 'bg-primary shadow-[0_0_10px_rgba(19,236,55,0.8)]' : 'bg-transparent'}`} />

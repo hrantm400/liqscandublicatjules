@@ -124,10 +124,10 @@ class ApiClient {
 
 
   // Payments
-  async createPayment(amount: number, currency?: string, subscriptionId?: string) {
+  async createPayment(amount: number, currency?: string, subscriptionId?: string, metadata?: any) {
     return this.request<any>('/payments/create', {
       method: 'POST',
-      body: JSON.stringify({ amount, currency, subscriptionId }),
+      body: JSON.stringify({ amount, currency, subscriptionId, metadata }),
     });
   }
 

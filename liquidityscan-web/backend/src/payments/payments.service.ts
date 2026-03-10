@@ -9,7 +9,7 @@ export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
   constructor(private prisma: PrismaService) { }
 
-  async createPayment(userId: string, amount: number, currency: string = 'USD', subscriptionId?: string) {
+  async createPayment(userId: string, amount: number, currency: string = 'USD', subscriptionId?: string, metadata?: any) {
     const payment = await this.prisma.payment.create({
       data: {
         userId,
@@ -18,6 +18,7 @@ export class PaymentsService {
         status: 'pending',
         paymentMethod: 'crypto',
         subscriptionId: subscriptionId || null,
+        metadata: metadata || null,
       },
     });
 
@@ -82,7 +83,7 @@ export class PaymentsService {
     };
   }
 
-  async createSubscriptionPayment(userId: string, subscriptionId: string) {
+  async createSubscriptionPayment(userId: string, subscriptionId: string, plan: 'monthly' | 'annual' = 'monthly') {
     // Get subscription details
     const subscription = await this.prisma.subscription.findUnique({
       where: { id: subscriptionId },
@@ -92,8 +93,12 @@ export class PaymentsService {
       throw new NotFoundException(`Subscription with ID ${subscriptionId} not found`);
     }
 
+    const amount = plan === 'annual' && subscription.priceYearly
+      ? parseFloat(subscription.priceYearly.toString())
+      : parseFloat(subscription.priceMonthly.toString());
+
     // Create payment for subscription
-    return this.createPayment(userId, parseFloat(subscription.priceMonthly.toString()), 'USD', subscriptionId);
+    return this.createPayment(userId, amount, 'USD', subscriptionId, { plan });
   }
 
   async processSubscriptionPayment(paymentId: string) {
@@ -128,9 +133,17 @@ export class PaymentsService {
     // Determine plan type from payment metadata or amount
     const meta = (payment.metadata as any) || {};
     const payAmount = Number(payment.amount);
+
+    // Check if it's an annual plan from metadata or price
     const isAnnual = meta.plan === 'annual' || payAmount >= 400;
+
+    // Use subscription duration if available, otherwise fallback
+    let durationDays = subscription.duration || 30;
+    if (isAnnual && subscription.priceYearly) {
+      durationDays = 365;
+    }
+
     const tier = isAnnual ? 'PAID_ANNUAL' : 'PAID_MONTHLY';
-    const durationDays = isAnnual ? 365 : 30;
 
     // Calculate expiration date
     const expiresAt = new Date();

@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private paymentsService: PaymentsService) {}
+  constructor(private paymentsService: PaymentsService) { }
 
   @Post('nowpayments-webhook')
   @HttpCode(HttpStatus.OK)
@@ -26,7 +26,7 @@ export class PaymentsController {
   @Post('create')
   @UseGuards(JwtAuthGuard)
   async createPayment(
-    @Body() data: { amount: number; currency?: string; subscriptionId?: string },
+    @Body() data: { amount: number; currency?: string; subscriptionId?: string; metadata?: any },
     @Req() req: any,
   ) {
     return this.paymentsService.createPayment(
@@ -34,6 +34,7 @@ export class PaymentsController {
       data.amount,
       data.currency || 'USD',
       data.subscriptionId,
+      data.metadata,
     );
   }
 
