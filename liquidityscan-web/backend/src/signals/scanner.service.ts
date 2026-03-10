@@ -110,14 +110,18 @@ export class ScannerService implements OnModuleInit {
             this.scanStrategy1All().catch((err) => this.logger.error(`Strategy 1 scan error: ${err.message}`));
         }, 5 * 60 * 1000);
 
-        // Run both once on startup after a slight delay
+        // Run both once on startup — STAGGERED to avoid rate limit collision
         setTimeout(() => {
             // One-time bulk cleanup: archive all stale signals
             this.signalsService.archiveAllStaleSignals()
                 .catch((err) => this.logger.error(`Startup archive cleanup error: ${err.message}`));
             this.scanBasicStrategies().catch((err) => this.logger.error(`Startup basic scan error: ${err.message}`));
-            this.scanStrategy1All().catch((err) => this.logger.error(`Startup Strategy 1 scan error: ${err.message}`));
         }, 10000);
+
+        // Strategy 1 starts 60s after basic scan to avoid overlap
+        setTimeout(() => {
+            this.scanStrategy1All().catch((err) => this.logger.error(`Startup Strategy 1 scan error: ${err.message}`));
+        }, 70000);
     }
 
     /**
@@ -144,8 +148,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting scan for ${symbols.length} symbols (chunked)...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 8;
-            const DELAY_MS = 1500;
+            const CHUNK_SIZE = 4;   // Reduced from 8 — each symbol hits 12 endpoints
+            const DELAY_MS = 3000;  // 3s between chunks to stay under rate limits
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
@@ -215,8 +219,8 @@ export class ScannerService implements OnModuleInit {
             this.logger.log(`Starting 5-min Strategy 1 scan for ${symbols.length} symbols...`);
 
             let signalCount = 0;
-            const CHUNK_SIZE = 10;
-            const DELAY_MS = 800;
+            const CHUNK_SIZE = 5;    // Reduced from 10 to stay under rate limits
+            const DELAY_MS = 2000;   // 2s between chunks
 
             for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
                 const chunk = symbols.slice(i, i + CHUNK_SIZE);
