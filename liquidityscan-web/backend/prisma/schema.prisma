@@ -287,14 +287,16 @@ model SuperEngulfingSignal {
   entry_price     Float?        // se_candle.close - THE entry price
   sl_price        Float?        // Original SL - NEVER changes after init
   current_sl_price Float?       // Starts at sl_price, moves to entry_price after TP1 hit
-  tp1_price       Float?        // 1:2 RR target
-  tp2_price       Float?        // 1:3 RR target (full win)
+  tp1_price       Float?        // 1:1.5 RR target — close 50%
+  tp2_price       Float?        // 1:2 RR target — close 25%
+  tp3_price       Float?        // 1:3 RR target — close 25% (full win)
   
   tp1_hit         Boolean       @default(false)   // Has TP1 been reached?
   tp2_hit         Boolean       @default(false)   // Has TP2 been reached?
+  tp3_hit         Boolean       @default(false)   // Has TP3 been reached?
   
   result_v2       String?       // "won" or "lost" - null while live
-  result_type     String?       // "tp1", "tp2_full", "sl", "candle_expiry" - null while live
+  result_type     String?       // "tp1", "tp2", "tp3_full", "sl", "candle_expiry" - null while live
   
   candle_count    Int           @default(0)       // Starts at 0, increments on each candle close
   

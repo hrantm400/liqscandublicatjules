@@ -344,6 +344,7 @@ export class ScannerService implements OnModuleInit {
                     current_sl_price: sig.sl_price, // Starts at sl_price
                     tp1_price: sig.tp1_price,
                     tp2_price: sig.tp2_price,
+                    tp3_price: sig.tp3_price,
                     max_candles,
                     candle_high: sig.candle_high,
                     candle_low: sig.candle_low,

@@ -195,7 +195,7 @@ export class SignalsService {
           data: toAdd.map((s) => {
             const meta = s.metadata as any;
             const isSuperEngulfing = s.strategyType === 'SUPER_ENGULFING';
-            
+
             return {
               id: s.id,
               strategyType: s.strategyType,
@@ -229,8 +229,10 @@ export class SignalsService {
                 current_sl_price: meta?.current_sl_price as number | undefined,
                 tp1_price: meta?.tp1_price as number | undefined,
                 tp2_price: meta?.tp2_price as number | undefined,
+                tp3_price: meta?.tp3_price as number | undefined,
                 tp1_hit: false,
                 tp2_hit: false,
+                tp3_hit: false,
                 result_v2: null,
                 result_type: null,
                 candle_count: 0,
@@ -490,7 +492,7 @@ export class SignalsService {
       });
       return rows.map((r) => {
         const isSuperEngulfing = r.strategyType === 'SUPER_ENGULFING';
-        
+
         return {
           id: r.id,
           strategyType: r.strategyType,
@@ -532,8 +534,10 @@ export class SignalsService {
             current_sl_price: r.current_sl_price ?? undefined,
             tp1_price: r.tp1_price ?? undefined,
             tp2_price: r.tp2_price ?? undefined,
+            tp3_price: r.tp3_price ?? undefined,
             tp1_hit: r.tp1_hit ?? undefined,
             tp2_hit: r.tp2_hit ?? undefined,
+            tp3_hit: r.tp3_hit ?? undefined,
             result_v2: r.result_v2 ?? undefined,
             result_type: r.result_type ?? undefined,
             candle_count: r.candle_count ?? undefined,
@@ -608,7 +612,7 @@ export class SignalsService {
       const isSuperEngulfing = strategyType === 'SUPER_ENGULFING';
 
       const total = rows.length;
-      
+
       // For SE v2, use state field; for others, use legacy status
       let active: number;
       let won: number;
@@ -624,7 +628,7 @@ export class SignalsService {
         live = rows.filter(r => r.state === 'live').length;
         closedSignals = rows.filter(r => r.state === 'closed').length;
         archived = 0; // SE v2 has no archive
-        
+
         active = live; // For backward compat
         won = rows.filter(r => r.result_v2 === 'won' || r.result === 'WIN').length;
         lost = rows.filter(r => r.result_v2 === 'lost' || r.result === 'LOSS').length;
@@ -635,7 +639,7 @@ export class SignalsService {
         won = rows.filter((r) => r.status === 'HIT_TP' || r.outcome === 'HIT_TP' || r.result === 'WIN').length;
         lost = rows.filter((r) => r.status === 'HIT_SL' || r.outcome === 'HIT_SL' || r.result === 'LOSS').length;
         expired = rows.filter((r) => r.status === 'EXPIRED' || r.outcome === 'EXPIRED' || r.lifecycleStatus === 'EXPIRED').length;
-        
+
         live = rows.filter(r => r.lifecycleStatus === 'PENDING' || r.lifecycleStatus === 'ACTIVE' || (!r.lifecycleStatus && r.status === 'ACTIVE')).length;
         closedSignals = rows.filter(r => r.lifecycleStatus === 'COMPLETED' || r.lifecycleStatus === 'EXPIRED' || (!r.lifecycleStatus && (r.status === 'HIT_TP' || r.status === 'HIT_SL' || r.status === 'EXPIRED' || r.status === 'CLOSED'))).length;
         archived = rows.filter(r => r.lifecycleStatus === 'ARCHIVED').length;

@@ -281,7 +281,7 @@ export class LifecycleService implements OnModuleInit {
         }
 
         const now = new Date();
-        let tp1Hit = 0, tp2Hit = 0, slHit = 0, expired = 0, unchanged = 0;
+        let tp1Hit = 0, tp2Hit = 0, tp3Hit = 0, slHit = 0, expired = 0, unchanged = 0;
 
         for (const signal of liveSeSignals) {
             const currentPrice = priceMap.get(signal.symbol);
@@ -310,9 +310,11 @@ export class LifecycleService implements OnModuleInit {
                 current_sl_price: signal.current_sl_price ?? signal.se_current_sl ?? signal.sl_price ?? signal.se_sl ?? 0,
                 tp1_price: signal.tp1_price ?? signal.se_tp1 ?? 0,
                 tp2_price: signal.tp2_price ?? signal.se_tp2 ?? 0,
+                tp3_price: signal.tp3_price ?? 0,
                 state: signal.state as 'live' | 'closed',
                 tp1_hit: signal.tp1_hit ?? signal.se_r_ratio_hit ?? false,
                 tp2_hit: signal.tp2_hit ?? false,
+                tp3_hit: signal.tp3_hit ?? false,
                 result_v2: signal.result_v2 ?? null,
                 result_type: signal.result_type ?? null,
                 candle_count: candleInfo.isCandleClose ? candleInfo.actualCandleCount - 1 : candleInfo.actualCandleCount,
@@ -326,12 +328,13 @@ export class LifecycleService implements OnModuleInit {
                 runtimeSignal.sl_price === 0 ||
                 runtimeSignal.tp1_price === 0 ||
                 runtimeSignal.tp2_price === 0 ||
+                runtimeSignal.tp3_price === 0 ||
                 runtimeSignal.entry_price === 0
             ) {
                 this.logger.warn(
-                    `SE v2 Lifecycle: Skipping signal ${signal.id} — missing price data ` +
+                    `SE v3 Lifecycle: Skipping signal ${signal.id} — missing price data ` +
                     `(entry=${runtimeSignal.entry_price}, sl=${runtimeSignal.sl_price}, ` +
-                    `tp1=${runtimeSignal.tp1_price}, tp2=${runtimeSignal.tp2_price}). ` +
+                    `tp1=${runtimeSignal.tp1_price}, tp2=${runtimeSignal.tp2_price}, tp3=${runtimeSignal.tp3_price}). ` +
                     `Signal may need manual cleanup or re-detection.`
                 );
                 unchanged++;
@@ -350,7 +353,9 @@ export class LifecycleService implements OnModuleInit {
                     const worstPrice = Math.min(currentPrice, extremes.low);
                     if (!runtimeSignal.tp1_hit && bestPrice >= runtimeSignal.tp1_price) {
                         effectivePrice = bestPrice;
-                    } else if (runtimeSignal.tp1_hit && bestPrice >= runtimeSignal.tp2_price) {
+                    } else if (runtimeSignal.tp1_hit && !runtimeSignal.tp2_hit && bestPrice >= runtimeSignal.tp2_price) {
+                        effectivePrice = bestPrice;
+                    } else if (runtimeSignal.tp2_hit && !runtimeSignal.tp3_hit && bestPrice >= runtimeSignal.tp3_price) {
                         effectivePrice = bestPrice;
                     } else if (worstPrice <= runtimeSignal.current_sl_price) {
                         effectivePrice = worstPrice;
@@ -360,7 +365,9 @@ export class LifecycleService implements OnModuleInit {
                     const worstPrice = Math.max(currentPrice, extremes.high);
                     if (!runtimeSignal.tp1_hit && bestPrice <= runtimeSignal.tp1_price) {
                         effectivePrice = bestPrice;
-                    } else if (runtimeSignal.tp1_hit && bestPrice <= runtimeSignal.tp2_price) {
+                    } else if (runtimeSignal.tp1_hit && !runtimeSignal.tp2_hit && bestPrice <= runtimeSignal.tp2_price) {
+                        effectivePrice = bestPrice;
+                    } else if (runtimeSignal.tp2_hit && !runtimeSignal.tp3_hit && bestPrice <= runtimeSignal.tp3_price) {
                         effectivePrice = bestPrice;
                     } else if (worstPrice >= runtimeSignal.current_sl_price) {
                         effectivePrice = worstPrice;
@@ -396,6 +403,7 @@ export class LifecycleService implements OnModuleInit {
             if (result.state !== undefined) updateData.state = result.state;
             if (result.tp1_hit !== undefined) updateData.tp1_hit = result.tp1_hit;
             if (result.tp2_hit !== undefined) updateData.tp2_hit = result.tp2_hit;
+            if (result.tp3_hit !== undefined) updateData.tp3_hit = result.tp3_hit;
             if (result.current_sl_price !== undefined) updateData.current_sl_price = result.current_sl_price;
             if (result.result_v2 !== undefined) updateData.result_v2 = result.result_v2;
             if (result.result_type !== undefined) updateData.result_type = result.result_type;
@@ -420,7 +428,7 @@ export class LifecycleService implements OnModuleInit {
             if (result.state === 'closed') {
                 const legacyResult = mapResultToLegacy(result.result_v2 ?? null);
                 const legacyStatus = mapStateToLegacyStatus(result.state, result.result_v2 ?? null);
-                
+
                 updateData.lifecycleStatus = legacyStatus;
                 if (legacyResult) {
                     updateData.result = legacyResult;
@@ -431,8 +439,10 @@ export class LifecycleService implements OnModuleInit {
                     updateData.se_close_price = runtimeSignal.current_sl_price;
                 } else if (result.result_type === 'tp1') {
                     updateData.se_close_price = runtimeSignal.tp1_price;
-                } else if (result.result_type === 'tp2_full') {
+                } else if (result.result_type === 'tp2') {
                     updateData.se_close_price = runtimeSignal.tp2_price;
+                } else if (result.result_type === 'tp3_full') {
+                    updateData.se_close_price = runtimeSignal.tp3_price;
                 } else if (result.result_type === 'candle_expiry') {
                     updateData.se_close_price = currentPrice;
                 }
@@ -440,7 +450,9 @@ export class LifecycleService implements OnModuleInit {
                 const closePrice = updateData.se_close_price;
 
                 // Map result_type to legacy se_close_reason
-                if (result.result_type === 'tp2_full') {
+                if (result.result_type === 'tp3_full') {
+                    updateData.se_close_reason = 'TP3';
+                } else if (result.result_type === 'tp2') {
                     updateData.se_close_reason = 'TP2';
                 } else if (result.result_type === 'tp1') {
                     updateData.se_close_reason = 'TP1';
@@ -454,6 +466,9 @@ export class LifecycleService implements OnModuleInit {
                 updateData.status = legacyResult === 'WIN' ? 'HIT_TP' : legacyResult === 'LOSS' ? 'HIT_SL' : 'EXPIRED';
                 updateData.outcome = updateData.status;
 
+                // Also update legacy se_r_ratio_hit for tp2/tp3 cases
+                if (result.tp2_hit !== undefined) updateData.se_r_ratio_hit = true;
+
                 const isBull = runtimeSignal.direction_v2 === 'bullish';
                 updateData.pnlPercent = this.calcPnl(isBull, runtimeSignal.entry_price, closePrice);
             }
@@ -466,7 +481,8 @@ export class LifecycleService implements OnModuleInit {
 
             // Track stats
             if (result.state === 'closed') {
-                if (result.result_type === 'tp2_full') tp2Hit++;
+                if (result.result_type === 'tp3_full') tp3Hit++;
+                else if (result.result_type === 'tp2') tp2Hit++;
                 else if (result.result_type === 'tp1') tp1Hit++;
                 else if (result.result_type === 'sl') slHit++;
                 else if (result.result_type === 'candle_expiry') expired++;
@@ -476,7 +492,7 @@ export class LifecycleService implements OnModuleInit {
         }
 
         this.logger.log(
-            `SE v2 Lifecycle complete: ${tp1Hit} TP1, ${tp2Hit} TP2_FULL, ${slHit} SL, ${expired} EXPIRY, ${unchanged} unchanged.`
+            `SE v3 Lifecycle complete: ${tp1Hit} TP1, ${tp2Hit} TP2, ${tp3Hit} TP3_FULL, ${slHit} SL, ${expired} EXPIRY, ${unchanged} unchanged.`
         );
     }
 

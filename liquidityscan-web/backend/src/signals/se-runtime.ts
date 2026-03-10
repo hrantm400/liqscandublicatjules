@@ -1,10 +1,10 @@
 /**
- * SE Scanner v2 - Pure Runtime Logic
+ * SE Scanner v2 - Pure Runtime Logic (Spec v3 — 3 TP Levels)
  * 
  * This file implements the EXACT signal processing logic from the spec.
  * It's a pure function with no DB access, making it easy to unit test.
  * 
- * SPEC REFERENCE: SE logic sort.md
+ * SPEC v3: TP1 (1:1.5 RR, close 50%) → TP2 (1:2 RR, close 25%) → TP3 (1:3 RR, close 25%)
  */
 
 // ============================================================
@@ -14,7 +14,7 @@
 export type SeDirection = 'bullish' | 'bearish';
 export type SeState = 'live' | 'closed';
 export type SeResult = 'won' | 'lost' | null;
-export type SeResultType = 'tp1' | 'tp2_full' | 'sl' | 'candle_expiry' | null;
+export type SeResultType = 'tp1' | 'tp2' | 'tp3_full' | 'sl' | 'candle_expiry' | null;
 
 export type SePatternV2 =
     | 'REV_BULLISH'
@@ -35,11 +35,13 @@ export interface SeRuntimeSignal {
     entry_price: number;
     sl_price: number;          // Original SL - NEVER changes
     current_sl_price: number;  // Starts at sl_price, moves to entry_price after TP1
-    tp1_price: number;
-    tp2_price: number;
+    tp1_price: number;         // 1:1.5 RR
+    tp2_price: number;         // 1:2 RR
+    tp3_price: number;         // 1:3 RR
     state: SeState;
     tp1_hit: boolean;
     tp2_hit: boolean;
+    tp3_hit: boolean;
     result_v2: SeResult;
     result_type: SeResultType;
     candle_count: number;
@@ -58,6 +60,7 @@ export interface SeProcessResult {
     state?: SeState;
     tp1_hit?: boolean;
     tp2_hit?: boolean;
+    tp3_hit?: boolean;
     current_sl_price?: number;
     result_v2?: SeResult;
     result_type?: SeResultType;
@@ -105,12 +108,8 @@ export function processSeSignal(
     let candle_count = signal.candle_count;
     let tp1_hit = signal.tp1_hit;
     let tp2_hit = signal.tp2_hit;
+    let tp3_hit = signal.tp3_hit;
     let current_sl_price = signal.current_sl_price;
-    let state: SeState = signal.state;
-    let result_v2: SeResult = signal.result_v2;
-    let result_type: SeResultType = signal.result_type;
-    let closed_at_v2: Date | null = signal.closed_at_v2;
-    let delete_at: Date | null = signal.delete_at;
 
     // ============================================================
     // STEP 1: INCREMENT CANDLE COUNT (only on candle close events)
@@ -125,7 +124,7 @@ export function processSeSignal(
     // IMPORTANT: If TP1 has NOT been hit yet, and BOTH SL and TP1 are breached
     // on the same update, skip SL and let TP1 handle it (Step 3).
     // This only applies to the original SL, not breakeven SL.
-    
+
     let sl_breached = false;
     if (direction === 'bullish' && currentPrice <= current_sl_price) {
         sl_breached = true;
@@ -149,7 +148,7 @@ export function processSeSignal(
             // Fall through to Step 3
         } else {
             // → Go to CLOSE_SL
-            return closeSl(signal, tp1_hit, candle_count, now);
+            return closeSl(signal, tp1_hit, tp2_hit, candle_count, now);
         }
     }
 
@@ -171,7 +170,7 @@ export function processSeSignal(
     }
 
     // ============================================================
-    // STEP 4: CHECK IF PRICE HIT TP2 (only if TP1 already hit)
+    // STEP 4: CHECK IF PRICE HIT TP2 (only if TP1 already hit, TP2 not yet)
     // ============================================================
     if (tp1_hit && !tp2_hit) {
         let tp2_reached = false;
@@ -182,17 +181,34 @@ export function processSeSignal(
         }
 
         if (tp2_reached) {
-            // → Go to CLOSE_TP2
-            return closeTp2(candle_count, now);
+            // → Go to HANDLE_TP2 (signal stays live, tracking TP3)
+            return handleTp2(signal, currentPrice, candle_count, direction, now);
         }
     }
 
     // ============================================================
-    // STEP 5: CHECK CANDLE EXPIRY (only on candle close events)
+    // STEP 5: CHECK IF PRICE HIT TP3 (only if TP2 hit, TP3 not yet)
+    // ============================================================
+    if (tp2_hit && !tp3_hit) {
+        let tp3_reached = false;
+        if (direction === 'bullish' && currentPrice >= signal.tp3_price) {
+            tp3_reached = true;
+        } else if (direction === 'bearish' && currentPrice <= signal.tp3_price) {
+            tp3_reached = true;
+        }
+
+        if (tp3_reached) {
+            // → Go to CLOSE_TP3
+            return closeTp3(candle_count, now);
+        }
+    }
+
+    // ============================================================
+    // STEP 6: CHECK CANDLE EXPIRY (only on candle close events)
     // ============================================================
     if (isCandleClose && candle_count >= signal.max_candles) {
         // → Go to CLOSE_EXPIRY
-        return closeExpiry(signal, currentPrice, tp1_hit, candle_count, direction, now);
+        return closeExpiry(signal, currentPrice, tp1_hit, tp2_hit, candle_count, direction, now);
     }
 
     // No condition met. Signal is still live. No action.
@@ -215,8 +231,11 @@ export function processSeSignal(
  * CLOSE_SL:
  * IF signal.tp1_hit == true:
  *     // SL hit at breakeven AFTER TP1 — still a win
+ *     IF signal.tp2_hit == true:
+ *         signal.result_type = "tp2"
+ *     ELSE:
+ *         signal.result_type = "tp1"
  *     signal.result = "won"
- *     signal.result_type = "tp1"
  * ELSE:
  *     // SL hit before TP1 — loss
  *     signal.result = "lost"
@@ -225,6 +244,7 @@ export function processSeSignal(
 function closeSl(
     signal: SeRuntimeSignal,
     tp1_hit: boolean,
+    tp2_hit: boolean,
     candle_count: number,
     now: Date
 ): SeProcessResult {
@@ -236,7 +256,7 @@ function closeSl(
             changed: true,
             state: 'closed',
             result_v2: 'won',
-            result_type: 'tp1',
+            result_type: tp2_hit ? 'tp2' : 'tp1',
             candle_count,
             closed_at_v2: now,
             delete_at,
@@ -259,7 +279,7 @@ function closeSl(
  * HANDLE_TP1:
  * signal.tp1_hit = true
  * signal.current_sl_price = signal.entry_price   // move SL to breakeven
- * // DO NOT close the signal. 50% remains open tracking toward TP2.
+ * // DO NOT close the signal. 50% remains open (25% for TP2, 25% for TP3).
  * // CRITICAL: Check if price ALSO hit TP2 on this same update (gap scenario)
  */
 function handleTp1(
@@ -281,8 +301,8 @@ function handleTp1(
     }
 
     if (tp2_also_hit) {
-        // → Go to CLOSE_TP2
-        return closeTp2(candle_count, now);
+        // → Go to HANDLE_TP2 (which may cascade to CLOSE_TP3)
+        return handleTp2(signal, currentPrice, candle_count, direction, now);
     }
 
     // TP2 not hit yet. Signal stays live with updated state.
@@ -295,13 +315,51 @@ function handleTp1(
 }
 
 /**
- * CLOSE_TP2:
- * signal.tp1_hit = true    // ensure tp1 is marked (covers gap-through-both scenario)
+ * HANDLE_TP2:
+ * signal.tp1_hit = true    // ensure tp1 is marked (covers gap scenario)
  * signal.tp2_hit = true
- * signal.result = "won"
- * signal.result_type = "tp2_full"
+ * // DO NOT close the signal. 25% remains open for TP3.
+ * // CRITICAL: Check if price ALSO hit TP3 on this same update (gap scenario)
  */
-function closeTp2(candle_count: number, now: Date): SeProcessResult {
+function handleTp2(
+    signal: SeRuntimeSignal,
+    currentPrice: number,
+    candle_count: number,
+    direction: SeDirection,
+    now: Date
+): SeProcessResult {
+    // CRITICAL: Check if price ALSO hit TP3 on this same update (gap scenario)
+    let tp3_also_hit = false;
+    if (direction === 'bullish' && currentPrice >= signal.tp3_price) {
+        tp3_also_hit = true;
+    } else if (direction === 'bearish' && currentPrice <= signal.tp3_price) {
+        tp3_also_hit = true;
+    }
+
+    if (tp3_also_hit) {
+        // → Go to CLOSE_TP3
+        return closeTp3(candle_count, now);
+    }
+
+    // TP3 not hit yet. Signal stays live with TP1+TP2 marked.
+    return {
+        changed: true,
+        tp1_hit: true,
+        tp2_hit: true,
+        current_sl_price: signal.entry_price, // ensure breakeven SL
+        candle_count,
+    };
+}
+
+/**
+ * CLOSE_TP3:
+ * signal.tp1_hit = true    // ensure all are marked (covers gap-through-all scenario)
+ * signal.tp2_hit = true
+ * signal.tp3_hit = true
+ * signal.result = "won"
+ * signal.result_type = "tp3_full"
+ */
+function closeTp3(candle_count: number, now: Date): SeProcessResult {
     const delete_at = new Date(now.getTime() + 48 * 60 * 60 * 1000); // +48 hours
 
     return {
@@ -309,8 +367,9 @@ function closeTp2(candle_count: number, now: Date): SeProcessResult {
         state: 'closed',
         tp1_hit: true,
         tp2_hit: true,
+        tp3_hit: true,
         result_v2: 'won',
-        result_type: 'tp2_full',
+        result_type: 'tp3_full',
         candle_count,
         closed_at_v2: now,
         delete_at,
@@ -320,9 +379,12 @@ function closeTp2(candle_count: number, now: Date): SeProcessResult {
 /**
  * CLOSE_EXPIRY:
  * IF signal.tp1_hit == true:
- *     // TP1 was hit earlier, but TP2 and breakeven SL were never reached
+ *     // At least TP1 was hit — win is locked
  *     signal.result = "won"
- *     signal.result_type = "tp1"
+ *     IF signal.tp2_hit == true:
+ *         signal.result_type = "tp2"
+ *     ELSE:
+ *         signal.result_type = "tp1"
  * ELSE:
  *     // Neither TP1 nor SL was hit within candle limit
  *     IF direction == "bullish":
@@ -343,6 +405,7 @@ function closeExpiry(
     signal: SeRuntimeSignal,
     currentPrice: number,
     tp1_hit: boolean,
+    tp2_hit: boolean,
     candle_count: number,
     direction: SeDirection,
     now: Date
@@ -350,12 +413,12 @@ function closeExpiry(
     const delete_at = new Date(now.getTime() + 48 * 60 * 60 * 1000); // +48 hours
 
     if (tp1_hit) {
-        // TP1 was hit earlier, but TP2 and breakeven SL were never reached
+        // At least TP1 was hit — win is locked
         return {
             changed: true,
             state: 'closed',
             result_v2: 'won',
-            result_type: 'tp1',
+            result_type: tp2_hit ? 'tp2' : 'tp1',
             candle_count,
             closed_at_v2: now,
             delete_at,
@@ -363,7 +426,7 @@ function closeExpiry(
     } else {
         // Neither TP1 nor SL was hit within candle limit
         let result: SeResult;
-        
+
         if (direction === 'bullish') {
             // Any close in favor of the signal direction (even a tiny move) = "won"
             // Equal to entry or against direction = "lost"

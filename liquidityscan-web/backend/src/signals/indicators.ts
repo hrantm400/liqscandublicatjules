@@ -39,13 +39,14 @@ export interface SuperEngulfingSignal {
     sl: number;
     tp1: number;
     tp2: number;
-    // SE Scanner v2 fields (per new spec)
+    // SE Scanner v3 fields (3 TP levels)
     pattern_v2: 'REV_BULLISH' | 'REV_BEARISH' | 'REV_PLUS_BULLISH' | 'REV_PLUS_BEARISH' | 'RUN_BULLISH' | 'RUN_BEARISH' | 'RUN_PLUS_BULLISH' | 'RUN_PLUS_BEARISH';
     direction_v2: 'bullish' | 'bearish';
     entry_price: number;
     sl_price: number;
-    tp1_price: number;
-    tp2_price: number;
+    tp1_price: number;     // 1:1.5 RR
+    tp2_price: number;     // 1:2 RR
+    tp3_price: number;     // 1:3 RR
     candle_high: number;
     candle_low: number;
 }
@@ -344,15 +345,16 @@ export function calculateATR(candles: CandleData[], period = 14): number {
  * Detect SuperEngulfing patterns on the last N candles.
  * Only returns signals for the most recent candle pair.
  * 
- * SE SCANNER V2 SPEC - SL/TP Calculation:
+ * SE SCANNER V3 SPEC - SL/TP Calculation:
  * - entry_price = se_candle.close
  * - candle_range = se_candle.high - se_candle.low (FULL range including wicks)
  * - buffer = candle_range * 0.1 (fixed 10%)
  * - Bullish: sl_price = se_candle.low - buffer
  * - Bearish: sl_price = se_candle.high + buffer
  * - risk = ABS(entry_price - sl_price)
- * - tp1_price = entry ± (risk * 2)  // 1:2 RR
- * - tp2_price = entry ± (risk * 3)  // 1:3 RR
+ * - tp1_price = entry ± (risk * 1.5)  // 1:1.5 RR — close 50%
+ * - tp2_price = entry ± (risk * 2)    // 1:2 RR   — close 25%
+ * - tp3_price = entry ± (risk * 3)    // 1:3 RR   — close 25%
  */
 export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSignal[] {
     const signals: SuperEngulfingSignal[] = [];
@@ -377,21 +379,23 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
     const candle_range = curr.high - curr.low;
     const buffer = candle_range * 0.1;
 
-    // Helper to calculate targets per spec (using SE candle's high/low, NOT min/max of both candles)
+    // Helper to calculate targets per spec v3 (using SE candle's high/low, NOT min/max of both candles)
     const getBullTargetsV2 = () => {
         const sl = curr.low - buffer;       // Spec: sl_price = se_candle.low - buffer
         const risk = entry - sl;             // Spec: risk = ABS(entry_price - sl_price)
-        const tp1 = entry + (risk * 2);      // Spec: tp1_price = entry_price + (risk * 2)
-        const tp2 = entry + (risk * 3);      // Spec: tp2_price = entry_price + (risk * 3)
-        return { entry, sl, tp1, tp2 };
+        const tp1 = entry + (risk * 1.5);    // Spec v3: 1:1.5 RR — close 50%
+        const tp2 = entry + (risk * 2);      // Spec v3: 1:2 RR   — close 25%
+        const tp3 = entry + (risk * 3);      // Spec v3: 1:3 RR   — close 25%
+        return { entry, sl, tp1, tp2, tp3 };
     };
 
     const getBearTargetsV2 = () => {
         const sl = curr.high + buffer;       // Spec: sl_price = se_candle.high + buffer
         const risk = sl - entry;             // Spec: risk = ABS(entry_price - sl_price)
-        const tp1 = entry - (risk * 2);      // Spec: tp1_price = entry_price - (risk * 2)
-        const tp2 = entry - (risk * 3);      // Spec: tp2_price = entry_price - (risk * 3)
-        return { entry, sl, tp1, tp2 };
+        const tp1 = entry - (risk * 1.5);    // Spec v3: 1:1.5 RR — close 50%
+        const tp2 = entry - (risk * 2);      // Spec v3: 1:2 RR   — close 25%
+        const tp3 = entry - (risk * 3);      // Spec v3: 1:3 RR   — close 25%
+        return { entry, sl, tp1, tp2, tp3 };
     };
 
     // --- RUN (Continuation): same color ---
@@ -411,13 +415,14 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
-            // SE v2 fields per spec
+            // SE v3 fields per spec
             pattern_v2: isPlus ? 'RUN_PLUS_BULLISH' : 'RUN_BULLISH',
             direction_v2: 'bullish',
             entry_price: targets.entry,
             sl_price: targets.sl,
             tp1_price: targets.tp1,
             tp2_price: targets.tp2,
+            tp3_price: targets.tp3,
             candle_high: curr.high,
             candle_low: curr.low,
         });
@@ -439,13 +444,14 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
-            // SE v2 fields per spec
+            // SE v3 fields per spec
             pattern_v2: isPlus ? 'RUN_PLUS_BEARISH' : 'RUN_BEARISH',
             direction_v2: 'bearish',
             entry_price: targets.entry,
             sl_price: targets.sl,
             tp1_price: targets.tp1,
             tp2_price: targets.tp2,
+            tp3_price: targets.tp3,
             candle_high: curr.high,
             candle_low: curr.low,
         });
@@ -468,13 +474,14 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
-            // SE v2 fields per spec
+            // SE v3 fields per spec
             pattern_v2: isPlus ? 'REV_PLUS_BULLISH' : 'REV_BULLISH',
             direction_v2: 'bullish',
             entry_price: targets.entry,
             sl_price: targets.sl,
             tp1_price: targets.tp1,
             tp2_price: targets.tp2,
+            tp3_price: targets.tp3,
             candle_high: curr.high,
             candle_low: curr.low,
         });
@@ -496,13 +503,14 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             sl: targets.sl,
             tp1: targets.tp1,
             tp2: targets.tp2,
-            // SE v2 fields per spec
+            // SE v3 fields per spec
             pattern_v2: isPlus ? 'REV_PLUS_BEARISH' : 'REV_BEARISH',
             direction_v2: 'bearish',
             entry_price: targets.entry,
             sl_price: targets.sl,
             tp1_price: targets.tp1,
             tp2_price: targets.tp2,
+            tp3_price: targets.tp3,
             candle_high: curr.high,
             candle_low: curr.low,
         });
