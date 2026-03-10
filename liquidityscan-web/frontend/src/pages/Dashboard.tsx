@@ -45,24 +45,28 @@ export const Dashboard: React.FC = () => {
     queryKey: ['signals', 'SUPER_ENGULFING'],
     queryFn: () => fetchSignals('SUPER_ENGULFING', 1000),
     refetchInterval: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const { data: biasData } = useQuery({
     queryKey: ['signals', 'ICT_BIAS'],
     queryFn: () => fetchSignals('ICT_BIAS', 5000),
     refetchInterval: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const { data: rsiData } = useQuery({
     queryKey: ['signals', 'RSI_DIVERGENCE'],
     queryFn: () => fetchSignals('RSI_DIVERGENCE', 5000),
     refetchInterval: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const { data: crtData } = useQuery({
     queryKey: ['signals', 'CRT'],
     queryFn: () => fetchSignals('CRT', 5000),
     refetchInterval: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
 

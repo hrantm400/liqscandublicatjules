@@ -16,6 +16,7 @@ export function WinRatePanel({ strategyType }: WinRatePanelProps) {
         queryFn: () => fetchSignalStats(strategyType),
         refetchInterval: 30000,
         staleTime: 15000,
+        placeholderData: (prev) => prev,
     });
 
     const winRate = stats?.winRate ?? 0;

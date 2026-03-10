@@ -23,13 +23,14 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
         queryFn: () => fetchSignalStats(strategyType),
         refetchInterval: 30000,
         staleTime: 15000,
+        placeholderData: (prev) => prev,
     });
 
-    const allTabs: Array<{ key: TabView | 'ALL', label: string, count: number, icon: string, color: string, bgActive: string, glow: string }> = [
+    const allTabs: Array<{ key: TabView | 'ALL', label: string, count: number | null, icon: string, color: string, bgActive: string, glow: string }> = [
         {
             key: 'ALL',
             label: 'All Signals',
-            count: stats?.total ?? 0,
+            count: stats != null ? stats.total : null,
             icon: 'select_all',
             color: 'text-white',
             bgActive: 'dark:bg-white/10 light:bg-green-100',
@@ -38,7 +39,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
         {
             key: 'LIVE',
             label: 'Live Signals',
-            count: stats?.live ?? 0,
+            count: stats != null ? stats.live : null,
             icon: 'radio_button_checked',
             color: 'text-primary',
             bgActive: 'dark:bg-primary/15 light:bg-green-100',
@@ -47,7 +48,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
         {
             key: 'CLOSED',
             label: 'Recent Closed',
-            count: stats?.closedSignals ?? 0,
+            count: stats != null ? stats.closedSignals : null,
             icon: 'inventory_2',
             color: 'text-amber-400',
             bgActive: 'dark:bg-amber-500/15 light:bg-amber-100',
@@ -56,7 +57,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
         {
             key: 'ARCHIVE',
             label: 'Archive',
-            count: stats?.archived ?? 0,
+            count: stats != null ? stats.archived : null,
             icon: 'folder_open',
             color: 'dark:text-gray-400 light:text-slate-500',
             bgActive: 'dark:bg-gray-500/15 light:bg-gray-100',
@@ -92,7 +93,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
                                 : 'dark:text-gray-600 light:text-gray-400 dark:bg-white/5 light:bg-gray-100'
                                 }`}
                         >
-                            {tab.count}
+                            {tab.count === null ? '—' : tab.count}
                         </span>
                     </motion.button>
                 );
