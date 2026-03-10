@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { StatusTabs } from '../components/shared/StatusTabs';
 import { WinRatePanel } from '../components/shared/WinRatePanel';
@@ -201,7 +201,7 @@ export function MonitorCRT() {
     return (
         <>
             {/* Header */}
-            <div className="px-8 pt-8 pb-4">
+            <div className="px-4 md:px-8 pt-4 md:pt-8 pb-2 md:pb-4">
                 <PageHeader
                     breadcrumbs={[
                         { label: 'Scanner', path: '/dashboard' },
@@ -211,9 +211,9 @@ export function MonitorCRT() {
             </div>
 
             {/* Timeframes and Status Tabs Row */}
-            <div className="px-8 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-30 dark:bg-[#0a140d]/80 light:bg-[#f8faf9]/80 backdrop-blur-md">
+            <div className="px-4 md:px-8 pb-2 md:pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-30 dark:bg-[#0a140d]/80 light:bg-[#f8faf9]/80 backdrop-blur-md">
                 {/* Timeframe selector */}
-                <div className="flex bg-black/20 dark:bg-black/40 light:bg-green-100 p-1 rounded-xl w-fit dark:border-white/5 light:border-green-300 border backdrop-blur-md shrink-0">
+                <div className="flex overflow-x-auto no-scrollbar max-w-full bg-black/20 dark:bg-black/40 light:bg-green-100 p-1 rounded-xl w-fit dark:border-white/5 light:border-green-300 border backdrop-blur-md shrink-0 hide-scroll-indicator">
                     <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setSelectedTimeframe(null)}
@@ -251,19 +251,10 @@ export function MonitorCRT() {
                     ))}
                 </div>
 
-                {/* Status Tabs */}
                 <StatusTabs
-                    activeTab={statusFilter}
-                    onChange={setStatusFilter}
-                    counts={{
-                        ALL: signals.length,
-                        ACTIVE: signals.filter(s => s.status === 'ACTIVE').length,
-                        PENDING: signals.filter(s => s.status === 'PENDING').length,
-                        LIFECYCLE: signals.filter(s => s.lifecycleStatus && s.lifecycleStatus !== 'PENDING' && s.lifecycleStatus !== 'ACTIVE').length,
-                        COMPLETED: signals.filter(s => s.status === 'COMPLETED').length,
-                        EXPIRED: signals.filter(s => s.status === 'EXPIRED').length,
-                        ARCHIVED: signals.filter(s => s.lifecycleStatus === 'ARCHIVED').length,
-                    }}
+                    strategyType="CRT"
+                    activeStatus={statusFilter}
+                    onStatusChange={setStatusFilter}
                 />
             </div>
 
@@ -277,10 +268,10 @@ export function MonitorCRT() {
             )}
 
             {/* Main Content */}
-            <div className="flex-1 min-h-0 px-8 pb-8 flex flex-col">
+            <div className="flex-1 min-h-0 px-4 md:px-8 pb-4 md:pb-8 flex flex-col">
                 <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-4 min-h-full">
                     {/* Filters Bar */}
-                    <div className="flex items-center gap-2.5 py-2 dark:bg-background-dark/50 dark:backdrop-blur-sm light:bg-green-50 sticky top-0 z-20 overflow-visible flex-nowrap shrink-0">
+                    <div className="flex items-center gap-2.5 py-2 dark:bg-background-dark/50 dark:backdrop-blur-sm light:bg-green-50 sticky top-0 z-20 overflow-x-auto flex-nowrap shrink-0 snap-x hide-scroll-indicator no-scrollbar">
                         {/* Search */}
                         <motion.div
                             whileFocus={{ scale: 1.02 }}
@@ -367,8 +358,8 @@ export function MonitorCRT() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="flex-1 flex flex-col min-w-0 rounded-xl glass-panel overflow-hidden"
                             >
-                                <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-                                    <table className="w-full text-sm text-left dark:text-gray-400 light:text-text-light-secondary">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0 relative">
+                                    <table className="hidden md:table w-full text-sm text-left dark:text-gray-400 light:text-text-light-secondary">
                                         <thead className="text-[11px] uppercase dark:text-gray-500 light:text-text-light-secondary font-bold sticky top-0 dark:bg-[#0a140d] light:bg-green-50 dark:border-b-white/10 light:border-b-green-300 z-10 tracking-wider">
                                             <tr>
                                                 <th className="px-6 py-3" scope="col">Symbol</th>
@@ -442,6 +433,61 @@ export function MonitorCRT() {
                                             )}
                                         </tbody>
                                     </table>
+
+                                    {/* Mobile Card List */}
+                                    <div className="md:hidden flex flex-col gap-3 p-4">
+                                        {paginatedSignals.length === 0 ? (
+                                            <div className="text-center py-8 text-sm dark:text-gray-500 light:text-text-light-secondary">
+                                                No signals found
+                                            </div>
+                                        ) : (
+                                            paginatedSignals.map((signal, index) => {
+                                                const meta = (signal as any).metadata || {};
+                                                const isLong = signal.signalType === 'BUY';
+                                                const directionLabel = isLong ? '▲ BULLISH' : '▼ BEARISH';
+
+                                                return (
+                                                    <motion.div
+                                                        key={signal.id}
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: index * 0.02, duration: 0.2 }}
+                                                        onClick={() => navigate(`/signals/${signal.id}`)}
+                                                        className="flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <SymbolAvatar symbol={signal.symbol} />
+                                                                <span className="font-bold text-base dark:text-white light:text-slate-800">{signal.symbol}</span>
+                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isLong ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                                                    {directionLabel}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
+                                                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-1 text-xs mb-1">
+                                                            <div className="flex justify-between">
+                                                                <span className="dark:text-gray-500 light:text-slate-500">Swept:</span>
+                                                                <span className="font-mono">{meta.swept_level ? formatPrice(meta.swept_level) : '—'}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="dark:text-gray-500 light:text-slate-500">Price:</span>
+                                                                <span className="font-mono font-bold text-primary">${formatPrice(signal.price)}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between">
+                                                            <SignalStatusBadge signal={signal} />
+                                                            <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
                                 </div>
                                 {/* Pagination */}
                                 {filteredSignals.length > 0 && (
@@ -498,9 +544,6 @@ export function MonitorCRT() {
                                         paginatedSignals.map((signal) => {
                                             const timeAgo = Math.floor((Date.now() - new Date(signal.detectedAt).getTime()) / 60000);
                                             const isLong = signal.signalType === 'BUY';
-                                            const entryPrice = Number(signal.price);
-                                            const stopLoss = isLong ? entryPrice * 0.99 : entryPrice * 1.01;
-                                            const confidence = signal.metadata?.confidence || 'MED';
                                             const meta = (signal as any).metadata || {};
 
                                             return (

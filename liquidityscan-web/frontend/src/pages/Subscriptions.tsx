@@ -77,7 +77,7 @@ export function Subscriptions() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* FREE Card */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-            className="glass-panel rounded-2xl overflow-hidden border dark:border-white/10 light:border-gray-200">
+            className="glass-panel rounded-2xl overflow-hidden border dark:border-white/10 light:border-gray-200 flex flex-col">
             <div className="p-6 border-b dark:border-white/5 light:border-gray-100">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl dark:bg-white/5 light:bg-gray-100 flex items-center justify-center">
@@ -106,7 +106,7 @@ export function Subscriptions() {
 
           {/* PRO Card */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-            className="glass-panel rounded-2xl overflow-hidden border-2 border-primary/40 relative">
+            className="glass-panel rounded-2xl overflow-hidden border-2 border-primary/40 relative flex flex-col">
             {/* Popular Badge */}
             <div className="absolute top-4 right-4 bg-primary text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
               Most Popular
@@ -135,12 +135,14 @@ export function Subscriptions() {
                   <span className="dark:text-gray-300 light:text-gray-600">{f.text}</span>
                 </div>
               ))}
+              {/* Push button to bottom if contents are smaller */}
+              <div className="flex-1"></div>
               {!isPaid && (
                 <button
                   onClick={() => setShowPayment(true)}
-                  className="w-full mt-4 py-3 rounded-2xl bg-primary text-black font-bold text-sm transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(19,236,55,0.2)] flex items-center justify-center gap-2"
+                  className="w-full mt-4 py-4 md:py-3 rounded-2xl bg-primary text-black font-bold text-base transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(19,236,55,0.2)] flex items-center justify-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-base">bolt</span>
+                  <span className="material-symbols-outlined text-xl md:text-base">bolt</span>
                   Upgrade Now
                 </button>
               )}

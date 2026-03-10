@@ -2,9 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuthStore } from '../store/authStore';
-import { authApi, userApi } from '../services/userApi';
+import { userApi, authApi } from '../services/userApi';
 import { useQuery } from '@tanstack/react-query';
 import { SubscriptionBadge } from './subscriptions/SubscriptionBadge';
+import { MobileHeader } from './layout/MobileHeader';
+import { MobileBottomNav } from './layout/MobileBottomNav';
 
 const MainLayout: React.FC = () => {
     const location = useLocation();
@@ -99,12 +101,15 @@ const MainLayout: React.FC = () => {
     const subscriptionPlan = mySubscription?.subscription?.name || 'Free Plan';
 
     return (
-        <div className="flex h-screen w-full selection:bg-primary selection:text-black overflow-hidden font-sans dark:bg-background-dark dark:text-white light:bg-background-light light:text-text-dark">
+        <div className="flex flex-col md:flex-row h-[100dvh] w-full selection:bg-primary selection:text-black overflow-hidden font-sans dark:bg-background-dark dark:text-white light:bg-background-light light:text-text-dark">
             <div className="fixed inset-0 pointer-events-none z-0 bg-grid-pattern bg-[length:24px_24px] dark:opacity-50 light:opacity-30"></div>
             <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
-            {/* Sidebar */}
-            <aside className="relative z-50 flex flex-col glass-sidebar h-full shrink-0 transition-[width] duration-300 ease-in-out group/sidebar overflow-hidden w-[80px] hover:w-72">
+            {/* Mobile Header (Hidden on Desktop) */}
+            <MobileHeader />
+
+            {/* Sidebar (Hidden on Mobile) */}
+            <aside className="hidden md:flex relative z-50 flex-col glass-sidebar h-full shrink-0 transition-[width] duration-300 ease-in-out group/sidebar overflow-hidden w-[80px] hover:w-72">
                 <div className="w-72 h-full flex flex-col">
                     {/* Top section - Logo */}
                     <div className="p-6 pb-4 shrink-0">
@@ -284,6 +289,9 @@ const MainLayout: React.FC = () => {
                     <Outlet />
                 )}
             </main>
+
+            {/* Mobile Bottom Navigation (Hidden on Desktop) */}
+            <MobileBottomNav />
         </div>
     );
 };

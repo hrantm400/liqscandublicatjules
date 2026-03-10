@@ -11,7 +11,6 @@ import { scanAll, fetchLiveBias } from '../services/signalsApi';
 import { StaticMiniChart } from '../components/StaticMiniChart';
 import { FilterMenu } from '../components/shared/FilterMenu';
 import { PatternFilter } from '../components/shared/PatternFilter';
-import { SignalBadge } from '../components/shared/SignalBadge';
 import { TrendIndicator } from '../components/shared/TrendIndicator';
 import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/animations/AnimatedCard';
@@ -309,12 +308,12 @@ export function MonitorBias() {
         initial="initial"
         animate="animate"
         variants={scaleInVariants}
-        className="flex flex-col gap-6 px-8 pt-8 pb-4 shrink-0"
+        className="flex flex-col gap-6 px-4 md:px-8 pt-4 md:pt-8 pb-2 md:pb-4 shrink-0"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex overflow-x-auto snap-x no-scrollbar gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 pb-2 md:pb-0">
           {/* 4H */}
           <AnimatedCard
-            className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 ${timeframeStats['4h'] > 0
+            className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['4h'] > 0
               ? activeTimeframe === '4h'
                 ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
                 : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
@@ -362,7 +361,7 @@ export function MonitorBias() {
 
           {/* 1D */}
           <AnimatedCard
-            className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 ${timeframeStats['1d'] > 0
+            className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['1d'] > 0
               ? activeTimeframe === '1d'
                 ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
                 : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
@@ -410,7 +409,7 @@ export function MonitorBias() {
 
           {/* 1W */}
           <AnimatedCard
-            className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 ${timeframeStats['1w'] > 0
+            className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['1w'] > 0
               ? activeTimeframe === '1w'
                 ? 'dark:bg-[rgba(20,30,22,0.6)] light:bg-green-50 dark:border-[rgba(19,236,55,0.5)] light:border-green-400 dark:shadow-[0_0_15px_rgba(19,236,55,0.15)] light:shadow-[0_0_10px_rgba(19,236,55,0.1)] hover:shadow-[0_0_25px_rgba(19,236,55,0.25)] ring-1 ring-primary/20'
                 : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)]'
@@ -468,7 +467,7 @@ export function MonitorBias() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0 px-8 pb-8 flex flex-col">
+      <div className="flex-1 min-h-0 px-4 md:px-8 pb-4 md:pb-8 flex flex-col">
         <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-4 min-h-full">
           {/* Manual Scan Button */}
           <motion.div
@@ -512,7 +511,7 @@ export function MonitorBias() {
           </motion.div>
 
           {/* Filters Bar */}
-          <div className="flex items-center gap-2.5 py-2 dark:bg-background-dark/50 dark:backdrop-blur-sm light:bg-green-50 sticky top-0 z-20 overflow-visible flex-nowrap">
+          <div className="flex items-center gap-2.5 py-2 dark:bg-background-dark/50 dark:backdrop-blur-sm light:bg-green-50 sticky top-0 z-20 overflow-x-auto no-scrollbar flex-nowrap shrink-0 snap-x hide-scroll-indicator">
             {/* Search */}
             <motion.div
               whileFocus={{ scale: 1.02 }}
@@ -623,8 +622,10 @@ export function MonitorBias() {
             {viewMode === 'list' ? (
               /* List View - Table */
               <div className="flex-1 flex flex-col min-w-0 rounded-xl table-glass-panel dark:border-[#234829] light:border-green-300 overflow-hidden">
-                <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-                  <table className="w-full text-sm text-left dark:text-gray-400 light:text-text-light-secondary">
+                <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0 relative">
+
+                  {/* Desktop Table */}
+                  <table className="hidden md:table w-full text-sm text-left dark:text-gray-400 light:text-text-light-secondary">
                     <thead className="text-[11px] uppercase dark:text-gray-500 light:text-text-light-secondary font-bold sticky top-0 dark:bg-[#0a140d] light:bg-green-50 dark:border-b-white/10 light:border-b-green-300 z-10 tracking-wider">
                       <tr>
                         <th className="px-6 py-3" scope="col">Symbol</th>
@@ -646,7 +647,6 @@ export function MonitorBias() {
                         </tr>
                       ) : (
                         paginatedSignals.map((signal, index) => {
-                          const trend = getTrendStrength(signal);
                           const biasType = getBiasType(signal);
 
                           return (
@@ -694,6 +694,51 @@ export function MonitorBias() {
                       )}
                     </tbody>
                   </table>
+
+                  {/* Mobile Card List */}
+                  <div className="md:hidden flex flex-col gap-3 p-4">
+                    {filteredSignals.length === 0 ? (
+                      <div className="text-center py-8 text-sm dark:text-gray-500 light:text-text-light-secondary">
+                        No signals found
+                      </div>
+                    ) : (
+                      paginatedSignals.map((signal, index) => {
+                        const biasType = getBiasType(signal);
+
+                        return (
+                          <motion.div
+                            key={signal.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.02, duration: 0.2 }}
+                            onClick={() => navigate(`/signals/${signal.id}`)}
+                            className="flex flex-col gap-3 p-4 rounded-xl dark:bg-black/20 light:bg-white border dark:border-white/5 light:border-green-200 shadow-sm active:scale-[0.98] transition-all"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <SymbolAvatar symbol={signal.symbol} />
+                                <span className="font-bold text-base dark:text-white light:text-slate-800">{signal.symbol}</span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                                  {biasType}
+                                </span>
+                              </div>
+                              <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
+                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <SignalStatusBadge signal={signal} />
+                                <TrendIndicator signal={signal} />
+                              </div>
+                              <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
+                            </div>
+                          </motion.div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
                 {/* Pagination */}
                 {filteredSignals.length > 0 && (

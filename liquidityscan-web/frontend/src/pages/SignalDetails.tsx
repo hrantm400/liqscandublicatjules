@@ -79,7 +79,7 @@ export function SignalDetails() {
 
   // Fetch 4H candles strictly for Strategy 1
   const isStrategy1 = signal?.id?.startsWith('STRATEGY_1');
-  const { data: historical4HCandles, isLoading: isLoading4HCandles, error: candles4HError } = useQuery({
+  const { data: historical4HCandles, isLoading: isLoading4HCandles } = useQuery({
     queryKey: ['candles-4h', signal?.symbol],
     queryFn: async () => {
       if (!signal?.symbol) return [];
@@ -248,8 +248,8 @@ export function SignalDetails() {
   return (
     <>
       {/* Header */}
-      <div className="sticky top-0 z-30 flex items-center justify-between px-8 py-4 dark:bg-background-dark/80 light:bg-background-light/80 backdrop-blur-md dark:border-b-white/5 light:border-b-green-200/30">
-        <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase">
+      <div className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 py-3 md:py-4 dark:bg-background-dark/80 light:bg-background-light/80 backdrop-blur-md dark:border-b-white/5 light:border-b-green-200/30">
+        <div className="flex items-center gap-2 text-[8px] md:text-[10px] font-bold tracking-widest uppercase">
           <Link to={getStrategyMonitorPath()} className="dark:text-gray-500 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark cursor-pointer transition-colors">
             Monitor
           </Link>
@@ -274,7 +274,7 @@ export function SignalDetails() {
       </div>
 
       {/* Content */}
-      <div className={`flex-1 overflow-y-auto custom-scrollbar ${isFullscreen ? 'p-0' : 'p-8 pt-6'}`}>
+      <div className={`flex-1 overflow-y-auto custom-scrollbar ${isFullscreen ? 'p-0' : 'p-4 pt-4 md:p-8 md:pt-6'}`}>
         <div className={`${isFullscreen ? 'h-screen' : 'max-w-[1600px] mx-auto'} flex flex-col gap-6`}>
           {/* Title Section */}
           {!isFullscreen && (
@@ -284,12 +284,12 @@ export function SignalDetails() {
                 <span className="w-1 h-1 rounded-full dark:bg-gray-600 light:bg-text-light-secondary"></span>
                 <span className="text-xs font-medium dark:text-gray-500 light:text-text-light-secondary">Created {timeAgo}m ago</span>
               </div>
-              <div className="flex items-center gap-4">
-                <h1 className="text-5xl font-sans tracking-tight">
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                <h1 className="text-3xl md:text-5xl font-sans tracking-tight">
                   <span className="font-black dark:text-white light:text-text-dark">{signalData.symbol}</span>{' '}
                   <span className="font-thin dark:text-gray-400 light:text-text-light-secondary">{getStrategyLabel()}</span>
                 </h1>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(19,236,55,0.2)]">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(19,236,55,0.2)] w-fit">
                   <span className="w-2 h-2 rounded-full bg-primary"></span> Active
                 </span>
               </div>
@@ -542,7 +542,7 @@ export function SignalDetails() {
                   initial="initial"
                   animate="animate"
                   variants={scaleInVariants}
-                  className="grid grid-cols-4 gap-4"
+                  className="grid grid-cols-2 lg:grid-cols-4 gap-4"
                 >
                   <motion.div
                     variants={fadeInVariants}
@@ -631,8 +631,8 @@ export function SignalDetails() {
                       <div className="flex items-center gap-3">
                         <span className="material-symbols-outlined text-2xl">change_history</span>
                         <div className="flex flex-col items-start leading-none">
-                          <span className="text-sm">Open in</span>
-                          <span className="text-sm font-black">TradingView</span>
+                          <span className="text-xs md:text-sm">Open in</span>
+                          <span className="text-xs md:text-sm font-black">TradingView</span>
                         </div>
                       </div>
                       <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">open_in_new</span>
