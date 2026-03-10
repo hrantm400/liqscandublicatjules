@@ -258,6 +258,28 @@ export class LifecycleService implements OnModuleInit {
             return;
         }
 
+        // Fetch recent 5m candle high/low for all symbols with live signals.
+        // This detects SL/TP breaches that occurred BETWEEN 5-min lifecycle checks.
+        const symbolsToCheck = Array.from(new Set<string>(liveSeSignals.map((s: any) => s.symbol)));
+        const candleExtremes = new Map<string, { high: number; low: number }>();
+
+        const CONCURRENCY = 10;
+        for (let i = 0; i < symbolsToCheck.length; i += CONCURRENCY) {
+            const batch = symbolsToCheck.slice(i, i + CONCURRENCY);
+            await Promise.all(batch.map(async (symbol) => {
+                try {
+                    const candles = await this.candlesService.getKlines(symbol, '5m', 2);
+                    if (candles.length >= 2) {
+                        const lastClosed = candles[candles.length - 2];
+                        candleExtremes.set(symbol, {
+                            high: lastClosed.high,
+                            low: lastClosed.low,
+                        });
+                    }
+                } catch { /* skip — will fall back to ticker only */ }
+            }));
+        }
+
         const now = new Date();
         let tp1Hit = 0, tp2Hit = 0, slHit = 0, expired = 0, unchanged = 0;
 
@@ -316,9 +338,38 @@ export class LifecycleService implements OnModuleInit {
                 continue;
             }
 
-            // Process signal using the v2 runtime
+            // Determine effective price using 5m candle extremes to catch
+            // SL/TP breaches that occurred between lifecycle checks.
+            const extremes = candleExtremes.get(signal.symbol);
+            let effectivePrice = currentPrice;
+
+            if (extremes) {
+                const dir = runtimeSignal.direction_v2;
+                if (dir === 'bullish') {
+                    const bestPrice = Math.max(currentPrice, extremes.high);
+                    const worstPrice = Math.min(currentPrice, extremes.low);
+                    if (!runtimeSignal.tp1_hit && bestPrice >= runtimeSignal.tp1_price) {
+                        effectivePrice = bestPrice;
+                    } else if (runtimeSignal.tp1_hit && bestPrice >= runtimeSignal.tp2_price) {
+                        effectivePrice = bestPrice;
+                    } else if (worstPrice <= runtimeSignal.current_sl_price) {
+                        effectivePrice = worstPrice;
+                    }
+                } else {
+                    const bestPrice = Math.min(currentPrice, extremes.low);
+                    const worstPrice = Math.max(currentPrice, extremes.high);
+                    if (!runtimeSignal.tp1_hit && bestPrice <= runtimeSignal.tp1_price) {
+                        effectivePrice = bestPrice;
+                    } else if (runtimeSignal.tp1_hit && bestPrice <= runtimeSignal.tp2_price) {
+                        effectivePrice = bestPrice;
+                    } else if (worstPrice >= runtimeSignal.current_sl_price) {
+                        effectivePrice = worstPrice;
+                    }
+                }
+            }
+
             const result = processSeSignal(runtimeSignal, {
-                currentPrice,
+                currentPrice: effectivePrice,
                 isCandleClose: candleInfo.isCandleClose,
                 now,
             });
@@ -375,7 +426,7 @@ export class LifecycleService implements OnModuleInit {
                     updateData.result = legacyResult;
                 }
                 updateData.closedAt = result.closed_at_v2;
-                updateData.se_close_price = currentPrice;
+                updateData.se_close_price = effectivePrice;
                 
                 // Map result_type to legacy se_close_reason
                 if (result.result_type === 'tp2_full') {
@@ -392,9 +443,8 @@ export class LifecycleService implements OnModuleInit {
                 updateData.status = legacyResult === 'WIN' ? 'HIT_TP' : legacyResult === 'LOSS' ? 'HIT_SL' : 'EXPIRED';
                 updateData.outcome = updateData.status;
 
-                // Calculate PNL
                 const isBull = runtimeSignal.direction_v2 === 'bullish';
-                updateData.pnlPercent = this.calcPnl(isBull, runtimeSignal.entry_price, currentPrice);
+                updateData.pnlPercent = this.calcPnl(isBull, runtimeSignal.entry_price, effectivePrice);
             }
 
             // Persist to DB
