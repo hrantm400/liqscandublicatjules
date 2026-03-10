@@ -755,14 +755,14 @@ export function InteractiveLiveChart({
             console.error('Error setting marker:', error);
           }
 
-          // Add SL / TP1 / TP2 lines for SuperEngulfing signals
+          // Add SL / TP1 / TP2 / TP3 lines for SuperEngulfing signals (v3)
           const isSESignal = signal?.id?.startsWith('SUPER_ENGULFING');
           if (isSESignal && signal && chartRef.current && signalCandleIndex >= 0) {
-            // Get SE targets from signal root fields or metadata
-            const seSL = signal.se_sl ?? (signal.metadata as any)?.se_sl;
-            const seTP1 = signal.se_tp1 ?? (signal.metadata as any)?.se_tp1;
-            const seTP2 = signal.se_tp2 ?? (signal.metadata as any)?.se_tp2;
-            const seCurrentSL = signal.se_current_sl ?? seSL;
+            // Get SE targets — prefer v3 fields, fallback to legacy
+            const seSL = signal.current_sl_price ?? signal.sl_price ?? signal.se_current_sl ?? signal.se_sl ?? (signal.metadata as any)?.se_sl;
+            const seTP1 = signal.tp1_price ?? signal.se_tp1 ?? (signal.metadata as any)?.se_tp1;
+            const seTP2 = signal.tp2_price ?? signal.se_tp2 ?? (signal.metadata as any)?.se_tp2;
+            const seTP3 = signal.tp3_price ?? (signal.metadata as any)?.tp3_price;
 
             const lineStartIdx = Math.max(0, signalCandleIndex - 5);
             const lineStart = chartData[lineStartIdx].time as any;
@@ -778,26 +778,29 @@ export function InteractiveLiveChart({
             if ((chartRef.current as any).seTP2Line) {
               try { chartRef.current.removeSeries((chartRef.current as any).seTP2Line); } catch (e) { }
             }
+            if ((chartRef.current as any).seTP3Line) {
+              try { chartRef.current.removeSeries((chartRef.current as any).seTP3Line); } catch (e) { }
+            }
 
             if (lineStart < lineEnd) {
               // SL line (red dashed)
-              if (seCurrentSL) {
+              if (seSL) {
                 const slLine = chartRef.current.addLineSeries({
                   color: '#ff4444',
                   lineWidth: 2,
                   lineStyle: 2, // Dashed
                   priceLineVisible: true,
                   lastValueVisible: true,
-                  title: 'SL',
+                  title: signal.tp1_hit ? 'SL (BE)' : 'SL',
                 });
                 slLine.setData([
-                  { time: lineStart, value: Number(seCurrentSL) },
-                  { time: lineEnd, value: Number(seCurrentSL) },
+                  { time: lineStart, value: Number(seSL) },
+                  { time: lineEnd, value: Number(seSL) },
                 ]);
                 (chartRef.current as any).seSLLine = slLine;
               }
 
-              // TP1 line (amber dotted)
+              // TP1 line (amber dotted) — 1.5R
               if (seTP1) {
                 const tp1Line = chartRef.current.addLineSeries({
                   color: '#f59e0b',
@@ -805,7 +808,7 @@ export function InteractiveLiveChart({
                   lineStyle: 1, // Dotted
                   priceLineVisible: true,
                   lastValueVisible: true,
-                  title: 'TP1 (2R)',
+                  title: signal.tp1_hit ? 'TP1 (1.5R) ✓' : 'TP1 (1.5R)',
                 });
                 tp1Line.setData([
                   { time: lineStart, value: Number(seTP1) },
@@ -814,21 +817,38 @@ export function InteractiveLiveChart({
                 (chartRef.current as any).seTP1Line = tp1Line;
               }
 
-              // TP2 line (green solid)
+              // TP2 line (cyan dotted) — 2R
               if (seTP2) {
                 const tp2Line = chartRef.current.addLineSeries({
-                  color: '#13ec37',
-                  lineWidth: 2,
-                  lineStyle: 0, // Solid
+                  color: '#22d3ee',
+                  lineWidth: 1,
+                  lineStyle: 1, // Dotted
                   priceLineVisible: true,
                   lastValueVisible: true,
-                  title: 'TP2 (3R)',
+                  title: signal.tp2_hit ? 'TP2 (2R) ✓' : 'TP2 (2R)',
                 });
                 tp2Line.setData([
                   { time: lineStart, value: Number(seTP2) },
                   { time: lineEnd, value: Number(seTP2) },
                 ]);
                 (chartRef.current as any).seTP2Line = tp2Line;
+              }
+
+              // TP3 line (green solid) — 3R
+              if (seTP3) {
+                const tp3Line = chartRef.current.addLineSeries({
+                  color: '#13ec37',
+                  lineWidth: 2,
+                  lineStyle: 0, // Solid
+                  priceLineVisible: true,
+                  lastValueVisible: true,
+                  title: signal.tp3_hit ? 'TP3 (3R) ✓' : 'TP3 (3R)',
+                });
+                tp3Line.setData([
+                  { time: lineStart, value: Number(seTP3) },
+                  { time: lineEnd, value: Number(seTP3) },
+                ]);
+                (chartRef.current as any).seTP3Line = tp3Line;
               }
             }
           }

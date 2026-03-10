@@ -23,18 +23,18 @@ export type SignalStatus = 'ACTIVE' | 'HIT_TP' | 'HIT_SL' | 'EXPIRED';
 export type SignalLifecycleStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'ARCHIVED';
 export type SignalResult = 'WIN' | 'LOSS' | null;
 
-// SE Scanner v2 types
+// SE Scanner v3 types (3 TP levels)
 export type SeState = 'live' | 'closed';
 export type SeResult = 'won' | 'lost';
-export type SeResultType = 'tp1' | 'tp2_full' | 'sl' | 'candle_expiry';
-export type SePatternV2 = 
-  | 'REV_BULLISH' 
-  | 'REV_BEARISH' 
-  | 'REV_PLUS_BULLISH' 
-  | 'REV_PLUS_BEARISH' 
-  | 'RUN_BULLISH' 
-  | 'RUN_BEARISH' 
-  | 'RUN_PLUS_BULLISH' 
+export type SeResultType = 'tp1' | 'tp2' | 'tp3_full' | 'sl' | 'candle_expiry';
+export type SePatternV2 =
+  | 'REV_BULLISH'
+  | 'REV_BEARISH'
+  | 'REV_PLUS_BULLISH'
+  | 'REV_PLUS_BEARISH'
+  | 'RUN_BULLISH'
+  | 'RUN_BEARISH'
+  | 'RUN_PLUS_BULLISH'
   | 'RUN_PLUS_BEARISH';
 export type SeDirectionV2 = 'bullish' | 'bearish';
 
@@ -86,7 +86,7 @@ export interface Signal {
   bias_result?: string;
   bias_validated_at?: string;
   // ============================================
-  // SE Scanner v2 fields (per new specification)
+  // SE Scanner v3 fields (3 TP levels)
   // ============================================
   state?: SeState;
   type_v2?: string;
@@ -97,10 +97,13 @@ export interface Signal {
   current_sl_price?: number;
   tp1_price?: number;
   tp2_price?: number;
+  tp3_price?: number;
   tp1_hit?: boolean;
   tp2_hit?: boolean;
+  tp3_hit?: boolean;
   result_v2?: SeResult;
   result_type?: SeResultType;
+  close_price?: number;
   candle_count?: number;
   triggered_at?: string;
   closed_at_v2?: string;

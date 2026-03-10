@@ -448,6 +448,7 @@ export class LifecycleService implements OnModuleInit {
                 }
 
                 const closePrice = updateData.se_close_price;
+                updateData.close_price = closePrice; // v3 spec field
 
                 // Map result_type to legacy se_close_reason
                 if (result.result_type === 'tp3_full') {

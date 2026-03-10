@@ -540,6 +540,7 @@ export class SignalsService {
             tp3_hit: r.tp3_hit ?? undefined,
             result_v2: r.result_v2 ?? undefined,
             result_type: r.result_type ?? undefined,
+            close_price: r.close_price ?? undefined,
             candle_count: r.candle_count ?? undefined,
             triggered_at: r.triggered_at ? r.triggered_at.toISOString() : undefined,
             closed_at_v2: r.closed_at_v2 ? r.closed_at_v2.toISOString() : undefined,

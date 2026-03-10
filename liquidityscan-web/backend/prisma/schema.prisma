@@ -297,6 +297,7 @@ model SuperEngulfingSignal {
   
   result_v2       String?       // "won" or "lost" - null while live
   result_type     String?       // "tp1", "tp2", "tp3_full", "sl", "candle_expiry" - null while live
+  close_price     Float?        // The price at which signal closed (preset level or market price at expiry)
   
   candle_count    Int           @default(0)       // Starts at 0, increments on each candle close
   

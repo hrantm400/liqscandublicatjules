@@ -716,10 +716,12 @@ export function SignalDetails() {
                   {signalData.se_close_reason && (
                     <div className="flex items-center justify-between py-1">
                       <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Close Reason</span>
-                      <span className={`font-mono font-bold text-sm px-2 py-0.5 rounded ${signalData.se_close_reason === 'TP2' ? 'bg-emerald-500/15 text-emerald-400' :
-                        signalData.se_close_reason === 'SL' ? 'bg-red-500/15 text-red-400' :
-                          signalData.se_close_reason === 'OPPOSITE_REV' ? 'bg-blue-500/15 text-blue-400' :
-                            'bg-gray-500/15 dark:text-gray-400 light:text-slate-500'
+                      <span className={`font-mono font-bold text-sm px-2 py-0.5 rounded ${signalData.se_close_reason === 'TP3' ? 'bg-emerald-500/15 text-emerald-400' :
+                        signalData.se_close_reason === 'TP2' ? 'bg-emerald-500/15 text-emerald-400' :
+                          signalData.se_close_reason === 'TP1' ? 'bg-amber-500/15 text-amber-400' :
+                            signalData.se_close_reason === 'SL' ? 'bg-red-500/15 text-red-400' :
+                              signalData.se_close_reason === 'OPPOSITE_REV' ? 'bg-blue-500/15 text-blue-400' :
+                                'bg-gray-500/15 dark:text-gray-400 light:text-slate-500'
                         }`}>
                         {signalData.se_close_reason === 'OPPOSITE_REV' ? 'OPP REV' : signalData.se_close_reason}
                       </span>
@@ -728,45 +730,53 @@ export function SignalDetails() {
 
                   <div className="h-px dark:bg-white/5 light:bg-green-200/30 my-1"></div>
 
-                  {/* SE Targets */}
-                  {signalData.se_entry_zone != null && (
+                  {/* SE Targets — v3 (3 TP levels) */}
+                  {(signalData.entry_price != null || signalData.se_entry_zone != null) && (
                     <>
                       <div className="flex items-center justify-between py-1">
                         <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Entry Zone</span>
                         <span className="font-mono dark:text-white light:text-text-dark font-bold tracking-tight">
-                          {formatPrice(signalData.se_entry_zone)}
+                          {formatPrice(signalData.entry_price ?? signalData.se_entry_zone ?? 0)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-1">
                         <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Stop Loss</span>
                         <span className="font-mono text-red-400 font-bold tracking-tight">
-                          {formatPrice(signalData.se_current_sl ?? signalData.se_sl ?? 0)}
-                          {signalData.se_r_ratio_hit && (
+                          {formatPrice(signalData.current_sl_price ?? signalData.se_current_sl ?? signalData.sl_price ?? signalData.se_sl ?? 0)}
+                          {signalData.tp1_hit && (
                             <span className="ml-1 text-[9px] text-amber-400">(BE)</span>
                           )}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-1">
-                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">TP1 (2R)</span>
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">TP1 (1.5R)</span>
                         <span className="font-mono text-amber-400 font-bold tracking-tight">
-                          {formatPrice(signalData.se_tp1 ?? 0)}
-                          {signalData.se_r_ratio_hit && <span className="ml-1 text-[9px]">✓</span>}
+                          {formatPrice(signalData.tp1_price ?? signalData.se_tp1 ?? 0)}
+                          {signalData.tp1_hit && <span className="ml-1 text-[9px]">✓</span>}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-1">
-                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">TP2 (3R)</span>
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">TP2 (2R)</span>
+                        <span className="font-mono text-cyan-400 font-bold tracking-tight">
+                          {formatPrice(signalData.tp2_price ?? signalData.se_tp2 ?? 0)}
+                          {signalData.tp2_hit && <span className="ml-1 text-[9px]">✓</span>}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">TP3 (3R)</span>
                         <span className="font-mono text-emerald-400 font-bold tracking-tight">
-                          {formatPrice(signalData.se_tp2 ?? 0)}
+                          {formatPrice(signalData.tp3_price ?? 0)}
+                          {signalData.tp3_hit && <span className="ml-1 text-[9px]">✓</span>}
                         </span>
                       </div>
                     </>
                   )}
 
                   {/* R:R Ratio */}
-                  {signalData.se_entry_zone != null && signalData.se_sl != null && signalData.se_tp2 != null && (
+                  {(signalData.entry_price != null || signalData.se_entry_zone != null) && (signalData.tp3_price != null || signalData.se_tp2 != null) && (
                     <div className="flex items-center justify-between py-1">
                       <span className="text-sm dark:text-gray-400 light:text-text-light-secondary font-medium">Risk / Reward</span>
-                      <span className="font-mono dark:text-white light:text-text-dark text-lg font-bold">1 : 3</span>
+                      <span className="font-mono dark:text-white light:text-text-dark text-lg font-bold">1:1.5 / 1:2 / 1:3</span>
                     </div>
                   )}
 
