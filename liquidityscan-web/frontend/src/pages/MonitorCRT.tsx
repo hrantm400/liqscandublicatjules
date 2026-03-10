@@ -92,7 +92,7 @@ export function MonitorCRT() {
     const [currentPage, setCurrentPage] = useState(1);
 
 
-    const { volumeMap, getVolume, isLowVolume, formatVolume } = useVolumeData();
+    const { volumeMap, getVolume, isLowVolume, formatVolume, isLoading: isVolumeLoading } = useVolumeData();
 
     const { isAuthenticated } = useAuthStore();
     const { data: mySubscription } = useQuery({
@@ -109,11 +109,13 @@ export function MonitorCRT() {
         setSelectedTimeframe(tf || null);
     }, [searchParams]);
 
-    const { signals, isLoading } = useMarketData({
+    const { signals, isLoading: isSignalsLoading } = useMarketData({
         strategyType: 'CRT',
         limit: 5000,
         refetchInterval: 60000,
     });
+
+    const isLoading = isSignalsLoading || isVolumeLoading;
 
     const filteredSignals = useSignalFilter({
         signals,

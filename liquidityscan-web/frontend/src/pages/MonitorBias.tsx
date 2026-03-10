@@ -139,15 +139,17 @@ export function MonitorBias() {
   const [scanResult, setScanResult] = useState<string | null>(null);
 
 
-  const { volumeMap, getVolume, isLowVolume, formatVolume } = useVolumeData();
+  const { volumeMap, getVolume, isLowVolume, formatVolume, isLoading: isVolumeLoading } = useVolumeData();
 
   // Use the new useMarketData hook
-  const { signals: rawSignals, isLoading, refetch } = useMarketData({
+  const { signals: rawSignals, isLoading: isSignalsLoading, refetch } = useMarketData({
     strategyType: 'ICT_BIAS',
     timeframe: activeTimeframe === 'all' ? undefined : activeTimeframe,
     limit: 5000, // Increased limit to show all signals
     refetchInterval: 60000,
   });
+
+  const isLoading = isSignalsLoading || isVolumeLoading;
 
   // Fetch live bias for the active timeframe (recalculates from latest candles)
   const { data: liveBiasMap } = useQuery({

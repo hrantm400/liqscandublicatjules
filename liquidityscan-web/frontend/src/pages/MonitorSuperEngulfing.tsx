@@ -100,7 +100,7 @@ export function MonitorSuperEngulfing() {
   const [scanResult, setScanResult] = useState<string | null>(null);
 
 
-  const { volumeMap, getVolume, isLowVolume, formatVolume } = useVolumeData();
+  const { volumeMap, getVolume, isLowVolume, formatVolume, isLoading: isVolumeLoading } = useVolumeData();
 
   const { isAuthenticated } = useAuthStore();
   const { data: mySubscription } = useQuery({
@@ -126,11 +126,13 @@ export function MonitorSuperEngulfing() {
   }, [searchParams]);
 
   // Use the new useMarketData hook
-  const { signals, isLoading } = useMarketData({
+  const { signals, isLoading: isSignalsLoading } = useMarketData({
     strategyType: 'SUPER_ENGULFING',
     limit: 5000, // Increased limit to show all signals
     refetchInterval: 60000,
   });
+
+  const isLoading = isSignalsLoading || isVolumeLoading;
 
   // Use the new useSignalFilter hook
   // Don't filter by timeframe here - apply it separately so we can show all signals by default

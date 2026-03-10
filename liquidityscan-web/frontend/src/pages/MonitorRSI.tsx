@@ -84,7 +84,7 @@ export function MonitorRSI() {
   const [currentPage, setCurrentPage] = useState(1);
 
 
-  const { volumeMap } = useVolumeData();
+  const { volumeMap, isLoading: isVolumeLoading } = useVolumeData();
 
   const { isAuthenticated } = useAuthStore();
   const { data: mySubscription } = useQuery({
@@ -96,12 +96,14 @@ export function MonitorRSI() {
   const allowedPairs: string[] | undefined = mySubscription?.subscription?.limits?.pairs;
 
   // Use the new useMarketData hook
-  const { signals, isLoading, refetch } = useMarketData({
+  const { signals, isLoading: isSignalsLoading, refetch } = useMarketData({
     strategyType: 'RSI_DIVERGENCE',
     timeframe: activeTimeframe === 'all' ? undefined : activeTimeframe,
     limit: 5000, // Increased limit to show all signals
     refetchInterval: 60000,
   });
+
+  const isLoading = isSignalsLoading || isVolumeLoading;
 
   // Use the new useSignalFilter hook
   const filteredSignals = useSignalFilter({
