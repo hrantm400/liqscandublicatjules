@@ -1,10 +1,17 @@
 import { Controller, Get, Post, Put, Param, Body, UseGuards, Req, Headers, BadRequestException, HttpCode, HttpStatus } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { startPaymentSession } from '../lib/payments/start-payment-session';
+import { activeSessions } from '../lib/payments/generate-unique-amount';
+import { Network, PlanType } from '../lib/payments/types';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private paymentsService: PaymentsService) { }
+  constructor(
+    private paymentsService: PaymentsService,
+    private prisma: PrismaService
+  ) { }
 
   @Post('nowpayments-webhook')
   @HttpCode(HttpStatus.OK)
@@ -42,6 +49,36 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async getPaymentStatus(@Param('id') id: string) {
     return this.paymentsService.getPaymentStatus(id);
+  }
+
+  @Post('start')
+  @UseGuards(JwtAuthGuard)
+  async startCustomPaymentSession(
+    @Body() data: { user_id?: string; network: Network; plan_type: PlanType },
+    @Req() req: any,
+  ) {
+    const userId = data.user_id || req.user.userId;
+    try {
+      const result = await startPaymentSession(userId, data.network, data.plan_type, this.prisma);
+      return result;
+    } catch (e: any) {
+      throw new BadRequestException(e.message || 'Failed to start payment session');
+    }
+  }
+
+  @Get('session-status')
+  @UseGuards(JwtAuthGuard)
+  async getCustomSessionStatus(@Req() req: any) {
+    const userId = req.user.userId;
+    for (const session of activeSessions.values()) {
+      if (session.user_id === userId) {
+        return {
+          status: 'pending',
+          session,
+        };
+      }
+    }
+    return { status: 'not_found_or_completed' };
   }
 
   @Put('status/:id')

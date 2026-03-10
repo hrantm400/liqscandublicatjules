@@ -11,18 +11,16 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
     const [step, setStep] = useState<'checkout' | 'generating' | 'awaiting' | 'success'>('checkout');
     const [plan, setPlan] = useState<'monthly' | 'annual'>('monthly');
     const [pricing, setPricing] = useState<any>(null);
-    const [subscriptionId, setSubscriptionId] = useState<string>('');
     const [timeLeft, setTimeLeft] = useState(900);
     const [copied, setCopied] = useState(false);
-    const [paymentId, setPaymentId] = useState('');
     const [walletAddress, setWalletAddress] = useState('');
     const [generatedAmount, setGeneratedAmount] = useState<number>(0);
+    const [network, setNetwork] = useState<'TRC20' | 'BEP20'>('TRC20');
 
     useEffect(() => {
         userApi.getSubscriptions().then(plans => {
-            const fullAccess = plans.find(p => p.tier === 'FULL_ACCESS');
+            const fullAccess = plans.find((p: any) => p.tier === 'FULL_ACCESS');
             if (fullAccess) {
-                setSubscriptionId(fullAccess.id);
                 setPricing({
                     monthly: { original: 49, current: Number(fullAccess.priceMonthly), label: 'Monthly', plan: 'monthly' },
                     annual: { original: 588, current: Number(fullAccess.priceYearly || 490), label: 'Annual', plan: 'annual' },
@@ -33,30 +31,37 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
 
     // Polling for payment confirmation
     const checkPaymentStatus = useCallback(async () => {
-        if (!paymentId || step !== 'awaiting') return;
+        if (step !== 'awaiting') return;
         try {
-            const status = await userApi.getPaymentStatus(paymentId);
-            if (status.status === 'completed') {
-                setStep('success');
-                toast.success('Payment confirmed! 🎉');
-                onSuccess?.();
+            const status = await userApi.getCustomSessionStatus();
+            if (status.status === 'not_found_or_completed') {
+                if (timeLeft > 0) {
+                    setStep('success');
+                    toast.success('Payment confirmed! 🎉');
+                    onSuccess?.();
+                }
             }
         } catch { /* silent */ }
-    }, [paymentId, step, onSuccess]);
+    }, [step, timeLeft, onSuccess]);
 
     useEffect(() => {
         let timer: ReturnType<typeof setInterval>;
-        if (step === 'awaiting' && timeLeft > 0) {
-            timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+        if (step === 'awaiting') {
+            if (timeLeft > 0) {
+                timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+            } else {
+                toast.error('Время вышло. Пожалуйста, попробуйте снова.');
+                setStep('checkout');
+            }
         }
         return () => clearInterval(timer);
     }, [step, timeLeft]);
 
-    // Poll every 10 seconds for payment confirmation
+    // Poll every 15 seconds for payment confirmation
     useEffect(() => {
         let poll: ReturnType<typeof setInterval>;
         if (step === 'awaiting') {
-            poll = setInterval(checkPaymentStatus, 10000);
+            poll = setInterval(checkPaymentStatus, 15000);
         }
         return () => clearInterval(poll);
     }, [step, checkPaymentStatus]);
@@ -77,16 +82,12 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
         if (!pricing) return;
         setStep('generating');
         try {
-            const price = pricing[plan];
-            const result = await userApi.createPayment(
-                price.current,
-                'USD',
-                subscriptionId,
-                { plan }
-            );
-            setPaymentId(result.id || result.paymentId);
-            setGeneratedAmount(parseFloat(result.amount));
-            setWalletAddress(result.metadata?.walletAddress || '');
+            const planType = plan === 'monthly' ? 'first_month' : 'full';
+            const result = await userApi.startCustomPaymentSession(network, planType);
+
+            setGeneratedAmount(result.amount);
+            setWalletAddress(result.walletAddress);
+            setTimeLeft(600); // 10 minutes
             setStep('awaiting');
         } catch (e: any) {
             toast.error(e.message || 'Payment failed');
@@ -172,6 +173,25 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                 </div>
                             </div>
 
+                            {/* Network Selector */}
+                            <div className="pt-2">
+                                <div className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest font-semibold mb-2">Select Network</div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setNetwork('TRC20')}
+                                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${network === 'TRC20' ? 'bg-primary/10 border-primary text-primary' : 'dark:bg-white/5 light:bg-gray-100 dark:border-white/10 light:border-gray-200 dark:text-gray-400 light:text-gray-500 hover:dark:border-white/20'}`}
+                                    >
+                                        TRC20 (Tron)
+                                    </button>
+                                    <button
+                                        onClick={() => setNetwork('BEP20')}
+                                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${network === 'BEP20' ? 'bg-primary/10 border-primary text-primary' : 'dark:bg-white/5 light:bg-gray-100 dark:border-white/10 light:border-gray-200 dark:text-gray-400 light:text-gray-500 hover:dark:border-white/20'}`}
+                                    >
+                                        BEP20 (Bsc)
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Features */}
                             <div className="pt-1 pb-1 space-y-2">
                                 {[
@@ -254,9 +274,22 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                                 </div>
                             </div>
 
+                            {/* QR Code */}
+                            <div className="flex justify-center mb-4">
+                                <div className="p-2 dark:bg-white light:bg-white rounded-2xl shadow-lg">
+                                    <img
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${walletAddress}`}
+                                        alt={`${network} Address QR`}
+                                        width="160"
+                                        height="160"
+                                        className="rounded-xl"
+                                    />
+                                </div>
+                            </div>
+
                             {/* Payment Address */}
                             <div className="dark:bg-white/[0.02] light:bg-gray-50 rounded-2xl p-4 border dark:border-white/5 light:border-gray-200">
-                                <div className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest font-semibold mb-2">Destination Address (TRC20)</div>
+                                <div className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest font-semibold mb-2">Destination Address ({network})</div>
                                 <div className="flex items-center justify-between gap-3 bg-black/20 p-3 rounded-xl border border-white/5">
                                     <div className="text-sm font-mono dark:text-gray-300 light:text-gray-600 truncate">
                                         {walletAddress}
@@ -273,10 +306,10 @@ export function PaymentWidget({ onSuccess, onClose }: PaymentWidgetProps) {
                             <div className="dark:bg-white/[0.02] light:bg-gray-50 rounded-2xl p-4 border dark:border-white/5 light:border-gray-200">
                                 <div className="flex justify-between items-center mb-2">
                                     <div className="text-[10px] dark:text-gray-500 light:text-gray-400 uppercase tracking-widest font-semibold">Network</div>
-                                    <div className="text-[10px] bg-red-500/10 text-red-400 px-2 py-1 rounded-md font-bold tracking-wide">TRC20</div>
+                                    <div className="text-[10px] bg-red-500/10 text-red-400 px-2 py-1 rounded-md font-bold tracking-wide">{network}</div>
                                 </div>
                                 <p className="text-xs dark:text-gray-400 light:text-gray-500 leading-relaxed">
-                                    Send USDT via <strong className="text-primary">TRC20 network only</strong>. Other networks will result in lost funds.
+                                    Send USDT via <strong className="text-primary">{network} network only</strong>. Other networks will result in lost funds.
                                 </p>
                             </div>
 

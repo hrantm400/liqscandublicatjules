@@ -131,6 +131,17 @@ class ApiClient {
     });
   }
 
+  async startCustomPaymentSession(network: string, plan_type: string) {
+    return this.request<any>('/payments/start', {
+      method: 'POST',
+      body: JSON.stringify({ network, plan_type }),
+    });
+  }
+
+  async getCustomSessionStatus() {
+    return this.request<any>('/payments/session-status');
+  }
+
   async createSubscriptionPayment(subscriptionId: string) {
     return this.request<any>(`/payments/subscription/${subscriptionId}`, {
       method: 'POST',
