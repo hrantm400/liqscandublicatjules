@@ -15,8 +15,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     console.log('[JwtStrategy] Validating token payload:', payload);
+    const userId = payload.sub || payload.userId || payload.id;
+    if (!userId) {
+      throw new UnauthorizedException('Invalid token: missing subject (userId)');
+    }
+    
     const user = {
-      userId: payload.sub,
+      userId,
       email: payload.email,
     };
     console.log('[JwtStrategy] Returning user:', user);
