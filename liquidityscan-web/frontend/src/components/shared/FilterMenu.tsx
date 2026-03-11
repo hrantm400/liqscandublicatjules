@@ -97,7 +97,7 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
 
       {/* By Market Cap */}
       <div className="px-2 py-1.5 flex items-center justify-between">
-        <span className="text-[10px] uppercase font-bold dark:text-gray-500 light:text-text-light-secondary tracking-widest">By Market Cap</span>
+        <span className="text-[10px] uppercase font-bold dark:text-gray-500 light:text-text-light-secondary tracking-widest">By CMC Rank</span>
       </div>
       <div className="grid grid-cols-2 gap-1 px-1 mb-1">
         <button
@@ -107,8 +107,8 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
             : 'border-transparent dark:hover:bg-primary/10 light:hover:bg-green-100 hover:border-primary/30 dark:text-gray-300 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark'
             }`}
         >
-          <span className="material-symbols-outlined text-sm">arrow_downward</span>
-          High to Low
+          <span className="material-symbols-outlined text-sm">arrow_upward</span>
+          Rank 1-N (High Cap)
         </button>
         <button
           onClick={() => onMarketCapSortChange(marketCapSort === 'low-high' ? null : 'low-high')}
@@ -117,8 +117,8 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
             : 'border-transparent dark:hover:bg-primary/10 light:hover:bg-green-100 hover:border-primary/30 dark:text-gray-300 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark'
             }`}
         >
-          <span className="material-symbols-outlined text-sm">arrow_upward</span>
-          Low to High
+          <span className="material-symbols-outlined text-sm">arrow_downward</span>
+          Rank N-1 (Low Cap)
         </button>
       </div>
 

@@ -20,6 +20,7 @@ import { useSignalFilter } from '../hooks/useSignalFilter';
 import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
 import { scaleInVariants } from '../utils/animations';
 import { useVolumeData } from '../hooks/useVolumeData';
+import { useMarketCapData } from '../hooks/useMarketCapData';
 import { VolumeBadge } from '../components/shared/VolumeFilter';
 import { useTierGating } from '../hooks/useTierGating';
 import { ProOverlay } from '../components/ProOverlay';
@@ -142,6 +143,7 @@ export function MonitorBias() {
 
 
   const { volumeMap, getVolume, isLowVolume, formatVolume, isLoading: isVolumeLoading } = useVolumeData();
+  const { marketCapMap, getRank } = useMarketCapData();
 
   // Use the new useMarketData hook
   const { signals: rawSignals, isLoading: isSignalsLoading, refetch } = useMarketData({
@@ -199,6 +201,7 @@ export function MonitorBias() {
     strategyType: 'ICT_BIAS',
 
     volumeMap,
+    marketCapMap,
   });
 
   // Apply status filter
@@ -637,6 +640,7 @@ export function MonitorBias() {
                         <th className="px-6 py-3" scope="col">Bias Type</th>
                         <th className="px-6 py-3 text-center" scope="col">Status</th>
                         <th className="px-6 py-3 text-center" scope="col">Trend</th>
+                        <th className="px-6 py-3 text-right" scope="col">CMC Rank</th>
                         <th className="px-6 py-3 text-right" scope="col">Volume (24h)</th>
                         <th className="px-6 py-3 text-right" scope="col">Detected</th>
                         <th className="px-6 py-3 text-right" scope="col">Actions</th>
@@ -681,6 +685,9 @@ export function MonitorBias() {
                               </td>
                               <td className="px-6 py-2.5 text-center">
                                 <TrendIndicator signal={signal} />
+                              </td>
+                              <td className="px-6 py-2.5 text-right font-mono text-xs dark:text-gray-300 light:text-slate-600">
+                                {getRank(signal.symbol) ? `#${getRank(signal.symbol)}` : '—'}
                               </td>
                               <td className="px-6 py-2.5 text-right">
                                 <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />

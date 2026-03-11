@@ -14,6 +14,7 @@ interface UseSignalFilterOptions {
   showClosedSignals: boolean;
   strategyType: 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS' | 'CRT';
   volumeMap?: Map<string, number>;
+  marketCapMap?: Map<string, number>;
 }
 
 export const useSignalFilter = (options: UseSignalFilterOptions) => {
@@ -30,6 +31,7 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     showClosedSignals,
     strategyType,
     volumeMap,
+    marketCapMap,
   } = options;
 
   const filteredSignals = useMemo(() => {
@@ -140,12 +142,29 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
       filtered.sort((a, b) => a.symbol.localeCompare(b.symbol));
     }
 
-    // Market Cap and Volume sorting with real Binance data
+    // Secondary sorts (Volume and Market Cap)
+    // Note: If both are active, Market Cap takes precedence over Volume in this implementation, 
+    // but the UI typically only allows one primary sort. We'll sort sequentially.
+    
     if (volumeSort && volumeMap && volumeMap.size > 0) {
       filtered.sort((a, b) => {
         const volA = volumeMap.get(a.symbol) || 0;
         const volB = volumeMap.get(b.symbol) || 0;
         return volumeSort === 'high-low' ? volB - volA : volA - volB;
+      });
+    }
+
+    if (marketCapSort && marketCapMap && marketCapMap.size > 0) {
+      filtered.sort((a, b) => {
+        // symbols: BTCUSDT
+        const baseA = a.symbol.replace('USDT', '').replace('_PERP', '').replace('PERP', '');
+        const baseB = b.symbol.replace('USDT', '').replace('_PERP', '').replace('PERP', '');
+        const rankA = marketCapMap.get(baseA) || 999999;
+        const rankB = marketCapMap.get(baseB) || 999999;
+        
+        // marketCapSort 'high-low' means Rank 1 to Rank X (High Market Cap to Low Market Cap)
+        // so rankA (1) comes before rankB (10)
+        return marketCapSort === 'high-low' ? rankA - rankB : rankB - rankA;
       });
     }
 
@@ -183,6 +202,7 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     showClosedSignals,
     strategyType,
     volumeMap,
+    marketCapMap,
   ]);
 
   return filteredSignals;

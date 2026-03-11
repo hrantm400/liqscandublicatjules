@@ -24,6 +24,7 @@ import { scaleInVariants } from '../utils/animations';
 import { userApi } from '../services/userApi';
 import { useAuthStore } from '../store/authStore';
 import { useVolumeData } from '../hooks/useVolumeData';
+import { useMarketCapData } from '../hooks/useMarketCapData';
 import { VolumeBadge } from '../components/shared/VolumeFilter';
 import { useTierGating } from '../hooks/useTierGating';
 import { ProOverlay } from '../components/ProOverlay';
@@ -97,6 +98,7 @@ export function MonitorSuperEngulfing() {
 
 
   const { volumeMap, getVolume, isLowVolume, formatVolume, isLoading: isVolumeLoading } = useVolumeData();
+  const { marketCapMap, getRank } = useMarketCapData();
 
   const { isAuthenticated } = useAuthStore();
   const { data: mySubscription } = useQuery({
@@ -146,6 +148,7 @@ export function MonitorSuperEngulfing() {
     strategyType: 'SUPER_ENGULFING',
 
     volumeMap,
+    marketCapMap,
   });
 
   // Apply timeframe filter (if a specific timeframe is selected)
@@ -663,6 +666,7 @@ export function MonitorSuperEngulfing() {
                         <th className="px-6 py-3" scope="col">Pattern</th>
                         <th className="px-6 py-3 text-center" scope="col">Status</th>
                         <th className="px-6 py-3 text-center" scope="col">Setup Quality</th>
+                        <th className="px-6 py-3 text-right" scope="col">CMC Rank</th>
                         <th className="px-6 py-3 text-right" scope="col">Volume (24h)</th>
                         <th className="px-6 py-3 text-right" scope="col">Detected</th>
                         <th className="px-6 py-3 text-right" scope="col">Actions</th>
@@ -721,6 +725,9 @@ export function MonitorSuperEngulfing() {
                               </td>
                               <td className="px-6 py-2.5 text-center">
                                 <SignalBadge signal={signal} />
+                              </td>
+                              <td className="px-6 py-2.5 text-right font-mono text-xs dark:text-gray-300 light:text-slate-600">
+                                {getRank(signal.symbol) ? `#${getRank(signal.symbol)}` : '—'}
                               </td>
                               <td className="px-6 py-2.5 text-right">
                                 <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
