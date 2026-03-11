@@ -49,6 +49,7 @@ export function OAuthHandler() {
       // 2. Fetch user profile from API
       try {
         const profile = await authApi.getProfile();
+        console.log('[OAuthHandler] Profile fetched:', { email: profile?.email, isAdmin: profile?.isAdmin });
         // 3. Store user in Zustand (persist middleware will save to localStorage automatically)
         setUser(profile);
       } catch (error) {
@@ -60,6 +61,7 @@ export function OAuthHandler() {
             id: payload.sub || '',
             email: payload.email || '',
             name: payload.email?.split('@')[0] || 'User',
+            isAdmin: payload.isAdmin || false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
