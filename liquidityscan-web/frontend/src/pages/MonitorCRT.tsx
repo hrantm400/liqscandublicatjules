@@ -21,6 +21,7 @@ import { useVolumeData } from '../hooks/useVolumeData';
 import { useTierGating } from '../hooks/useTierGating';
 import { ProOverlay } from '../components/ProOverlay';
 import { VolumeBadge } from '../components/shared/VolumeFilter';
+import { scaleInVariants } from '../utils/animations';
 
 // Component for signal card with static mini chart
 function SignalCardWithChart({ signal, isLong }: { signal: Signal; isLong: boolean }) {
@@ -188,6 +189,16 @@ export function MonitorCRT() {
         return stats;
     }, [statusFilteredSignals]);
 
+    const handleTimeframeClick = useCallback((timeframe: string | null) => {
+        setSelectedTimeframe(timeframe);
+        if (!timeframe) {
+            searchParams.delete('timeframe');
+        } else {
+            searchParams.set('timeframe', timeframe);
+        }
+        setSearchParams(searchParams);
+    }, [searchParams, setSearchParams]);
+
     const handleResetFilters = useCallback(() => {
         setSortBy('confidence');
         setMarketCapSort(null);
@@ -198,8 +209,9 @@ export function MonitorCRT() {
         setBearFilter('All');
         setSearchQuery('');
         setSelectedTimeframe(null);
-        setSearchParams({});
-    }, [setSearchParams]);
+        searchParams.delete('timeframe');
+        setSearchParams(searchParams);
+    }, [searchParams, setSearchParams]);
 
     return (
         <>
@@ -213,45 +225,157 @@ export function MonitorCRT() {
                 />
             </div>
 
-            {/* Timeframes and Status Tabs Row */}
-            <div className="px-4 md:px-8 pb-2 md:pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-30 dark:bg-[#0a140d]/80 light:bg-[#f8faf9]/80 backdrop-blur-md">
-                {/* Timeframe selector */}
-                <div className="flex overflow-x-auto no-scrollbar max-w-full bg-black/20 dark:bg-black/40 light:bg-green-100 p-1 rounded-xl w-fit dark:border-white/5 light:border-green-300 border backdrop-blur-md shrink-0 hide-scroll-indicator">
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedTimeframe(null)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${!selectedTimeframe
-                            ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            {/* Timeframe Cards */}
+            <motion.div
+                initial="initial"
+                animate="animate"
+                variants={scaleInVariants}
+                className="flex flex-col gap-6 px-4 md:px-8 pb-2 md:pb-4 shrink-0"
+            >
+                <div className="flex overflow-x-auto snap-x no-scrollbar gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 pb-2 md:pb-0">
+                    {/* 4H */}
+                    <AnimatedCard
+                        className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['4h'] > 0
+                            ? selectedTimeframe === '4h'
+                                ? 'dark:bg-[rgba(30,20,10,0.6)] light:bg-amber-50 dark:border-[rgba(245,158,11,0.5)] light:border-amber-400 dark:shadow-[0_0_15px_rgba(245,158,11,0.15)] light:shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_25px_rgba(245,158,11,0.25)] ring-1 ring-amber-500/20'
+                                : 'dark:bg-[rgba(30,20,10,0.4)] light:bg-amber-50 dark:border-[rgba(245,158,11,0.3)] light:border-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                            : 'dark:bg-[rgba(30,20,10,0.2)] light:bg-amber-50 dark:border-[#483323] light:border-amber-300 opacity-50 cursor-not-allowed hover:opacity-60'
                             }`}
+                        onClick={() => {
+                            if (timeframeStats['4h'] > 0) {
+                                handleTimeframeClick(selectedTimeframe === '4h' ? null : '4h');
+                            }
+                        }}
                     >
-                        ALL
-                    </motion.button>
-                    {[
-                        { id: '4h', label: '4H', count: timeframeStats['4h'] || 0 },
-                        { id: '1d', label: '1D', count: timeframeStats['1d'] || 0 },
-                        { id: '1w', label: '1W', count: timeframeStats['1w'] || 0 },
-                    ].map((tf) => (
-                        <motion.button
-                            key={tf.id}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setSelectedTimeframe(tf.id)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${selectedTimeframe === tf.id
-                                ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                }`}
-                        >
-                            {tf.label}
-                            {tf.count > 0 && (
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${selectedTimeframe === tf.id
-                                    ? 'bg-black/20 text-black'
-                                    : 'bg-white/10 text-gray-300'
-                                    }`}>
-                                    {tf.count}
+                        <div className="flex justify-between items-start">
+                            <span className={`text-sm font-bold ${timeframeStats['4h'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
+                                4H Timeframe
+                            </span>
+                            {timeframeStats['4h'] > 0 ? (
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-500 uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                                    <motion.span
+                                        className="w-1.5 h-1.5 rounded-full bg-amber-500"
+                                        animate={{ opacity: [1, 0.5, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    />
+                                    Active
+                                </span>
+                            ) : (
+                                <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-amber-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-amber-300">
+                                    No Signals
                                 </span>
                             )}
-                        </motion.button>
-                    ))}
+                        </div>
+                        <div className="mt-auto">
+                            <span
+                                className={`text-5xl font-black tracking-tight ${timeframeStats['4h'] > 0
+                                    ? 'text-amber-500 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]'
+                                    : 'dark:text-gray-700 light:text-text-light-secondary'
+                                    }`}
+                            >
+                                {timeframeStats['4h']}
+                            </span>
+                            <span className={`text-xs ml-1 font-medium uppercase tracking-wide ${timeframeStats['4h'] > 0 ? 'dark:text-gray-400 light:text-text-light-secondary' : 'dark:text-gray-600 light:text-text-light-secondary'}`}>
+                                Signals Detected
+                            </span>
+                        </div>
+                    </AnimatedCard>
+
+                    {/* 1D */}
+                    <AnimatedCard
+                        className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['1d'] > 0
+                            ? selectedTimeframe === '1d'
+                                ? 'dark:bg-[rgba(30,20,10,0.6)] light:bg-amber-50 dark:border-[rgba(245,158,11,0.5)] light:border-amber-400 dark:shadow-[0_0_15px_rgba(245,158,11,0.15)] light:shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_25px_rgba(245,158,11,0.25)] ring-1 ring-amber-500/20'
+                                : 'dark:bg-[rgba(30,20,10,0.4)] light:bg-amber-50 dark:border-[rgba(245,158,11,0.3)] light:border-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                            : 'dark:bg-[rgba(30,20,10,0.2)] light:bg-amber-50 dark:border-[#483323] light:border-amber-300 opacity-50 cursor-not-allowed hover:opacity-60'
+                            }`}
+                        onClick={() => {
+                            if (timeframeStats['1d'] > 0) {
+                                handleTimeframeClick(selectedTimeframe === '1d' ? null : '1d');
+                            }
+                        }}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className={`text-sm font-bold ${timeframeStats['1d'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
+                                1D Timeframe
+                            </span>
+                            {timeframeStats['1d'] > 0 ? (
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-500 uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                                    <motion.span
+                                        className="w-1.5 h-1.5 rounded-full bg-amber-500"
+                                        animate={{ opacity: [1, 0.5, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    />
+                                    Active
+                                </span>
+                            ) : (
+                                <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-amber-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-amber-300">
+                                    No Signals
+                                </span>
+                            )}
+                        </div>
+                        <div className="mt-auto">
+                            <span
+                                className={`text-5xl font-black tracking-tight ${timeframeStats['1d'] > 0
+                                    ? 'text-amber-500 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]'
+                                    : 'dark:text-gray-700 light:text-text-light-secondary'
+                                    }`}
+                            >
+                                {timeframeStats['1d']}
+                            </span>
+                            <span className={`text-xs ml-1 font-medium uppercase tracking-wide ${timeframeStats['1d'] > 0 ? 'dark:text-gray-400 light:text-text-light-secondary' : 'dark:text-gray-600 light:text-text-light-secondary'}`}>
+                                Signals Detected
+                            </span>
+                        </div>
+                    </AnimatedCard>
+
+                    {/* 1W */}
+                    <AnimatedCard
+                        className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['1w'] > 0
+                            ? selectedTimeframe === '1w'
+                                ? 'dark:bg-[rgba(30,20,10,0.6)] light:bg-amber-50 dark:border-[rgba(245,158,11,0.5)] light:border-amber-400 dark:shadow-[0_0_15px_rgba(245,158,11,0.15)] light:shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_25px_rgba(245,158,11,0.25)] ring-1 ring-amber-500/20'
+                                : 'dark:bg-[rgba(30,20,10,0.4)] light:bg-amber-50 dark:border-[rgba(245,158,11,0.3)] light:border-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                            : 'dark:bg-[rgba(30,20,10,0.2)] light:bg-amber-50 dark:border-[#483323] light:border-amber-300 opacity-50 cursor-not-allowed hover:opacity-60'
+                            }`}
+                        onClick={() => {
+                            if (timeframeStats['1w'] > 0) {
+                                handleTimeframeClick(selectedTimeframe === '1w' ? null : '1w');
+                            }
+                        }}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className={`text-sm font-bold ${timeframeStats['1w'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
+                                1W Timeframe
+                            </span>
+                            {timeframeStats['1w'] > 0 ? (
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-500 uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                                    <motion.span
+                                        className="w-1.5 h-1.5 rounded-full bg-amber-500"
+                                        animate={{ opacity: [1, 0.5, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    />
+                                    Active
+                                </span>
+                            ) : (
+                                <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-amber-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-amber-300">
+                                    No Signals
+                                </span>
+                            )}
+                        </div>
+                        <div className="mt-auto">
+                            <span
+                                className={`text-5xl font-black tracking-tight ${timeframeStats['1w'] > 0
+                                    ? 'text-amber-500 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]'
+                                    : 'dark:text-gray-700 light:text-text-light-secondary'
+                                    }`}
+                            >
+                                {timeframeStats['1w']}
+                            </span>
+                            <span className={`text-xs ml-1 font-medium uppercase tracking-wide ${timeframeStats['1w'] > 0 ? 'dark:text-gray-400 light:text-text-light-secondary' : 'dark:text-gray-600 light:text-text-light-secondary'}`}>
+                                Signals Detected
+                            </span>
+                        </div>
+                    </AnimatedCard>
                 </div>
 
                 <StatusTabs
@@ -259,7 +383,7 @@ export function MonitorCRT() {
                     activeStatus={statusFilter}
                     onStatusChange={setStatusFilter}
                 />
-            </div>
+            </motion.div>
 
             {isLoading && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-background-dark/50 backdrop-blur-sm">
