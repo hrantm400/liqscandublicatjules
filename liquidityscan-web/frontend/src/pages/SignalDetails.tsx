@@ -190,8 +190,8 @@ export function SignalDetails() {
 
   // Derive strategy type from signal ID
   const getStrategyType = (): 'SUPER_ENGULFING' | 'RSI_DIVERGENCE' | 'ICT_BIAS' => {
-    if (signalData.id?.startsWith('RSI_DIVERGENCE')) return 'RSI_DIVERGENCE';
-    if (signalData.id?.startsWith('ICT_BIAS')) return 'ICT_BIAS';
+    if (signalData.strategyType === 'RSI_DIVERGENCE' || signalData.id?.startsWith('RSI_DIVERGENCE')) return 'RSI_DIVERGENCE';
+    if (signalData.strategyType === 'ICT_BIAS' || signalData.id?.startsWith('ICT_BIAS')) return 'ICT_BIAS';
     return 'SUPER_ENGULFING';
   };
   const strategyType = getStrategyType();
@@ -417,7 +417,7 @@ export function SignalDetails() {
                   </div>
 
                   {/* Chart 2: The 5M Entry (inside Strategy 1 side-by-side) */}
-                  <div className="glass-panel rounded-2xl p-1 relative overflow-hidden group h-[550px] flex flex-col">
+                  <div className={`${isFullscreen ? 'fixed inset-0 z-[100] dark:bg-background-dark light:bg-background-light' : 'glass-panel rounded-2xl h-[550px] border dark:border-white/5 light:border-green-200/50'} p-1 relative overflow-hidden group flex flex-col`}>
                     <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
                       <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
                         {getTimeframeDisplay()} Timeframe (Entry Confirmation)
@@ -511,7 +511,7 @@ export function SignalDetails() {
 
               {/* Single chart for non-Strategy 1 signals */}
               {!isStrategy1 && (
-                <div className={`glass-panel rounded-2xl p-1 relative overflow-hidden group h-[600px] flex flex-col`}>
+                <div className={`${isFullscreen ? 'fixed inset-0 z-[100] dark:bg-background-dark light:bg-background-light' : 'glass-panel rounded-2xl h-[600px] border dark:border-white/5 light:border-green-200/50'} p-1 relative overflow-hidden group flex flex-col`}>
                   <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
                     <span className="px-3 py-1.5 rounded dark:bg-black/40 light:bg-white/70 backdrop-blur-md dark:border-white/10 light:border-green-200/50 text-xs font-mono dark:text-gray-300 light:text-text-dark">
                       {getTimeframeDisplay()} Timeframe

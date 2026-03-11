@@ -79,7 +79,7 @@ function CourseCard({ course, index }: { course: any; index: number }) {
                 <span className="material-symbols-outlined text-6xl">school</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
             <div className="absolute top-3 left-3 flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-xs font-semibold uppercase tracking-wider">
                 {difficulty}
