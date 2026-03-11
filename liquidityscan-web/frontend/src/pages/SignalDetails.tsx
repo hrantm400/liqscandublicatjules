@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Signal } from '../types';
 import { fetchCandles } from '../services/candles';
@@ -233,6 +233,38 @@ export function SignalDetails() {
   const showCandlesLoading = isLoadingCandles && chartCandles.length === 0;
   const show4HCandlesLoading = isLoading4HCandles && chart4HCandles.length === 0;
 
+  // --- Prev / Next navigation across cached signal lists ---
+  const { prevSignal, nextSignal } = useMemo(() => {
+    if (!id) return { prevSignal: null, nextSignal: null };
+
+    // Collect ALL signals from every cached query whose key starts with ['signals']
+    const allCachedQueries = queryClient.getQueriesData<Signal[]>({
+      queryKey: ['signals'],
+    });
+
+    let allSignals: Signal[] = [];
+    for (const [, list] of allCachedQueries) {
+      if (!Array.isArray(list)) continue;
+      allSignals = allSignals.concat(list);
+    }
+
+    // Deduplicate by id (same signal may appear in multiple caches)
+    const seen = new Set<string>();
+    allSignals = allSignals.filter(s => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+
+    const currentIdx = allSignals.findIndex(s => s.id === id);
+    if (currentIdx === -1) return { prevSignal: null, nextSignal: null };
+
+    return {
+      prevSignal: currentIdx > 0 ? allSignals[currentIdx - 1] : null,
+      nextSignal: currentIdx < allSignals.length - 1 ? allSignals[currentIdx + 1] : null,
+    };
+  }, [id, queryClient]);
+
   // Derive mock signal for 4H chart if Strategy 1
   const mock4HSignal = (isStrategy1 && signalData) ? {
     ...signalData,
@@ -256,14 +288,43 @@ export function SignalDetails() {
           <span className="material-symbols-outlined text-[10px] dark:text-gray-600 light:text-text-light-secondary">chevron_right</span>
           <span className="text-primary drop-shadow-[0_0_5px_rgba(19,236,55,0.5)]">{getStrategyLabel()} Scans</span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2 px-2 py-0.5 rounded text-[10px] font-bold dark:bg-white/5 light:bg-green-50/50 dark:border-white/10 light:border-green-200/30 dark:text-gray-400 light:text-text-light-secondary uppercase tracking-wider">
+        <div className="flex items-center gap-2 md:gap-4">
+          <span className="hidden md:flex items-center gap-2 px-2 py-0.5 rounded text-[10px] font-bold dark:bg-white/5 light:bg-green-50/50 dark:border-white/10 light:border-green-200/30 dark:text-gray-400 light:text-text-light-secondary uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Live Feed
           </span>
+          <div className="hidden md:block h-4 w-px dark:bg-white/10 light:bg-green-200/30"></div>
+
+          {/* Prev / Next Signal Buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => prevSignal && navigate(`/signals/${prevSignal.id}`)}
+              disabled={!prevSignal}
+              className={`flex items-center gap-1 px-2 md:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                prevSignal
+                  ? 'dark:bg-white/5 light:bg-green-50/50 dark:hover:bg-white/10 light:hover:bg-green-100/50 dark:text-gray-300 light:text-text-dark cursor-pointer'
+                  : 'dark:bg-white/3 light:bg-gray-100/30 dark:text-gray-600 light:text-gray-400 cursor-not-allowed opacity-40'
+              }`}
+              title={prevSignal ? `Previous: ${prevSignal.symbol}` : 'No previous signal'}
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+              <span className="hidden md:inline">{prevSignal ? prevSignal.symbol : 'Prev'}</span>
+            </button>
+            <button
+              onClick={() => nextSignal && navigate(`/signals/${nextSignal.id}`)}
+              disabled={!nextSignal}
+              className={`flex items-center gap-1 px-2 md:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                nextSignal
+                  ? 'dark:bg-white/5 light:bg-green-50/50 dark:hover:bg-white/10 light:hover:bg-green-100/50 dark:text-gray-300 light:text-text-dark cursor-pointer'
+                  : 'dark:bg-white/3 light:bg-gray-100/30 dark:text-gray-600 light:text-gray-400 cursor-not-allowed opacity-40'
+              }`}
+              title={nextSignal ? `Next: ${nextSignal.symbol}` : 'No next signal'}
+            >
+              <span className="hidden md:inline">{nextSignal ? nextSignal.symbol : 'Next'}</span>
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+          </div>
+
           <div className="h-4 w-px dark:bg-white/10 light:bg-green-200/30"></div>
-          <span className="text-xs dark:text-gray-500 light:text-text-light-secondary font-medium">
-            Last updated: <span className="dark:text-white light:text-text-dark">Just now</span>
-          </span>
           <button
             onClick={() => navigate(-1)}
             className="p-1.5 rounded-lg dark:bg-white/5 light:bg-green-50/50 dark:hover:bg-white/10 light:hover:bg-green-100/50 dark:text-gray-400 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark transition-colors"
