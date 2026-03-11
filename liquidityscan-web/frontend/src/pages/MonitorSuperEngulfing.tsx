@@ -659,6 +659,7 @@ export function MonitorSuperEngulfing() {
                       <tr>
                         <th className="px-6 py-3" scope="col">Symbol</th>
                         <th className="px-6 py-3" scope="col">Exchange</th>
+                        <th className="px-6 py-3" scope="col">Timeframe</th>
                         <th className="px-6 py-3" scope="col">Pattern</th>
                         <th className="px-6 py-3 text-center" scope="col">Status</th>
                         <th className="px-6 py-3 text-center" scope="col">Setup Quality</th>
@@ -694,6 +695,9 @@ export function MonitorSuperEngulfing() {
                               </td>
                               <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark">
                                 Binance Perp
+                              </td>
+                              <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark font-bold uppercase">
+                                {signal.timeframe}
                               </td>
                               <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">
                                 {(() => {

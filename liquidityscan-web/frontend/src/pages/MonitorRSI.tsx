@@ -505,6 +505,9 @@ export function MonitorRSI() {
                         Exchange
                       </th>
                       <th className="px-6 py-3" scope="col">
+                        Timeframe
+                      </th>
+                      <th className="px-6 py-3" scope="col">
                         Divergence Type
                       </th>
                       <th className="px-6 py-3 text-center" scope="col">
@@ -550,6 +553,9 @@ export function MonitorRSI() {
                             </td>
                             <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark">
                               Binance Perp
+                            </td>
+                            <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark font-bold uppercase">
+                              {signal.timeframe}
                             </td>
                             <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">{divergenceType}</td>
                             <td className="px-6 py-2.5 text-center">

@@ -491,6 +491,7 @@ export function MonitorCRT() {
                                             <tr>
                                                 <th className="px-6 py-3" scope="col">Symbol</th>
                                                 <th className="px-6 py-3" scope="col">Exchange</th>
+                                                <th className="px-6 py-3" scope="col">Timeframe</th>
                                                 <th className="px-6 py-3" scope="col">Direction</th>
                                                 <th className="px-6 py-3 text-right" scope="col">Swept Level</th>
                                                 <th className="px-6 py-3 text-right" scope="col">Sweep Extreme</th>
@@ -528,6 +529,9 @@ export function MonitorCRT() {
                                                             </td>
                                                             <td className="px-6 py-2.5 whitespace-nowrap dark:text-gray-400 light:text-text-light-secondary dark:group-hover:dark:text-gray-300 light:text-slate-600 light:group-hover:text-text-dark">
                                                                 Binance Perp
+                                                            </td>
+                                                            <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark font-bold uppercase">
+                                                                {signal.timeframe}
                                                             </td>
                                                             <td className="px-6 py-2.5 whitespace-nowrap dark:text-white light:text-text-dark">
                                                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black ${signal.signalType === 'BUY'
