@@ -123,6 +123,38 @@ export function SignalDetails() {
     });
   }, []);
 
+  // --- Prev / Next navigation across cached signal lists ---
+  // IMPORTANT: Must be before early returns to satisfy React hooks rules
+  const { prevSignal, nextSignal } = useMemo(() => {
+    if (!id) return { prevSignal: null, nextSignal: null };
+
+    const allCachedQueries = queryClient.getQueriesData<Signal[]>({
+      queryKey: ['signals'],
+    });
+
+    let allSignals: Signal[] = [];
+    for (const [, list] of allCachedQueries) {
+      if (!Array.isArray(list)) continue;
+      allSignals = allSignals.concat(list);
+    }
+
+    // Deduplicate by id
+    const seen = new Set<string>();
+    allSignals = allSignals.filter(s => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+
+    const currentIdx = allSignals.findIndex(s => s.id === id);
+    if (currentIdx === -1) return { prevSignal: null, nextSignal: null };
+
+    return {
+      prevSignal: currentIdx > 0 ? allSignals[currentIdx - 1] : null,
+      nextSignal: currentIdx < allSignals.length - 1 ? allSignals[currentIdx + 1] : null,
+    };
+  }, [id, queryClient]);
+
 
   if (isLoading) {
     return (
@@ -232,38 +264,6 @@ export function SignalDetails() {
 
   const showCandlesLoading = isLoadingCandles && chartCandles.length === 0;
   const show4HCandlesLoading = isLoading4HCandles && chart4HCandles.length === 0;
-
-  // --- Prev / Next navigation across cached signal lists ---
-  const { prevSignal, nextSignal } = useMemo(() => {
-    if (!id) return { prevSignal: null, nextSignal: null };
-
-    // Collect ALL signals from every cached query whose key starts with ['signals']
-    const allCachedQueries = queryClient.getQueriesData<Signal[]>({
-      queryKey: ['signals'],
-    });
-
-    let allSignals: Signal[] = [];
-    for (const [, list] of allCachedQueries) {
-      if (!Array.isArray(list)) continue;
-      allSignals = allSignals.concat(list);
-    }
-
-    // Deduplicate by id (same signal may appear in multiple caches)
-    const seen = new Set<string>();
-    allSignals = allSignals.filter(s => {
-      if (seen.has(s.id)) return false;
-      seen.add(s.id);
-      return true;
-    });
-
-    const currentIdx = allSignals.findIndex(s => s.id === id);
-    if (currentIdx === -1) return { prevSignal: null, nextSignal: null };
-
-    return {
-      prevSignal: currentIdx > 0 ? allSignals[currentIdx - 1] : null,
-      nextSignal: currentIdx < allSignals.length - 1 ? allSignals[currentIdx + 1] : null,
-    };
-  }, [id, queryClient]);
 
   // Derive mock signal for 4H chart if Strategy 1
   const mock4HSignal = (isStrategy1 && signalData) ? {
