@@ -1,20 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Users, BookOpen, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-// import { adminApi } from '../../services/userApi'; // TODO: Re-enable when API is created
+import { adminApi } from '../../services/userApi';
 
 export function AdminDashboard() {
-  // TODO: Re-enable when API is created
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['admin', 'analytics'],
     queryFn: async () => {
-      // return adminApi.getAnalytics();
-      return {
-        stats: {
-          totalUsers: 0,
-          totalPayments: 0,
-          revenue: 0,
-        },
+      const data = await adminApi.getAnalytics();
+      return data || {
+        stats: { totalUsers: 0, totalPayments: 0, revenue: 0 },
         recentUsers: [],
       };
     },

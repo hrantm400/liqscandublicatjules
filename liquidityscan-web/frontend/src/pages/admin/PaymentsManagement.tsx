@@ -2,19 +2,17 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Search, DollarSign, CheckCircle, XCircle, Clock } from 'lucide-react';
-// import { adminApi } from '../../services/userApi'; // TODO: Re-enable when API is created
+import { adminApi } from '../../services/userApi';
 
 export function PaymentsManagement() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(1);
 
-  // TODO: Re-enable when API is created
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'payments', page, search, statusFilter],
     queryFn: async () => {
-      // return adminApi.getPayments({ page, limit: 20, search, status: statusFilter });
-      return { data: [], total: 0, page: 1, pageCount: 1 };
+      return adminApi.getPayments({ page, limit: 20, search, status: statusFilter });
     },
   });
 

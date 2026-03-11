@@ -14,7 +14,6 @@ import { CandlesModule } from './candles/candles.module';
 import { SignalsModule } from './signals/signals.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { AlertsModule } from './alerts/alerts.module';
-import { SettingsModule } from './settings/settings.module';
 import { PricingModule } from './pricing/pricing.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 
@@ -36,7 +35,6 @@ import { AffiliateModule } from './affiliate/affiliate.module';
     SignalsModule,
     TelegramModule,
     AlertsModule,
-    SettingsModule,
     PricingModule,
     AffiliateModule,
   ],

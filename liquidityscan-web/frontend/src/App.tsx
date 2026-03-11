@@ -41,7 +41,6 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(m 
 const UsersManagement = lazy(() => import('./pages/admin/UsersManagement').then(m => ({ default: m.UsersManagement })));
 const PaymentsManagement = lazy(() => import('./pages/admin/PaymentsManagement').then(m => ({ default: m.PaymentsManagement })));
 const Analytics = lazy(() => import('./pages/admin/Analytics').then(m => ({ default: m.Analytics })));
-const AdminSettings = lazy(() => import('./pages/admin/Settings').then(m => ({ default: m.Settings })));
 const CoursesManagement = lazy(() => import('./pages/admin/CoursesManagement').then(m => ({ default: m.CoursesManagement })));
 const AdminCourseDetail = lazy(() => import('./pages/admin/AdminCourseDetail').then(m => ({ default: m.AdminCourseDetail })));
 const Courses = lazy(() => import('./pages/Courses').then(m => ({ default: m.Courses })));
@@ -120,7 +119,6 @@ function AppRoutes() {
             <Route path="admin/courses/:id" element={<AnimatedPage><AdminCourseDetail /></AnimatedPage>} />
             <Route path="admin/payments" element={<AnimatedPage><PaymentsManagement /></AnimatedPage>} />
             <Route path="admin/analytics" element={<AnimatedPage><Analytics /></AnimatedPage>} />
-            <Route path="admin/settings" element={<AnimatedPage><AdminSettings /></AnimatedPage>} />
           </Route>
         </Routes>
       </AnimatePresence>

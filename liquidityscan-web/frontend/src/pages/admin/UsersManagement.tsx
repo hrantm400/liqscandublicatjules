@@ -2,26 +2,23 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Search, Edit, Trash2, Shield, UserX } from 'lucide-react';
-// import { adminApi } from '../../services/userApi'; // TODO: Re-enable when API is created
+import { adminApi } from '../../services/userApi';
 
 export function UsersManagement() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
 
-  // TODO: Re-enable when API is created
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users', page, search],
     queryFn: async () => {
-      // return adminApi.getUsers({ page, limit: 20, search });
-      return { data: [], total: 0, page: 1, pageCount: 1 };
+      return adminApi.getUsers({ page, limit: 20, search });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // return adminApi.deleteUser(id);
-      return {};
+      return adminApi.deleteUser(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
@@ -30,8 +27,7 @@ export function UsersManagement() {
 
   const toggleAdminMutation = useMutation({
     mutationFn: async ({ id, isAdmin }: { id: string; isAdmin: boolean }) => {
-      // return adminApi.updateUser(id, { isAdmin });
-      return {};
+      return adminApi.updateUser(id, { isAdmin });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });

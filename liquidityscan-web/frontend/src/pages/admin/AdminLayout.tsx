@@ -6,7 +6,6 @@ import {
   BookOpen,
   DollarSign, 
   BarChart3, 
-  Settings,
   LogOut,
   Menu,
   X,
@@ -48,7 +47,6 @@ export function AdminLayout() {
     { path: '/admin/courses', label: 'Courses', icon: BookOpen },
     { path: '/admin/payments', label: 'Payments', icon: DollarSign },
     { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
   const handleLogout = () => {
