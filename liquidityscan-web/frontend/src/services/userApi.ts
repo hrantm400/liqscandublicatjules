@@ -324,46 +324,6 @@ class ApiClient {
 
 
 
-  // Admin Users
-  async getUsers(params?: { page?: number; limit?: number; search?: string }) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.search) queryParams.append('search', params.search);
-    
-    return this.request<any>(`/admin/users?${queryParams.toString()}`);
-  }
-
-  async updateUser(id: string, data: { name?: string; isAdmin?: boolean }) {
-    return this.request<any>(`/admin/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteUser(id: string) {
-    return this.request<any>(`/admin/users/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Admin Payments
-  async getPayments(params?: { page?: number; limit?: number; status?: string; userId?: string; search?: string }) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.userId) queryParams.append('userId', params.userId);
-    // Note: search is not supported by the backend yet, but adding it for future compatibility
-    if (params?.search) queryParams.append('search', params.search);
-    
-    return this.request<any>(`/admin/payments?${queryParams.toString()}`);
-  }
-
-  // Admin Analytics
-  async getAnalytics() {
-    return this.request<any>('/admin/analytics');
-  }
 
   // Admin Subscriptions
   async createSubscription(data: any) {
