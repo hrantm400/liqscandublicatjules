@@ -16,8 +16,20 @@ import { useAuthStore } from '../../store/authStore';
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAdmin, isAuthenticated } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Redirect non-admin users — admin panel doesn't exist for them
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
+
+  // Don't render anything while redirecting
+  if (!isAuthenticated || !isAdmin) {
+    return null;
+  }
 
   // Force dark theme for admin panel
   useEffect(() => {
