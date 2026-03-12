@@ -178,6 +178,21 @@ export function MonitorBias() {
     });
   }, [rawSignals, liveBiasMap]);
 
+  // Global Valid Signals for strict 20M Volume enforcement across status tabs
+  const globalValidSignals = useMemo(() => {
+    if (!volumeMap || volumeMap.size === 0) return signals;
+    return signals.filter((s) => (volumeMap.get(s.symbol) || 0) >= 20_000_000);
+  }, [signals, volumeMap]);
+
+  const statusCounts = useMemo(() => {
+    return {
+      total: globalValidSignals.length,
+      live: globalValidSignals.filter((s) => s.lifecycleStatus === 'PENDING' || s.lifecycleStatus === 'ACTIVE').length,
+      closed: globalValidSignals.filter((s) => s.lifecycleStatus === 'COMPLETED' || s.lifecycleStatus === 'EXPIRED').length,
+      archive: globalValidSignals.filter((s) => s.lifecycleStatus === 'ARCHIVED').length,
+    };
+  }, [globalValidSignals]);
+
   // Use the new useSignalFilter hook
   const filteredSignals = useSignalFilter({
     signals,
@@ -463,6 +478,7 @@ export function MonitorBias() {
           activeStatus={statusFilter}
           onStatusChange={setStatusFilter}
           hideArchive={true}
+          counts={statusCounts}
         />
       </div>
 

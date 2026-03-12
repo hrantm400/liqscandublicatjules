@@ -9,6 +9,12 @@ interface StatusTabsProps {
     activeStatus: TabView | 'ALL';
     onStatusChange: (status: TabView | 'ALL') => void;
     hideArchive?: boolean; // SE Scanner v2: Hide archive tab for SE signals
+    counts?: {
+        total: number;
+        live: number;
+        closed: number;
+        archive: number;
+    } | null;
 }
 
 /**
@@ -17,20 +23,28 @@ interface StatusTabsProps {
  * 
  * SE SCANNER V2: Use hideArchive=true for SUPER_ENGULFING since SE has no archive state.
  */
-export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArchive = false }: StatusTabsProps) {
+export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArchive = false, counts = null }: StatusTabsProps) {
     const { data: stats } = useQuery<SignalStats>({
         queryKey: ['signal-stats', strategyType],
         queryFn: () => fetchSignalStats(strategyType),
         refetchInterval: 30000,
         staleTime: 15000,
         placeholderData: (prev) => prev,
+        enabled: !counts,
     });
+
+    const displayStats = counts ? {
+        total: counts.total,
+        live: counts.live,
+        closedSignals: counts.closed,
+        archived: counts.archive
+    } : stats;
 
     const allTabs: Array<{ key: TabView | 'ALL', label: string, count: number | null, icon: string, color: string, bgActive: string, glow: string }> = [
         {
             key: 'ALL',
             label: 'All Signals',
-            count: stats != null ? stats.total : null,
+            count: displayStats != null ? displayStats.total : null,
             icon: 'select_all',
             color: 'text-white',
             bgActive: 'dark:bg-white/10 light:bg-green-100',
@@ -39,7 +53,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
         {
             key: 'LIVE',
             label: 'Live Signals',
-            count: stats != null ? stats.live : null,
+            count: displayStats != null ? displayStats.live : null,
             icon: 'radio_button_checked',
             color: 'text-primary',
             bgActive: 'dark:bg-primary/15 light:bg-green-100',
@@ -48,7 +62,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
         {
             key: 'CLOSED',
             label: 'Recent Closed',
-            count: stats != null ? stats.closedSignals : null,
+            count: displayStats != null ? displayStats.closedSignals : null,
             icon: 'inventory_2',
             color: 'text-amber-400',
             bgActive: 'dark:bg-amber-500/15 light:bg-amber-100',
@@ -57,7 +71,7 @@ export function StatusTabs({ strategyType, activeStatus, onStatusChange, hideArc
         {
             key: 'ARCHIVE',
             label: 'Archive',
-            count: stats != null ? stats.archived : null,
+            count: displayStats != null ? displayStats.archived : null,
             icon: 'folder_open',
             color: 'dark:text-gray-400 light:text-slate-500',
             bgActive: 'dark:bg-gray-500/15 light:bg-gray-100',

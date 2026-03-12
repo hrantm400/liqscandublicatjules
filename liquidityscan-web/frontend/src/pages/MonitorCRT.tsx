@@ -123,6 +123,21 @@ export function MonitorCRT() {
 
     const isLoading = isSignalsLoading || isVolumeLoading;
 
+    // Global Valid Signals for strict 20M Volume enforcement across status tabs
+    const globalValidSignals = useMemo(() => {
+        if (!volumeMap || volumeMap.size === 0) return signals;
+        return signals.filter((s) => (volumeMap.get(s.symbol) || 0) >= 20_000_000);
+    }, [signals, volumeMap]);
+
+    const statusCounts = useMemo(() => {
+        return {
+            total: globalValidSignals.length,
+            live: globalValidSignals.filter((s) => s.lifecycleStatus === 'PENDING' || s.lifecycleStatus === 'ACTIVE').length,
+            closed: globalValidSignals.filter((s) => s.lifecycleStatus === 'COMPLETED' || s.lifecycleStatus === 'EXPIRED').length,
+            archive: globalValidSignals.filter((s) => s.lifecycleStatus === 'ARCHIVED').length,
+        };
+    }, [globalValidSignals]);
+
     const filteredSignals = useSignalFilter({
         signals,
         searchQuery,
@@ -386,6 +401,7 @@ export function MonitorCRT() {
                     activeStatus={statusFilter}
                     onStatusChange={setStatusFilter}
                     hideArchive={true}
+                    counts={statusCounts}
                 />
             </motion.div>
 

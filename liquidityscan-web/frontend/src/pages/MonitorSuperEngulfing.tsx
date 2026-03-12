@@ -134,6 +134,30 @@ export function MonitorSuperEngulfing() {
 
   const isLoading = isSignalsLoading || isVolumeLoading;
 
+  // Global Valid Signals for strict 20M Volume enforcement across status tabs
+  const globalValidSignals = useMemo(() => {
+    if (!volumeMap || volumeMap.size === 0) return signals;
+    return signals.filter((s) => (volumeMap.get(s.symbol) || 0) >= 20_000_000);
+  }, [signals, volumeMap]);
+
+  const statusCounts = useMemo(() => {
+    return {
+      total: globalValidSignals.length,
+      live: globalValidSignals.filter((s) => {
+        if (s.strategyType === 'SUPER_ENGULFING' && s.state) return s.state === 'live';
+        return s.lifecycleStatus === 'PENDING' || s.lifecycleStatus === 'ACTIVE';
+      }).length,
+      closed: globalValidSignals.filter((s) => {
+        if (s.strategyType === 'SUPER_ENGULFING' && s.state) return s.state === 'closed';
+        return s.lifecycleStatus === 'COMPLETED' || s.lifecycleStatus === 'EXPIRED';
+      }).length,
+      archive: globalValidSignals.filter((s) => {
+        if (s.strategyType === 'SUPER_ENGULFING') return false;
+        return s.lifecycleStatus === 'ARCHIVED';
+      }).length,
+    };
+  }, [globalValidSignals]);
+
   // Use the new useSignalFilter hook
   // Don't filter by timeframe here - apply it separately so we can show all signals by default
   const filteredSignals = useSignalFilter({
@@ -493,6 +517,7 @@ export function MonitorSuperEngulfing() {
             activeStatus={statusFilter}
             onStatusChange={setStatusFilter}
             hideArchive={true}
+            counts={statusCounts}
           />
         </motion.div>
       )}
