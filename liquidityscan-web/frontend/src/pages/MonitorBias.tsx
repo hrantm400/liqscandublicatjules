@@ -218,7 +218,7 @@ export function MonitorBias() {
   const timeframeStats = useMemo(() => {
     // Initialize with 0 for all required timeframes to satisfy the type
     const stats: Record<Timeframe | 'all', number> = {
-      all: statusFilteredSignals.length,
+      all: filteredSignals.length,
       '5m': 0,
       '15m': 0,
       '1h': 0,
@@ -226,7 +226,7 @@ export function MonitorBias() {
       '1d': 0,
       '1w': 0,
     };
-    statusFilteredSignals.forEach((signal) => {
+    filteredSignals.forEach((signal) => {
       if (signal.timeframe === '4h' || signal.timeframe === '1d' || signal.timeframe === '1w') {
         if (stats[signal.timeframe] !== undefined) {
           stats[signal.timeframe]++;
@@ -234,7 +234,7 @@ export function MonitorBias() {
       }
     });
     return stats;
-  }, [statusFilteredSignals]);
+  }, [filteredSignals]);
 
   const handleTimeframeClick = useCallback((timeframe: Timeframe | 'all') => {
     setActiveTimeframe(timeframe);

@@ -211,7 +211,7 @@ export function MonitorSuperEngulfing() {
       '1w': 0,
     };
 
-    statusFilteredSignals.forEach((signal) => {
+    filteredSignals.forEach((signal) => {
       const tf = signal.timeframe.toLowerCase();
       if (tf === '4h' || tf === '1d' || tf === '1w') {
         stats[tf] = (stats[tf] || 0) + 1;
@@ -219,7 +219,7 @@ export function MonitorSuperEngulfing() {
     });
 
     return stats;
-  }, [statusFilteredSignals]);
+  }, [filteredSignals]);
 
 
 
