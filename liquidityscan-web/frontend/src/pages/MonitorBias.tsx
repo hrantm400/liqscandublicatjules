@@ -3,14 +3,11 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { StatusTabs } from '../components/shared/StatusTabs';
-import { WinRatePanel } from '../components/shared/WinRatePanel';
-import { BiasPerformanceStats } from '../components/shared/BiasPerformanceStats';
 import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { Signal, Timeframe } from '../types';
 import { scanAll, fetchLiveBias } from '../services/signalsApi';
 import { StaticMiniChart } from '../components/StaticMiniChart';
 import { FilterMenu } from '../components/shared/FilterMenu';
-import { PatternFilter } from '../components/shared/PatternFilter';
 import { TrendIndicator } from '../components/shared/TrendIndicator';
 import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/animations/AnimatedCard';
@@ -70,12 +67,6 @@ function SymbolAvatar({ symbol }: { symbol: string }) {
   );
 }
 
-// Format time helper
-function formatTime(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
 // Helper functions for Bias signals
 function getBiasType(signal: Signal): string {
   const metadata = signal.metadata as any;
@@ -133,7 +124,8 @@ export function MonitorBias() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<any>('ALL');
+  const [directionFilter, setDirectionFilter] = useState<'All' | 'Longs' | 'Shorts'>('All');
+  const [statusFilter, setStatusFilter] = useState<any>('ACTIVE');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [pageSize, setPageSize] = useState(50);
@@ -259,6 +251,7 @@ export function MonitorBias() {
     setMarketCapSort(null);
     setVolumeSort(null);
     setRankingFilter(null);
+    setDirectionFilter('All');
     setStatusFilter('ALL');
     setBullFilter('All');
     setBearFilter('All');
@@ -469,6 +462,7 @@ export function MonitorBias() {
           strategyType="ICT_BIAS"
           activeStatus={statusFilter}
           onStatusChange={setStatusFilter}
+          hideArchive={true}
         />
       </div>
 
@@ -517,7 +511,7 @@ export function MonitorBias() {
           </motion.div>
 
           {/* Filters Bar */}
-          <div className="flex items-center gap-2.5 py-2 dark:bg-background-dark/50 dark:backdrop-blur-sm light:bg-green-50 sticky top-0 z-20 overflow-x-auto no-scrollbar flex-nowrap shrink-0 snap-x hide-scroll-indicator">
+          <div className="flex items-center gap-2.5 py-2 dark:bg-background-dark/50 dark:backdrop-blur-sm light:bg-green-50 sticky top-0 z-20 flex-wrap overflow-visible shrink-0 hide-scroll-indicator">
             {/* Search */}
             <motion.div
               whileFocus={{ scale: 1.02 }}
@@ -536,22 +530,25 @@ export function MonitorBias() {
             </motion.div>
             <div className="w-px h-5 dark:bg-white/10 light:bg-green-300 mx-1 shrink-0"></div>
 
-            {/* Bull Filter */}
-            <PatternFilter
-              type="bull"
-              value={bullFilter}
-              onChange={setBullFilter}
-              strategyType="ICT_BIAS"
-            />
-            <div className="w-px h-5 dark:bg-white/10 light:bg-green-300 mx-1 shrink-0"></div>
-
-            {/* Bear Filter */}
-            <PatternFilter
-              type="bear"
-              value={bearFilter}
-              onChange={setBearFilter}
-              strategyType="ICT_BIAS"
-            />
+            {/* Direction Filter */}
+            <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl dark:bg-white/5 light:bg-white dark:border-white/5 light:border-green-300 shrink-0 border">
+              <span className="text-[10px] font-black dark:text-gray-400 light:text-text-light-secondary uppercase tracking-widest pl-1 mr-1">
+                SIDE
+              </span>
+              {['All', 'Longs', 'Shorts'].map((dir) => (
+                <button
+                  key={dir}
+                  onClick={() => setDirectionFilter(dir as any)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all border ${
+                    directionFilter === dir
+                      ? 'bg-primary text-black shadow-[0_0_10px_rgba(19,236,55,0.4)] border-primary'
+                      : 'border-transparent dark:text-gray-400 light:text-text-light-secondary dark:hover:bg-white/10 light:hover:bg-green-100 hover:text-primary transition-all'
+                  }`}
+                >
+                  {dir}
+                </button>
+              ))}
+            </div>
             <div className="w-px h-5 dark:bg-white/10 light:bg-green-300 mx-1 shrink-0"></div>
 
             {/* Filter Menu */}
@@ -634,14 +631,53 @@ export function MonitorBias() {
                   <table className="hidden md:table w-full text-sm text-left dark:text-gray-400 light:text-text-light-secondary">
                     <thead className="text-[11px] uppercase dark:text-gray-500 light:text-text-light-secondary font-bold sticky top-0 dark:bg-[#0a140d] light:bg-green-50 dark:border-b-white/10 light:border-b-green-300 z-10 tracking-wider">
                       <tr>
-                        <th className="px-6 py-3" scope="col">Symbol</th>
+                        <th 
+                          className="px-6 py-3 cursor-pointer hover:text-white transition-colors group" 
+                          scope="col"
+                          onClick={() => setSortBy('symbol')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Symbol
+                            <span className={`material-symbols-outlined text-[10px] ${sortBy === 'symbol' ? 'text-primary' : 'opacity-0 group-hover:opacity-50'}`}>sort</span>
+                          </div>
+                        </th>
                         <th className="px-6 py-3" scope="col">Exchange</th>
-                        <th className="px-6 py-3" scope="col">Timeframe</th>
+                        <th className="px-6 py-3" scope="col">TF</th>
                         <th className="px-6 py-3" scope="col">Bias Type</th>
                         <th className="px-6 py-3 text-center" scope="col">Status</th>
                         <th className="px-6 py-3 text-center" scope="col">Trend</th>
-                        <th className="px-6 py-3 text-right" scope="col">CMC Rank</th>
-                        <th className="px-6 py-3 text-right" scope="col">Volume (24h)</th>
+                        <th 
+                          className="px-6 py-3 text-right cursor-pointer hover:text-white transition-colors group" 
+                          scope="col"
+                          onClick={() => setMarketCapSort(marketCapSort === 'high-low' ? 'low-high' : 'high-low')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            CMC Rank
+                            {marketCapSort ? (
+                              <span className="material-symbols-outlined text-[10px] text-primary">
+                                {marketCapSort === 'high-low' ? 'arrow_downward' : 'arrow_upward'}
+                              </span>
+                            ) : (
+                              <span className="material-symbols-outlined text-[10px] opacity-0 group-hover:opacity-50">sort</span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right cursor-pointer hover:text-white transition-colors group" 
+                          scope="col"
+                          onClick={() => setVolumeSort(volumeSort === 'high-low' ? 'low-high' : 'high-low')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Volume (24h)
+                            {volumeSort ? (
+                              <span className="material-symbols-outlined text-[10px] text-primary">
+                                {volumeSort === 'high-low' ? 'arrow_downward' : 'arrow_upward'}
+                              </span>
+                            ) : (
+                              <span className="material-symbols-outlined text-[10px] opacity-0 group-hover:opacity-50">sort</span>
+                            )}
+                          </div>
+                        </th>
                         <th className="px-6 py-3 text-right" scope="col">Detected</th>
                         <th className="px-6 py-3 text-right" scope="col">Actions</th>
                       </tr>
@@ -735,13 +771,21 @@ export function MonitorBias() {
                               <div className="flex items-center gap-2.5">
                                 <SymbolAvatar symbol={signal.symbol} />
                                 <span className="font-bold text-base dark:text-white light:text-slate-800">{signal.symbol}</span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 dark:text-white light:text-slate-800 border">
+                                  TF: {signal.timeframe}
+                                </span>
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
                                   {biasType}
                                 </span>
                               </div>
-                              <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
-                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
-                              </span>
+                              <div className="flex flex-col items-end">
+                                <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
+                                  {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                </span>
+                                <span className="text-[10px] font-mono dark:text-gray-500 light:text-slate-400 mt-0.5">
+                                  Rank: {getRank(signal.symbol) ? `#${getRank(signal.symbol)}` : '—'}
+                                </span>
+                              </div>
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -938,13 +982,7 @@ export function MonitorBias() {
               </div>
             )}
 
-            {/* Win Rate Sidebar - Only show in list view */}
-            {viewMode === 'list' && (
-              <div className="hidden lg:block flex flex-col gap-6">
-                <WinRatePanel strategyType="ICT_BIAS" />
-                <BiasPerformanceStats signals={rawSignals} />
-              </div>
-            )}
+            {/* Win Rate Sidebar removed for BIAS overview */}
           </div>
         </div>
       </div>

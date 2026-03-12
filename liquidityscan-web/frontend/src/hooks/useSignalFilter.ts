@@ -7,6 +7,7 @@ interface UseSignalFilterOptions {
   activeTimeframe?: Timeframe | 'all';
   bullFilter: string;
   bearFilter: string;
+  directionFilter?: 'All' | 'Longs' | 'Shorts';
   sortBy: 'confidence' | 'time' | 'symbol';
   marketCapSort: 'high-low' | 'low-high' | null;
   volumeSort: 'high-low' | 'low-high' | null;
@@ -24,6 +25,7 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     activeTimeframe,
     bullFilter,
     bearFilter,
+    directionFilter,
     sortBy,
     marketCapSort,
     volumeSort,
@@ -128,6 +130,19 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
       }
     }
 
+    // Direction filter
+    if (directionFilter === 'Longs') {
+      filtered = filtered.filter((signal) => {
+        const bias = (signal.metadata as any)?.bias || signal.signalType;
+        return bias === 'BULLISH' || bias === 'BUY';
+      });
+    } else if (directionFilter === 'Shorts') {
+      filtered = filtered.filter((signal) => {
+        const bias = (signal.metadata as any)?.bias || signal.signalType;
+        return bias === 'BEARISH' || bias === 'SELL';
+      });
+    }
+
     // Sort
     if (sortBy === 'time') {
       filtered.sort((a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime());
@@ -195,6 +210,7 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
     activeTimeframe,
     bullFilter,
     bearFilter,
+    directionFilter,
     sortBy,
     marketCapSort,
     volumeSort,

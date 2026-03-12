@@ -89,7 +89,7 @@ export function MonitorCRT() {
     const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
     const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
     const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-    const [statusFilter, setStatusFilter] = useState<any>('ALL');
+    const [statusFilter, setStatusFilter] = useState<any>('ACTIVE');
     const [filterMenuOpen, setFilterMenuOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(searchParams.get('timeframe') || null);

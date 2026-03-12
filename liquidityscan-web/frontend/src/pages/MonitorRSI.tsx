@@ -58,7 +58,7 @@ export function MonitorRSI() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<any>('ALL');
+  const [statusFilter, setStatusFilter] = useState<any>('ACTIVE');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);

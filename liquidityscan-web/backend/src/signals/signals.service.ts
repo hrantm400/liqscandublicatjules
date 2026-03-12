@@ -344,6 +344,7 @@ export class SignalsService {
    * Called after saving new signals to prevent accumulation.
    */
   async archiveOldSignals(strategyType: string, symbol: string, timeframe: string): Promise<number> {
+    // SE v2 SPEC: SE signals are NEVER archived. They are hard-deleted after 48h by lifecycle service.
     if (strategyType === 'SUPER_ENGULFING') {
       return 0;
     }
@@ -416,6 +417,8 @@ export class SignalsService {
         by: ['strategyType', 'symbol', 'timeframe'],
         where: {
           lifecycleStatus: { not: 'ARCHIVED' },
+          // SE v2 SPEC: Multiple SE signals per symbol+timeframe are allowed.
+          // Do NOT archive SE signals here — they use state='live'/'closed' + hard delete after 48h.
           strategyType: { not: 'SUPER_ENGULFING' },
         },
         _count: true,

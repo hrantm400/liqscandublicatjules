@@ -38,7 +38,7 @@ function formatTime(dateString: string) {
 export function MonitorStrategy1() {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<any>('ALL');
+    const [statusFilter, setStatusFilter] = useState<any>('ACTIVE');
     const [directionFilter, setDirectionFilter] = useState<'all' | 'long' | 'short'>('all');
     const [pageSize] = useState(50);
     const [currentPage, setCurrentPage] = useState(1);

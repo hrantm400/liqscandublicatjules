@@ -443,7 +443,8 @@ export class LifecycleService implements OnModuleInit {
                     updateData.se_close_price = runtimeSignal.tp2_price;
                 } else if (result.result_type === 'tp3_full') {
                     updateData.se_close_price = runtimeSignal.tp3_price;
-                } else if (result.result_type === 'candle_expiry') {
+                } else {
+                    // candle_expiry — only case where actual market price matters
                     updateData.se_close_price = currentPrice;
                 }
 
