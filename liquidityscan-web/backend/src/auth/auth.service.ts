@@ -52,6 +52,7 @@ export class AuthService {
         name: true,
         avatar: true,
         isAdmin: true,
+        timezone: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -103,6 +104,7 @@ export class AuthService {
         name: user.name,
         avatar: user.avatar,
         isAdmin: user.isAdmin,
+        timezone: user.timezone,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -170,6 +172,7 @@ export class AuthService {
         name: user.name,
         avatar: user.avatar,
         isAdmin: user.isAdmin,
+        timezone: user.timezone,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -189,6 +192,7 @@ export class AuthService {
         name: true,
         avatar: true,
         isAdmin: true,
+        timezone: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -211,6 +215,7 @@ export class AuthService {
           name: true,
           avatar: true,
           isAdmin: true,
+          timezone: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -263,6 +268,7 @@ export class AuthService {
       name: string | null;
       avatar: string | null;
       isAdmin: boolean;
+      timezone: string | null;
       createdAt: Date;
       updatedAt: Date;
     };
@@ -287,6 +293,7 @@ export class AuthService {
         name: createdUser.name,
         avatar: createdUser.avatar,
         isAdmin: createdUser.isAdmin,
+        timezone: createdUser.timezone,
         createdAt: createdUser.createdAt,
         updatedAt: createdUser.updatedAt,
       };
@@ -305,6 +312,7 @@ export class AuthService {
           name: updatedUser.name,
           avatar: updatedUser.avatar,
           isAdmin: updatedUser.isAdmin,
+          timezone: updatedUser.timezone,
           createdAt: updatedUser.createdAt,
           updatedAt: updatedUser.updatedAt,
         };
@@ -316,6 +324,7 @@ export class AuthService {
           name: dbUser.name,
           avatar: dbUser.avatar,
           isAdmin: dbUser.isAdmin,
+          timezone: dbUser.timezone,
           createdAt: dbUser.createdAt,
           updatedAt: dbUser.updatedAt,
         };
