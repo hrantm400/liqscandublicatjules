@@ -183,15 +183,7 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
       });
     }
 
-    // Hard filter: always hide coins with <$20M 24h volume
-    if (volumeMap && volumeMap.size > 0) {
-      filtered = filtered.filter(s => {
-        const vol = volumeMap.get(s.symbol) || 0;
-        return vol >= 20_000_000;
-      });
-    }
-
-    // Ranking filter
+    // Hard filter removed so that table contents align with database stat counts.    // Ranking filter
     if (rankingFilter) {
       filtered = filtered.slice(0, rankingFilter);
     }
