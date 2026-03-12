@@ -13,7 +13,7 @@ export class UsersController {
   }
 
   @Put('me')
-  async updateProfile(@Req() req: any, @Body() data: { name?: string; avatar?: string }) {
+  async updateProfile(@Req() req: any, @Body() data: { name?: string; avatar?: string; timezone?: string }) {
     return this.usersService.updateProfile(req.user.userId, data);
   }
 }

@@ -13,6 +13,7 @@ import { StaticMiniChart } from '../components/StaticMiniChart';
 import { FilterMenu } from '../components/shared/FilterMenu';
 import { PatternFilter } from '../components/shared/PatternFilter';
 import { SignalBadge } from '../components/shared/SignalBadge';
+import { TimeDisplay } from '../components/shared/TimeDisplay';
 import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/animations/AnimatedCard';
 import { AnimatedList } from '../components/animations/AnimatedList';
@@ -87,12 +88,15 @@ export function MonitorSuperEngulfing() {
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
   const [directionFilter, setDirectionFilter] = useState<'All' | 'Longs' | 'Shorts'>('All');
-  const [statusFilter, setStatusFilter] = useState<any>('ACTIVE'); // Live Signals default
+  const [statusFilter, setStatusFilter] = useState<any>('LIVE'); // Live Signals default
   const [showPerformanceWidget, setShowPerformanceWidget] = useState(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  // By default, show all timeframes (don't filter)
-  const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(searchParams.get('timeframe') || null);
+  // By default, show all timeframes (don't filter). Use Set for multi-select.
+  const [selectedTimeframes, setSelectedTimeframes] = useState<Set<string>>(() => {
+    const tf = searchParams.get('timeframe');
+    return tf ? new Set([tf]) : new Set();
+  });
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
   const [isScanning, setIsScanning] = useState(false);
@@ -119,10 +123,12 @@ export function MonitorSuperEngulfing() {
     }
   }, [isFreeForever]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync selectedTimeframe with URL
+  // Sync selectedTimeframes with URL
   useEffect(() => {
     const tf = searchParams.get('timeframe');
-    setSelectedTimeframe(tf || null); // null means show all timeframes
+    if (tf) {
+      setSelectedTimeframes(new Set([tf]));
+    }
   }, [searchParams]);
 
   // Use the new useMarketData hook
@@ -166,6 +172,7 @@ export function MonitorSuperEngulfing() {
     activeTimeframe: undefined,
     bullFilter,
     bearFilter,
+    directionFilter,
     sortBy,
     marketCapSort,
     volumeSort,
@@ -177,57 +184,13 @@ export function MonitorSuperEngulfing() {
     marketCapMap,
   });
 
-  // Apply timeframe filter (if a specific timeframe is selected)
-  const timeframeFilteredSignals = useMemo(() => {
-    if (!selectedTimeframe) {
-      return filteredSignals; // Show all timeframes if none selected
-    }
-    return filteredSignals.filter(s => s.timeframe.toLowerCase() === selectedTimeframe.toLowerCase());
-  }, [filteredSignals, selectedTimeframe]);
-
-  // Use the new useLifecycleFilter hook for Lifecycle Tab filtering!
+  // Apply Lifecycle Tab filtering FIRST (so stats can use it)
   const statusFilteredSignals = useLifecycleFilter({
-    signals: timeframeFilteredSignals,
+    signals: filteredSignals,
     tab: statusFilter,
   });
 
-  // Tier gating: show ALL signals for everyone (don't filter them out)
-  // FREE users see them blurred. PAID users see them clearly.
-  const { isSymbolAllowed, isPaid: isTierPaid } = useTierGating();
-  const subscriptionFilteredSignals = statusFilteredSignals;
-
-  // Pagination
-  const totalPages = Math.ceil(subscriptionFilteredSignals.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedSignals = subscriptionFilteredSignals.slice(startIndex, endIndex);
-
-  // Debug: Log signals count (after statusFilteredSignals is defined)
-  useEffect(() => {
-    if (signals.length > 0) {
-      console.log(`[SuperEngulfing] Total signals loaded: ${signals.length}`);
-      const byStatus = signals.reduce((acc, s) => {
-        acc[s.status] = (acc[s.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log(`[SuperEngulfing] Signals by status:`, byStatus);
-      const byTimeframe = signals.reduce((acc, s) => {
-        const tf = s.timeframe.toLowerCase();
-        acc[tf] = (acc[tf] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log(`[SuperEngulfing] Signals by timeframe:`, byTimeframe);
-      console.log(`[SuperEngulfing] Selected timeframe:`, selectedTimeframe);
-      console.log(`[SuperEngulfing] Status filter:`, statusFilter);
-      console.log(`[SuperEngulfing] Filtered signals count:`, subscriptionFilteredSignals.length);
-    }
-  }, [signals, selectedTimeframe, statusFilter, subscriptionFilteredSignals]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedTimeframe, searchQuery, bullFilter, bearFilter, sortBy, statusFilter]);
-
+  // Calculate timeframe stats based on signals filtered by status tab
   const timeframeStats = useMemo(() => {
     const stats: Record<string, number> = {
       '4h': 0,
@@ -235,7 +198,7 @@ export function MonitorSuperEngulfing() {
       '1w': 0,
     };
 
-    filteredSignals.forEach((signal) => {
+    statusFilteredSignals.forEach((signal) => {
       const tf = signal.timeframe.toLowerCase();
       if (tf === '4h' || tf === '1d' || tf === '1w') {
         stats[tf] = (stats[tf] || 0) + 1;
@@ -243,9 +206,40 @@ export function MonitorSuperEngulfing() {
     });
 
     return stats;
-  }, [filteredSignals]);
+  }, [statusFilteredSignals]);
 
+  // Apply timeframe filter (if specific timeframes are selected)
+  const timeframeFilteredSignals = useMemo(() => {
+    if (selectedTimeframes.size === 0) {
+      return statusFilteredSignals; // Show all timeframes if none selected
+    }
+    return statusFilteredSignals.filter(s => selectedTimeframes.has(s.timeframe.toLowerCase()));
+  }, [statusFilteredSignals, selectedTimeframes]);
 
+  // Tier gating: show ALL signals for everyone (don't filter them out)
+  // FREE users see them blurred. PAID users see them clearly.
+  const { isSymbolAllowed, isPaid: isTierPaid } = useTierGating();
+  const subscriptionFilteredSignals = timeframeFilteredSignals;
+
+  // Pagination
+  const totalPages = Math.ceil(subscriptionFilteredSignals.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedSignals = subscriptionFilteredSignals.slice(startIndex, endIndex);
+
+  // Debug: Log signals count
+  useEffect(() => {
+    if (signals.length > 0) {
+      console.log(`[SuperEngulfing] Total signals loaded: ${signals.length}`);
+      console.log(`[SuperEngulfing] Status filter:`, statusFilter);
+      console.log(`[SuperEngulfing] Filtered signals count:`, subscriptionFilteredSignals.length);
+    }
+  }, [signals, statusFilter, subscriptionFilteredSignals]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTimeframes, searchQuery, bullFilter, bearFilter, sortBy, statusFilter, directionFilter]);
 
   const handleResetFilters = useCallback(() => {
     setSortBy('confidence');
@@ -257,7 +251,7 @@ export function MonitorSuperEngulfing() {
     setBullFilter('All');
     setBearFilter('All');
     setSearchQuery('');
-    setSelectedTimeframe(null); // Reset timeframe filter to show all
+    setSelectedTimeframes(new Set()); // Reset timeframe filter to show all
     setSearchParams({}); // Clear URL params
   }, [setSearchParams]);
 
@@ -265,7 +259,7 @@ export function MonitorSuperEngulfing() {
     setIsScanning(true);
     setScanResult(null);
     try {
-      const result = await scanSuperEngulfing(selectedTimeframe || undefined);
+      const result = await scanSuperEngulfing(selectedTimeframes.size > 0 ? [...selectedTimeframes][0] : undefined);
       setScanResult(
         `Scan completed! Generated ${result.totalSignals || 0} signals from ${result.symbolsScanned || 0} symbols across ${result.timeframesScanned || 0} timeframes.`
       );
@@ -277,7 +271,7 @@ export function MonitorSuperEngulfing() {
     } finally {
       setIsScanning(false);
     }
-  }, [selectedTimeframe]);
+  }, [selectedTimeframes]);
 
   if (isLoading) {
     return (
@@ -316,21 +310,18 @@ export function MonitorSuperEngulfing() {
             {/* 4H */}
             <AnimatedCard
               className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all cursor-pointer h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['4h'] > 0
-                ? selectedTimeframe === '4h'
+                ? selectedTimeframes.has('4h')
                   ? 'dark:bg-[rgba(19,236,55,0.15)] light:bg-green-100 dark:border-primary light:border-green-400 dark:shadow-[0_0_20px_rgba(19,236,55,0.3)] light:shadow-[0_0_15px_rgba(19,236,55,0.2)] ring-2 ring-primary/50 scale-[1.02]'
                   : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)] hover:scale-[1.01]'
                 : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
                 }`}
               onClick={() => {
                 if (timeframeStats['4h'] > 0) {
-                  if (selectedTimeframe === '4h') {
-                    // If already selected, deselect to show all
-                    setSearchParams({});
-                    setSelectedTimeframe(null);
-                  } else {
-                    setSearchParams({ timeframe: '4h' });
-                    setSelectedTimeframe('4h');
-                  }
+                  setSelectedTimeframes(prev => {
+                    const next = new Set(prev);
+                    if (next.has('4h')) { next.delete('4h'); } else { next.add('4h'); }
+                    return next;
+                  });
                 }
               }}
             >
@@ -339,14 +330,14 @@ export function MonitorSuperEngulfing() {
                   <span className={`text-sm font-bold ${timeframeStats['4h'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
                     4H Timeframe
                   </span>
-                  {selectedTimeframe === '4h' && (
-                    <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to show all">
+                  {selectedTimeframes.has('4h') && (
+                    <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to deselect">
                       check_circle
                     </span>
                   )}
                 </div>
                 {timeframeStats['4h'] > 0 ? (
-                  <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframe === '4h'
+                  <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframes.has('4h')
                     ? 'text-primary bg-primary/20 border-primary/40'
                     : 'text-primary bg-primary/10 border-primary/20'
                     }`}>
@@ -355,7 +346,7 @@ export function MonitorSuperEngulfing() {
                       animate={{ opacity: [1, 0.5, 1] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     />
-                    {selectedTimeframe === '4h' ? 'Selected' : 'Active'}
+                    {selectedTimeframes.has('4h') ? 'Selected' : 'Active'}
                   </span>
                 ) : (
                   <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-green-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-green-300">
@@ -381,21 +372,18 @@ export function MonitorSuperEngulfing() {
             {/* 1D */}
             <AnimatedCard
               className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['1d'] > 0
-                ? selectedTimeframe === '1d'
+                ? selectedTimeframes.has('1d')
                   ? 'dark:bg-[rgba(19,236,55,0.15)] light:bg-green-100 dark:border-primary light:border-green-400 dark:shadow-[0_0_20px_rgba(19,236,55,0.3)] light:shadow-[0_0_15px_rgba(19,236,55,0.2)] ring-2 ring-primary/50 scale-[1.02] cursor-pointer'
                   : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)] hover:scale-[1.01] cursor-pointer'
                 : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
                 }`}
               onClick={() => {
                 if (timeframeStats['1d'] > 0) {
-                  if (selectedTimeframe === '1d') {
-                    // If already selected, deselect to show all
-                    setSearchParams({});
-                    setSelectedTimeframe(null);
-                  } else {
-                    setSearchParams({ timeframe: '1d' });
-                    setSelectedTimeframe('1d');
-                  }
+                  setSelectedTimeframes(prev => {
+                    const next = new Set(prev);
+                    if (next.has('1d')) { next.delete('1d'); } else { next.add('1d'); }
+                    return next;
+                  });
                 }
               }}
             >
@@ -404,14 +392,14 @@ export function MonitorSuperEngulfing() {
                   <span className={`text-sm font-bold ${timeframeStats['1d'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
                     1D Timeframe
                   </span>
-                  {selectedTimeframe === '1d' && (
-                    <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to show all">
+                  {selectedTimeframes.has('1d') && (
+                    <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to deselect">
                       check_circle
                     </span>
                   )}
                 </div>
                 {timeframeStats['1d'] > 0 ? (
-                  <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframe === '1d'
+                  <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframes.has('1d')
                     ? 'text-primary bg-primary/20 border-primary/40'
                     : 'text-primary bg-primary/10 border-primary/20'
                     }`}>
@@ -420,7 +408,7 @@ export function MonitorSuperEngulfing() {
                       animate={{ opacity: [1, 0.5, 1] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     />
-                    {selectedTimeframe === '1d' ? 'Selected' : 'Active'}
+                    {selectedTimeframes.has('1d') ? 'Selected' : 'Active'}
                   </span>
                 ) : (
                   <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-green-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-green-300">
@@ -447,20 +435,18 @@ export function MonitorSuperEngulfing() {
             {!isFreeForever && (
               <AnimatedCard
                 className={`group relative flex flex-col justify-between p-5 rounded-xl dark:backdrop-blur-md border transition-all h-36 min-w-[85vw] md:min-w-0 snap-center md:snap-align-none ${timeframeStats['1w'] > 0
-                  ? selectedTimeframe === '1w'
+                  ? selectedTimeframes.has('1w')
                     ? 'dark:bg-[rgba(19,236,55,0.15)] light:bg-green-100 dark:border-primary light:border-green-400 dark:shadow-[0_0_20px_rgba(19,236,55,0.3)] light:shadow-[0_0_15px_rgba(19,236,55,0.2)] ring-2 ring-primary/50 scale-[1.02] cursor-pointer'
                     : 'dark:bg-[rgba(20,30,22,0.4)] light:bg-green-50 dark:border-[rgba(19,236,55,0.3)] light:border-green-400 hover:shadow-[0_0_20px_rgba(19,236,55,0.2)] hover:scale-[1.01] cursor-pointer'
                   : 'dark:bg-[rgba(20,30,22,0.2)] light:bg-green-50 dark:border-[#234829] light:border-green-300 opacity-50 cursor-not-allowed hover:opacity-60'
                   }`}
                 onClick={() => {
                   if (timeframeStats['1w'] > 0) {
-                    if (selectedTimeframe === '1w') {
-                      setSearchParams({});
-                      setSelectedTimeframe(null);
-                    } else {
-                      setSearchParams({ timeframe: '1w' });
-                      setSelectedTimeframe('1w');
-                    }
+                    setSelectedTimeframes(prev => {
+                      const next = new Set(prev);
+                      if (next.has('1w')) { next.delete('1w'); } else { next.add('1w'); }
+                      return next;
+                    });
                   }
                 }}
               >
@@ -469,14 +455,14 @@ export function MonitorSuperEngulfing() {
                     <span className={`text-sm font-bold ${timeframeStats['1w'] > 0 ? 'dark:text-white light:text-text-dark' : 'dark:text-gray-500 light:text-text-light-secondary'}`}>
                       1W Timeframe
                     </span>
-                    {selectedTimeframe === '1w' && (
-                      <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to show all">
+                    {selectedTimeframes.has('1w') && (
+                      <span className="material-symbols-outlined text-primary text-base animate-pulse" title="Click again to deselect">
                         check_circle
                       </span>
                     )}
                   </div>
                   {timeframeStats['1w'] > 0 ? (
-                    <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframe === '1w'
+                    <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-[0_0_10px_rgba(19,236,55,0.2)] ${selectedTimeframes.has('1w')
                       ? 'text-primary bg-primary/20 border-primary/40'
                       : 'text-primary bg-primary/10 border-primary/20'
                       }`}>
@@ -485,7 +471,7 @@ export function MonitorSuperEngulfing() {
                         animate={{ opacity: [1, 0.5, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
                       />
-                      {selectedTimeframe === '1w' ? 'Selected' : 'Active'}
+                      {selectedTimeframes.has('1w') ? 'Selected' : 'Active'}
                     </span>
                   ) : (
                     <span className="text-[10px] font-bold dark:text-gray-500 light:text-text-light-secondary uppercase tracking-wider dark:bg-white/5 light:bg-green-100 px-2 py-0.5 rounded-full dark:border-white/5 light:border-green-300">
@@ -651,8 +637,6 @@ export function MonitorSuperEngulfing() {
                 onVolumeSortChange={setVolumeSort}
                 rankingFilter={rankingFilter}
                 onRankingFilterChange={setRankingFilter}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
                 onReset={handleResetFilters}
               />
             </div>
@@ -839,7 +823,7 @@ export function MonitorSuperEngulfing() {
                                 <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
                               </td>
                               <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">
-                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
                               </td>
                               <td className="px-6 py-2.5 text-right">
                                 <Link
@@ -895,7 +879,7 @@ export function MonitorSuperEngulfing() {
                               </div>
                               <div className="flex flex-col items-end">
                                 <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
-                                  {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                  <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
                                 </span>
                                 <span className="text-[10px] font-mono dark:text-gray-500 light:text-slate-400 mt-0.5">
                                   Rank: {getRank(signal.symbol) ? `#${getRank(signal.symbol)}` : '—'}

@@ -8,6 +8,7 @@ import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { Signal } from '../types';
 import { StaticMiniChart } from '../components/StaticMiniChart';
 import { FilterMenu } from '../components/shared/FilterMenu';
+import { TimeDisplay } from '../components/shared/TimeDisplay';
 import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/animations/AnimatedCard';
 import { AnimatedList } from '../components/animations/AnimatedList';
@@ -89,7 +90,7 @@ export function MonitorCRT() {
     const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
     const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
     const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-    const [statusFilter, setStatusFilter] = useState<any>('ACTIVE');
+    const [statusFilter, setStatusFilter] = useState<any>('LIVE');
     const [filterMenuOpen, setFilterMenuOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(searchParams.get('timeframe') || null);
@@ -155,40 +156,10 @@ export function MonitorCRT() {
         marketCapMap,
     });
 
-    const timeframeFilteredSignals = useMemo(() => {
-        if (!selectedTimeframe) {
-            return filteredSignals;
-        }
-        return filteredSignals.filter(s => s.timeframe.toLowerCase() === selectedTimeframe.toLowerCase());
-    }, [filteredSignals, selectedTimeframe]);
-
     const statusFilteredSignals = useLifecycleFilter({
-        signals: timeframeFilteredSignals,
+        signals: filteredSignals,
         tab: statusFilter,
     });
-
-    const subscriptionFilteredSignals = useMemo(() => {
-        if (!isFreeForever || !allowedPairs?.length) return statusFilteredSignals;
-        return statusFilteredSignals.filter((s) =>
-            allowedPairs.some(
-                (p) =>
-                    s.symbol === p ||
-                    s.symbol.toUpperCase().startsWith(p.toUpperCase()) ||
-                    s.symbol.toUpperCase().includes(p.toUpperCase())
-            )
-        );
-    }, [statusFilteredSignals, isFreeForever, allowedPairs]);
-
-    // Pagination
-    const totalPages = Math.ceil(subscriptionFilteredSignals.length / pageSize);
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedSignals = subscriptionFilteredSignals.slice(startIndex, endIndex);
-
-    // Reset to page 1 when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [selectedTimeframe, searchQuery, bullFilter, bearFilter, sortBy, statusFilter]);
 
     const timeframeStats = useMemo(() => {
         const stats: Record<string, number> = {
@@ -206,6 +177,36 @@ export function MonitorCRT() {
 
         return stats;
     }, [statusFilteredSignals]);
+
+    const timeframeFilteredSignals = useMemo(() => {
+        if (!selectedTimeframe) {
+            return statusFilteredSignals;
+        }
+        return statusFilteredSignals.filter(s => s.timeframe.toLowerCase() === selectedTimeframe.toLowerCase());
+    }, [statusFilteredSignals, selectedTimeframe]);
+
+    const subscriptionFilteredSignals = useMemo(() => {
+        if (!isFreeForever || !allowedPairs?.length) return timeframeFilteredSignals;
+        return timeframeFilteredSignals.filter((s) =>
+            allowedPairs.some(
+                (p) =>
+                    s.symbol === p ||
+                    s.symbol.toUpperCase().startsWith(p.toUpperCase()) ||
+                    s.symbol.toUpperCase().includes(p.toUpperCase())
+            )
+        );
+    }, [timeframeFilteredSignals, isFreeForever, allowedPairs]);
+
+    // Pagination
+    const totalPages = Math.ceil(subscriptionFilteredSignals.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedSignals = subscriptionFilteredSignals.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedTimeframe, searchQuery, bullFilter, bearFilter, sortBy, statusFilter]);
 
     const handleTimeframeClick = useCallback((timeframe: string | null) => {
         setSelectedTimeframe(timeframe);
@@ -463,8 +464,6 @@ export function MonitorCRT() {
                                 onVolumeSortChange={setVolumeSort}
                                 rankingFilter={rankingFilter}
                                 onRankingFilterChange={setRankingFilter}
-                                statusFilter={statusFilter}
-                                onStatusFilterChange={setStatusFilter}
                                 onReset={handleResetFilters}
                             />
                         </div>
@@ -581,7 +580,7 @@ export function MonitorCRT() {
                                                                 <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
                                                             </td>
                                                             <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">
-                                                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                                <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
                                                             </td>
                                                         </motion.tr>
                                                     )
@@ -622,7 +621,7 @@ export function MonitorCRT() {
                                                                 </span>
                                                             </div>
                                                             <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
-                                                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                                <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
                                                             </span>
                                                         </div>
 

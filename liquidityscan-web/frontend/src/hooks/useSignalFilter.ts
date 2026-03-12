@@ -183,9 +183,21 @@ export const useSignalFilter = (options: UseSignalFilterOptions) => {
       });
     }
 
-    // Hard filter removed so that table contents align with database stat counts.    // Ranking filter
-    if (rankingFilter) {
-      filtered = filtered.slice(0, rankingFilter);
+    // Hard filter: always hide coins with <$20M 24h volume
+    if (volumeMap && volumeMap.size > 0) {
+      filtered = filtered.filter(s => {
+        const vol = volumeMap.get(s.symbol) || 0;
+        return vol >= 20_000_000;
+      });
+    }
+
+    // Ranking filter — filter by actual CMC rank, not just first N items
+    if (rankingFilter && marketCapMap && marketCapMap.size > 0) {
+      filtered = filtered.filter(s => {
+        const base = s.symbol.replace('USDT', '').replace('_PERP', '').replace('PERP', '');
+        const rank = marketCapMap.get(base);
+        return rank != null && rank <= rankingFilter;
+      });
     }
 
     // Status filter — use lifecycleStatus for SE lifecycle

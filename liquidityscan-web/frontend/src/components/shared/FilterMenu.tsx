@@ -10,8 +10,6 @@ interface FilterMenuProps {
   onVolumeSortChange: (sort: 'high-low' | 'low-high' | null) => void;
   rankingFilter: number | null;
   onRankingFilterChange: (rank: number | null) => void;
-  statusFilter: string;
-  onStatusFilterChange: (status: string) => void;
   onReset: () => void;
   align?: 'left' | 'right';
 }
@@ -26,20 +24,12 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
   onVolumeSortChange,
   rankingFilter,
   onRankingFilterChange,
-  statusFilter,
-  onStatusFilterChange,
   onReset,
   align = 'right',
 }) => {
   if (!isOpen) return null;
 
-  const statusButtons = [
-    { key: 'all', label: 'All', icon: 'list' },
-    { key: 'active', label: 'Active', icon: 'radio_button_checked' },
-    { key: 'won', label: 'Won', icon: 'check_circle' },
-    { key: 'lost', label: 'Lost', icon: 'cancel' },
-    { key: 'expired', label: 'Expired', icon: 'schedule' },
-  ];
+
 
   return (
     <div className={`absolute top-full mt-2 w-72 dark:bg-[#112214] dark:backdrop-blur-md light:bg-white dark:border-[#234829] light:border-green-300 rounded-xl dark:shadow-[0_20px_40px_-5px_rgba(0,0,0,0.6)] light:shadow-lg z-50 p-2 flex flex-col gap-1 dark:ring-1 dark:ring-white/5 light:ring-1 light:ring-green-300 border ${align === 'right' ? 'right-0' : 'left-0'}`}>
@@ -168,28 +158,6 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
               }`}
           >
             Top {rank}
-          </button>
-        ))}
-      </div>
-
-      <div className="h-px dark:bg-[#234829] light:bg-green-300 my-1 mx-1"></div>
-
-      {/* Status Filter */}
-      <div className="px-2 py-1.5">
-        <span className="text-[10px] uppercase font-bold dark:text-gray-500 light:text-text-light-secondary tracking-widest">Status Filter</span>
-      </div>
-      <div className="grid grid-cols-3 gap-1 px-1 mb-1">
-        {statusButtons.map((btn) => (
-          <button
-            key={btn.key}
-            onClick={() => onStatusFilterChange(btn.key)}
-            className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border text-[10px] font-medium transition-all ${statusFilter === btn.key
-              ? 'dark:bg-primary/10 light:bg-green-100 border-primary/30 dark:text-white light:text-text-dark'
-              : 'border-transparent dark:hover:bg-primary/10 light:hover:bg-green-100 hover:border-primary/30 dark:text-gray-300 light:text-text-light-secondary dark:hover:text-white light:hover:text-text-dark'
-              }`}
-          >
-            <span className="material-symbols-outlined text-xs">{btn.icon}</span>
-            {btn.label}
           </button>
         ))}
       </div>

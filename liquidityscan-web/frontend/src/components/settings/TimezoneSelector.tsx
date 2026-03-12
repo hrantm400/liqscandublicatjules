@@ -1,0 +1,74 @@
+import React, { useState } from 'react';
+import { TIMEZONE_OPTIONS, TimezoneOption } from '../../utils/timezone';
+import { useAuthStore } from '../../store/authStore';
+import toast from 'react-hot-toast';
+
+interface TimezoneSelectorProps {
+  onSuccess?: () => void;
+  standalone?: boolean;
+}
+
+export const TimezoneSelector: React.FC<TimezoneSelectorProps> = ({ onSuccess, standalone = false }) => {
+  const { user, setUser } = useAuthStore();
+  const [selectedDz, setSelectedDz] = useState(user?.timezone || '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!selectedDz) {
+      toast.error('Please select a timezone');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Create user api method if not exists, but we can reuse updateProfile logic via authApi/userApi 
+      // The backend /auth/me or /users/me is set to PUT 'me' in UsersController
+      const response = await fetch('/api/users/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${useAuthStore.getState().token}`
+        },
+        body: JSON.stringify({ timezone: selectedDz }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to update timezone');
+      
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      toast.success('Timezone updated successfully');
+      
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      console.error('Error saving timezone:', error);
+      toast.error('Failed to save timezone. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className={`flex ${standalone ? 'flex-col gap-4' : 'flex-col sm:flex-row items-start sm:items-center gap-4'}`}>
+      <select
+        value={selectedDz}
+        onChange={(e) => setSelectedDz(e.target.value)}
+        className="flex-1 w-full bg-background-dark/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm dark:text-white light:text-text-dark focus:outline-none focus:border-primary transition-colors appearance-none"
+      >
+        <option value="" disabled>Select your timezone</option>
+        {TIMEZONE_OPTIONS.map((tz: TimezoneOption) => (
+          <option key={tz.value} value={tz.value}>
+            {tz.label}
+          </option>
+        ))}
+      </select>
+      
+      <button
+        onClick={handleSave}
+        disabled={isSaving || selectedDz === user?.timezone}
+        className="px-6 py-2.5 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+      >
+        {isSaving ? 'Saving...' : 'Save Timezone'}
+      </button>
+    </div>
+  );
+};

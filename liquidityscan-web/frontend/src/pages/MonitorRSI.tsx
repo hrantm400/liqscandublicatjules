@@ -9,6 +9,7 @@ import { Signal, Timeframe } from '../types';
 import { FilterMenu } from '../components/shared/FilterMenu';
 import { PatternFilter } from '../components/shared/PatternFilter';
 import { TrendIndicator } from '../components/shared/TrendIndicator';
+import { TimeDisplay } from '../components/shared/TimeDisplay';
 import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/animations/AnimatedCard';
 import { useMarketData } from '../hooks/useMarketData';
@@ -58,7 +59,7 @@ export function MonitorRSI() {
   const [marketCapSort, setMarketCapSort] = useState<'high-low' | 'low-high' | null>(null);
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<any>('ACTIVE');
+  const [statusFilter, setStatusFilter] = useState<any>('LIVE');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
@@ -212,10 +213,7 @@ export function MonitorRSI() {
     }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  };
+  // formatTime is no longer used since we use TimeDisplay
 
   if (isLoading) {
     return (
@@ -494,8 +492,6 @@ export function MonitorRSI() {
                 onVolumeSortChange={setVolumeSort}
                 rankingFilter={rankingFilter}
                 onRankingFilterChange={setRankingFilter}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
                 onReset={handleResetFilters}
               />
             </div>
@@ -597,7 +593,9 @@ export function MonitorRSI() {
                             <td className="px-6 py-2.5 text-right">
                               <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
                             </td>
-                            <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">{formatTime(signal.detectedAt)}</td>
+                            <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">
+                              <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
+                            </td>
                             <td className="px-6 py-2.5 text-right">
                               <Link
                                 to={`/signals/${signal.id}`}
@@ -644,7 +642,7 @@ export function MonitorRSI() {
                               </span>
                             </div>
                             <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
-                              {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                              <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
                             </span>
                           </div>
 

@@ -33,11 +33,11 @@ export function StaticMiniChart({ candles, isLong, height = 128 }: StaticMiniCha
   const priceRange = maxPrice - minPrice || 1;
 
   // Chart dimensions
-  const chartWidth = 100;
   const chartHeight = height - 8; // Padding
   const padding = 4;
-  const candleWidth = Math.max(2, (chartWidth - padding * 2) / displayCandles.length - 1);
+  const candleWidth = Math.max(2, 3); // Fixed candle width for consistent look
   const candleSpacing = candleWidth + 1;
+  const chartWidth = padding * 2 + displayCandles.length * candleSpacing;
 
   // Color scheme - адаптировано для светлой темы
   const upColor = isLong ? '#13ec37' : '#ff4444';
@@ -92,7 +92,7 @@ export function StaticMiniChart({ candles, isLong, height = 128 }: StaticMiniCha
         width="100%"
         height={chartHeight}
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         className="w-full h-full"
       >
         {candleElements}

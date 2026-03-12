@@ -38,6 +38,7 @@ model User {
   subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
   subscriptionExpiresAt DateTime?
   subscriptionStatus  String    @default("none") // none, active, expired, cancelled
+  timezone            String?
 
   // Pricing tier
   tier              String    @default("FREE")  // FREE, PAID_MONTHLY, PAID_ANNUAL

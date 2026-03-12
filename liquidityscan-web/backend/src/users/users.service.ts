@@ -16,6 +16,7 @@ export class UsersService {
         isAdmin: true,
         subscriptionId: true,
         subscription: true,
+        timezone: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -28,7 +29,7 @@ export class UsersService {
     return user;
   }
 
-  async updateProfile(userId: string, data: { name?: string; avatar?: string }) {
+  async updateProfile(userId: string, data: { name?: string; avatar?: string; timezone?: string }) {
     return this.prisma.user.update({
       where: { id: userId },
       data,
@@ -38,6 +39,7 @@ export class UsersService {
         name: true,
         avatar: true,
         isAdmin: true,
+        timezone: true,
         createdAt: true,
         updatedAt: true,
       },

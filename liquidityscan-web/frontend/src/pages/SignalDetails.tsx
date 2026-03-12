@@ -7,6 +7,7 @@ import { fetchCandles } from '../services/candles';
 import { fetchSignalById } from '../services/signalsApi';
 import { InteractiveLiveChart } from '../components/InteractiveLiveChart';
 import { SignalBadge } from '../components/shared/SignalBadge';
+import { TimeDisplay } from '../components/shared/TimeDisplay';
 import { scaleInVariants, fadeInVariants } from '../utils/animations';
 
 interface Candle {
@@ -69,7 +70,7 @@ export function SignalDetails() {
     queryKey: ['candles', signal?.symbol, signal?.timeframe],
     queryFn: async () => {
       if (!signal?.symbol || !signal?.timeframe) return [];
-      return fetchCandles(signal.symbol, signal.timeframe, 500);
+      return fetchCandles(signal.symbol, signal.timeframe, 300);
     },
     enabled: !!signal?.symbol && !!signal?.timeframe,
     retry: 2,
@@ -83,7 +84,7 @@ export function SignalDetails() {
     queryKey: ['candles-4h', signal?.symbol],
     queryFn: async () => {
       if (!signal?.symbol) return [];
-      return fetchCandles(signal.symbol, '4h', 500);
+      return fetchCandles(signal.symbol, '4h', 300);
     },
     enabled: !!signal?.symbol && isStrategy1,
     retry: 2,
@@ -136,6 +137,21 @@ export function SignalDetails() {
     for (const [, list] of allCachedQueries) {
       if (!Array.isArray(list)) continue;
       allSignals = allSignals.concat(list);
+    }
+
+    // If query cache is empty (e.g. after refresh), try to load from sessionStorage
+    if (allSignals.length === 0) {
+      const savedContext = sessionStorage.getItem('lastSignalContext');
+      if (savedContext) {
+        try {
+          allSignals = JSON.parse(savedContext);
+        } catch (e) {
+          console.error('Failed to parse lastSignalContext from sessionStorage', e);
+        }
+      }
+    } else {
+      // If we have data from cache (e.g. navigated from Monitor), save it for later refreshes
+      sessionStorage.setItem('lastSignalContext', JSON.stringify(allSignals));
     }
 
     // Deduplicate by id
@@ -206,10 +222,6 @@ export function SignalDetails() {
     if (strategyType === 'RSI_DIVERGENCE') return '/monitor/rsi';
     if (strategyType === 'ICT_BIAS') return '/monitor/bias';
     return '/monitor/superengulfing';
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
   };
 
   const getPatternType = () => {
@@ -612,9 +624,11 @@ export function SignalDetails() {
                   >
                     <div className="flex items-center gap-2 dark:text-gray-500 light:text-text-light-secondary mb-2">
                       <span className="material-symbols-outlined text-lg">schedule</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Time (UTC)</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Time</span>
                     </div>
-                    <span className="text-3xl font-bold font-mono dark:text-white light:text-text-dark">{formatTime(detectedDate)}</span>
+                    <span className="text-3xl font-bold font-mono dark:text-white light:text-text-dark">
+                      <TimeDisplay date={detectedDate} format="time" />
+                    </span>
                   </motion.div>
                   <motion.div
                     variants={fadeInVariants}

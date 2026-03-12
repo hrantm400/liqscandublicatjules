@@ -358,7 +358,7 @@ export function InteractiveLiveChart({
             timeVisible: true,
             secondsVisible: false,
             borderColor: isRsi ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 236, 55, 0.15)'),
-            rightOffset: 12,
+            rightOffset: 5,
             barSpacing: 10,
             minBarSpacing: 3,
             visible: !isRsi,
@@ -436,7 +436,7 @@ export function InteractiveLiveChart({
               timeVisible: true,
               secondsVisible: false,
               borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)',
-              rightOffset: 12,
+              rightOffset: 5,
               barSpacing: 10,
               minBarSpacing: 3,
             },
@@ -1043,11 +1043,11 @@ export function InteractiveLiveChart({
             }
           }
 
-          // Zoom to signal area — show ~40 candles before and ~10 after
-          const zoomBefore = 40;
-          const zoomAfter = 10;
+          // Zoom to signal area — show ~70 candles before and ~30 after
+          const zoomBefore = 70;
+          const zoomAfter = 30; // 30% empty space on the right
           const logicalFrom = Math.max(0, signalCandleIndex - zoomBefore);
-          const logicalTo = Math.min(chartData.length - 1, signalCandleIndex + zoomAfter);
+          const logicalTo = signalCandleIndex + zoomAfter; // Do not clamp to chartData.length - 1 to allow empty space
           try {
             chartRef.current.timeScale().setVisibleLogicalRange({
               from: logicalFrom,

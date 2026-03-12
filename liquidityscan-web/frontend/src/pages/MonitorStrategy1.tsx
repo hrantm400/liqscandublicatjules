@@ -7,6 +7,7 @@ import { SignalStatusBadge } from '../components/shared/SignalStatusBadge';
 import { useMarketData } from '../hooks/useMarketData';
 import { listItemVariants } from '../utils/animations';
 import { useLifecycleFilter } from '../hooks/useLifecycleFilter';
+import { TimeDisplay } from '../components/shared/TimeDisplay';
 
 // Symbol Avatar Component
 function SymbolAvatar({ symbol }: { symbol: string }) {
@@ -29,11 +30,7 @@ function SymbolAvatar({ symbol }: { symbol: string }) {
     );
 }
 
-// Format time helper
-function formatTime(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
+// Format time helper removed - using TimeDisplay
 
 export function MonitorStrategy1() {
     const navigate = useNavigate();
@@ -86,21 +83,21 @@ export function MonitorStrategy1() {
     // Session counts
     const sessionCounts = useMemo(() => {
         const counts = { london: 0, newYork: 0 };
-        signals.forEach(s => {
+        filteredSignals.forEach(s => {
             const session = (s as any).metadata?.session;
             if (session === 'LONDON') counts.london++;
             else if (session === 'NEW_YORK') counts.newYork++;
         });
         return counts;
-    }, [signals]);
+    }, [filteredSignals]);
 
     // Signal stats
     const stats = useMemo(() => {
-        const long = signals.filter(s => s.signalType === 'BUY').length;
-        const short = signals.filter(s => s.signalType === 'SELL').length;
-        const active = signals.filter(s => s.status === 'ACTIVE').length;
+        const long = filteredSignals.filter(s => s.signalType === 'BUY').length;
+        const short = filteredSignals.filter(s => s.signalType === 'SELL').length;
+        const active = filteredSignals.filter(s => s.status === 'ACTIVE').length;
         return { long, short, active, total: filteredSignals.length };
-    }, [signals, filteredSignals]);
+    }, [filteredSignals]);
 
     return (
         <div className="flex flex-col h-full">
@@ -269,9 +266,9 @@ export function MonitorStrategy1() {
                                         <span className="text-sm font-bold dark:text-white light:text-text-dark truncate">
                                             {signal.symbol.replace('USDT', '/USDT')}
                                         </span>
-                                        <span className="text-[10px] dark:text-gray-600 light:text-text-light-secondary font-mono">
-                                            {formatTime(signal.detectedAt)} • {meta.sePattern || '4H SE'}
-                                        </span>
+                                        <div className="text-[10px] dark:text-gray-600 light:text-text-light-secondary font-mono flex items-center gap-1">
+                                            <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} /> • {meta.sePattern || '4H SE'}
+                                        </div>
                                     </div>
 
                                     {/* Direction */}

@@ -10,6 +10,7 @@ export interface User {
   referrerId?: string;
   affiliateCode?: string;
   isAdmin?: boolean;
+  timezone?: string;
   createdAt: string;
   updatedAt: string;
 }

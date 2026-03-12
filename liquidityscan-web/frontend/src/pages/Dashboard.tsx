@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Timeframe } from '../types';
 import { fetchSignals } from '../services/signalsApi';
 import { staggerContainer, listItemVariants, scaleInVariants } from '../utils/animations';
+import { useVolumeData } from '../hooks/useVolumeData';
 
 interface StrategySummary {
   total: number;
@@ -20,6 +21,7 @@ const STRATEGY_TIMEFRAMES = {
 };
 
 export const Dashboard: React.FC = () => {
+  const { volumeMap } = useVolumeData();
   const [expandedAccordions, setExpandedAccordions] = useState<Set<string>>(new Set());
   // Initialize with only relevant timeframes for each strategy
   const [superEngulfingSummary, setSuperEngulfingSummary] = useState<StrategySummary>({
@@ -73,43 +75,50 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (seData) {
-      const signals = seData as any[];
+      const allSignals = seData as any[];
+      const signals = volumeMap && volumeMap.size > 0
+        ? allSignals.filter(s => (volumeMap.get(s.symbol) || 0) >= 20_000_000)
+        : allSignals;
       const summary: StrategySummary = {
         total: signals.length,
         timeframes: { '4h': 0, '1d': 0, '1w': 0 } as Record<Timeframe, number>,
       };
       signals.forEach((signal) => {
         const tf = signal.timeframe as Timeframe;
-        // Only count signals from relevant timeframes (4h, 1d, 1w)
         if (STRATEGY_TIMEFRAMES.SUPER_ENGULFING.includes(tf) && summary.timeframes[tf] !== undefined) {
           summary.timeframes[tf]++;
         }
       });
       setSuperEngulfingSummary(summary);
     }
-  }, [seData]);
+  }, [seData, volumeMap]);
 
   useEffect(() => {
     if (biasData) {
-      const signals = biasData as any[];
+      const allSignals = biasData as any[];
+      const signals = volumeMap && volumeMap.size > 0
+        ? allSignals.filter(s => (volumeMap.get(s.symbol) || 0) >= 20_000_000)
+        : allSignals;
       const summary: StrategySummary = {
         total: signals.length,
         timeframes: { '4h': 0, '1d': 0, '1w': 0 } as Record<Timeframe, number>,
       };
       signals.forEach((signal) => {
         const tf = signal.timeframe as Timeframe;
-        // Only count signals from relevant timeframes (4h, 1d, 1w)
         if (STRATEGY_TIMEFRAMES.ICT_BIAS.includes(tf) && summary.timeframes[tf] !== undefined) {
           summary.timeframes[tf]++;
         }
       });
       setBiasSummary(summary);
     }
-  }, [biasData]);
+  }, [biasData, volumeMap]);
 
   useEffect(() => {
     if (rsiData) {
-      const signals = rsiData as any[];
+      const allSignals = rsiData as any[];
+      const signals = volumeMap && volumeMap.size > 0
+        ? allSignals.filter(s => (volumeMap.get(s.symbol) || 0) >= 20_000_000)
+        : allSignals;
       const summary: StrategySummary = {
         total: signals.length,
         timeframes: { '1h': 0, '4h': 0, '1d': 0 } as Record<Timeframe, number>,
@@ -122,11 +131,14 @@ export const Dashboard: React.FC = () => {
       });
       setRsiSummary(summary);
     }
-  }, [rsiData]);
+  }, [rsiData, volumeMap]);
 
   useEffect(() => {
     if (crtData) {
-      const signals = crtData as any[];
+      const allSignals = crtData as any[];
+      const signals = volumeMap && volumeMap.size > 0
+        ? allSignals.filter(s => (volumeMap.get(s.symbol) || 0) >= 20_000_000)
+        : allSignals;
       const summary: StrategySummary = {
         total: signals.length,
         timeframes: { '4h': 0, '1d': 0, '1w': 0 } as Record<Timeframe, number>,
@@ -139,7 +151,7 @@ export const Dashboard: React.FC = () => {
       });
       setCrtSummary(summary);
     }
-  }, [crtData]);
+  }, [crtData, volumeMap]);
 
 
 

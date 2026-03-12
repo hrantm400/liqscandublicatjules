@@ -9,6 +9,7 @@ import { scanAll, fetchLiveBias } from '../services/signalsApi';
 import { StaticMiniChart } from '../components/StaticMiniChart';
 import { FilterMenu } from '../components/shared/FilterMenu';
 import { TrendIndicator } from '../components/shared/TrendIndicator';
+import { TimeDisplay } from '../components/shared/TimeDisplay';
 import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/animations/AnimatedCard';
 import { useMarketData } from '../hooks/useMarketData';
@@ -125,7 +126,7 @@ export function MonitorBias() {
   const [volumeSort, setVolumeSort] = useState<'high-low' | 'low-high' | null>(null);
   const [rankingFilter, setRankingFilter] = useState<number | null>(null);
   const [directionFilter, setDirectionFilter] = useState<'All' | 'Longs' | 'Shorts'>('All');
-  const [statusFilter, setStatusFilter] = useState<any>('ACTIVE');
+  const [statusFilter, setStatusFilter] = useState<any>('LIVE');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [pageSize, setPageSize] = useState(50);
@@ -200,6 +201,7 @@ export function MonitorBias() {
     activeTimeframe,
     bullFilter,
     bearFilter,
+    directionFilter,
     sortBy,
     marketCapSort,
     volumeSort,
@@ -217,6 +219,29 @@ export function MonitorBias() {
     tab: statusFilter,
   });
 
+  // Calculate signals by timeframe
+  // ICT Bias uses only 4h, 1d, 1w timeframes
+  const timeframeStats = useMemo(() => {
+    // Initialize with 0 for all required timeframes to satisfy the type
+    const stats: Record<Timeframe | 'all', number> = {
+      all: statusFilteredSignals.length,
+      '5m': 0,
+      '15m': 0,
+      '1h': 0,
+      '4h': 0,
+      '1d': 0,
+      '1w': 0,
+    };
+    statusFilteredSignals.forEach((signal) => {
+      if (signal.timeframe === '4h' || signal.timeframe === '1d' || signal.timeframe === '1w') {
+        if (stats[signal.timeframe] !== undefined) {
+          stats[signal.timeframe]++;
+        }
+      }
+    });
+    return stats;
+  }, [statusFilteredSignals]);
+
   // Pagination
   const totalPages = Math.ceil(statusFilteredSignals.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -226,30 +251,7 @@ export function MonitorBias() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTimeframe, searchQuery, bullFilter, bearFilter, sortBy, statusFilter]);
-
-  // Calculate signals by timeframe - count ONLY ACTIVE signals for cards
-  // ICT Bias uses only 4h, 1d, 1w timeframes
-  const timeframeStats = useMemo(() => {
-    // Initialize with 0 for all required timeframes to satisfy the type
-    const stats: Record<Timeframe | 'all', number> = {
-      all: filteredSignals.length,
-      '5m': 0,
-      '15m': 0,
-      '1h': 0,
-      '4h': 0,
-      '1d': 0,
-      '1w': 0,
-    };
-    filteredSignals.forEach((signal) => {
-      if (signal.timeframe === '4h' || signal.timeframe === '1d' || signal.timeframe === '1w') {
-        if (stats[signal.timeframe] !== undefined) {
-          stats[signal.timeframe]++;
-        }
-      }
-    });
-    return stats;
-  }, [filteredSignals]);
+  }, [activeTimeframe, searchQuery, bullFilter, bearFilter, directionFilter, sortBy, statusFilter]);
 
   const handleTimeframeClick = useCallback((timeframe: Timeframe | 'all') => {
     setActiveTimeframe(timeframe);
@@ -593,8 +595,6 @@ export function MonitorBias() {
                 onVolumeSortChange={setVolumeSort}
                 rankingFilter={rankingFilter}
                 onRankingFilterChange={setRankingFilter}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
                 onReset={handleResetFilters}
               />
             </div>
@@ -699,7 +699,7 @@ export function MonitorBias() {
                       </tr>
                     </thead>
                     <tbody className="dark:divide-y-white/5 light:divide-y-green-200/30 text-xs font-medium">
-                      {filteredSignals.length === 0 ? (
+                      {statusFilteredSignals.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="px-6 py-12 text-center dark:text-gray-500 light:text-text-light-secondary">
                             No signals found
@@ -745,7 +745,7 @@ export function MonitorBias() {
                                 <VolumeBadge volume={getVolume(signal.symbol)} formatVolume={formatVolume} isLow={isLowVolume(signal.symbol)} />
                               </td>
                               <td className="px-6 py-2.5 text-right font-mono dark:text-gray-300 light:text-slate-600 whitespace-nowrap">
-                                {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
                               </td>
                               <td className="px-6 py-2.5 text-right">
                                 <Link
@@ -764,7 +764,7 @@ export function MonitorBias() {
 
                   {/* Mobile Card List */}
                   <div className="md:hidden flex flex-col gap-3 p-4">
-                    {filteredSignals.length === 0 ? (
+                    {statusFilteredSignals.length === 0 ? (
                       <div className="text-center py-8 text-sm dark:text-gray-500 light:text-text-light-secondary">
                         No signals found
                       </div>
@@ -796,7 +796,7 @@ export function MonitorBias() {
                               </div>
                               <div className="flex flex-col items-end">
                                 <span className="text-xs font-mono dark:text-gray-400 light:text-slate-500">
-                                  {new Date(signal.detectedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                                  <TimeDisplay date={signal.detectedAt} format="full" showUtcLabel={false} />
                                 </span>
                                 <span className="text-[10px] font-mono dark:text-gray-500 light:text-slate-400 mt-0.5">
                                   Rank: {getRank(signal.symbol) ? `#${getRank(signal.symbol)}` : '—'}
@@ -866,7 +866,7 @@ export function MonitorBias() {
               /* Grid View - Cards */
               <div className="flex-1 overflow-y-auto custom-scrollbar p-6 min-h-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1600px] mx-auto">
-                  {filteredSignals.length === 0 ? (
+                  {statusFilteredSignals.length === 0 ? (
                     <div className="col-span-full text-center py-12 dark:text-gray-500 light:text-text-light-secondary">No signals found</div>
                   ) : (
                     paginatedSignals.map((signal, index) => {
@@ -952,7 +952,7 @@ export function MonitorBias() {
                   )}
                 </div>
                 {/* Pagination */}
-                {filteredSignals.length > 0 && (
+                {statusFilteredSignals.length > 0 && (
                   <div className="flex items-center justify-between px-6 py-4 border-t dark:border-white/5 light:border-green-300 shrink-0 mt-6">
                     <div className="flex items-center gap-2">
                       <span className="text-xs dark:text-gray-400 light:text-text-light-secondary">Show:</span>

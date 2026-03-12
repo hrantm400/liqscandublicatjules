@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { TelegramAlertsConfig } from '../components/settings/TelegramAlertsConfig';
+import { TimezoneSelector } from '../components/settings/TimezoneSelector';
 import { staggerContainer, listItemVariants } from '../utils/animations';
 
 export function Settings() {
@@ -90,6 +91,21 @@ export function Settings() {
           </div>
         </motion.div>
       </div>
+
+      <motion.div variants={listItemVariants} className="glass-panel rounded-xl p-6 border dark:border-white/5 light:border-green-300 dark:bg-surface-dark/60 light:bg-white">
+        <h2 className="text-xl font-bold dark:text-white light:text-text-dark mb-6">Preferences</h2>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="dark:text-white light:text-text-dark font-medium">Timezone</p>
+              <p className="text-sm dark:text-gray-400 light:text-text-light-secondary">All signal times will be displayed in this timezone</p>
+            </div>
+            <div className="w-full sm:w-auto">
+              <TimezoneSelector />
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Embedded Telegram Custom Alerts */}
       <motion.div variants={listItemVariants}>

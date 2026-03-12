@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SubscriptionBadge } from './subscriptions/SubscriptionBadge';
 import { MobileHeader } from './layout/MobileHeader';
 import { MobileBottomNav } from './layout/MobileBottomNav';
+import { TimezoneGate } from './onboarding/TimezoneGate';
 
 const MainLayout: React.FC = () => {
     const location = useLocation();
@@ -100,16 +101,51 @@ const MainLayout: React.FC = () => {
 
     const subscriptionPlan = mySubscription?.subscription?.name || 'Free Plan';
 
+    // Timezone Logic
+    const hasTimezone = !!user?.timezone;
+    const LEGACY_DATE = new Date('2024-03-31T00:00:00Z'); // Arbitrary legacy cutoff date
+    const isLegacyUser = user?.createdAt ? new Date(user.createdAt) < LEGACY_DATE : false;
+
+    // Gate opens for non-legacy users without a timezone
+    const [isTimezoneGateOpen, setTimezoneGateOpen] = useState(!hasTimezone && !isLegacyUser && !loading);
+    
+    // Updates when profile loads
+    useEffect(() => {
+        if (!loading && user) {
+             const userMissingTz = !user.timezone;
+             const isLegacy = new Date(user.createdAt) < LEGACY_DATE;
+             setTimezoneGateOpen(userMissingTz && !isLegacy);
+        }
+    }, [loading, user]);
+
+    // Legacy users see banner instead of gate
+    const showLegacyBanner = !hasTimezone && isLegacyUser && !loading;
+
     return (
-        <div className="flex flex-col md:flex-row h-[100dvh] w-full selection:bg-primary selection:text-black overflow-hidden font-sans dark:bg-background-dark dark:text-white light:bg-background-light light:text-text-dark">
+        <div className="flex flex-col md:flex-row h-[100dvh] w-full selection:bg-primary selection:text-black overflow-hidden font-sans dark:bg-background-dark dark:text-white light:bg-background-light light:text-text-dark pb-16 md:pb-0">
+            {/* Timezone Gate for New Users */}
+            <TimezoneGate isOpen={isTimezoneGateOpen} onComplete={() => setTimezoneGateOpen(false)} />
+
             <div className="fixed inset-0 pointer-events-none z-0 bg-grid-pattern bg-[length:24px_24px] dark:opacity-50 light:opacity-30"></div>
             <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
             {/* Mobile Header (Hidden on Desktop) */}
             <MobileHeader />
 
+            {/* Top Legacy Banner */}
+            {showLegacyBanner && (
+               <div className="absolute top-0 left-0 right-0 z-[60] py-2 px-4 bg-yellow-500/20 border-b border-yellow-500/50 flex items-center justify-between backdrop-blur-md md:left-[80px]">
+                   <span className="text-yellow-200 text-xs md:text-sm font-medium">
+                       ⚠️ LiquidityScanner now supports local timezones. Your signals are currently defaulting to UTC.
+                   </span>
+                   <button onClick={() => navigate('/settings')} className="ml-4 px-3 py-1 bg-yellow-500/30 hover:bg-yellow-500/40 text-yellow-100 rounded text-xs font-bold transition-colors whitespace-nowrap">
+                       Update Settings
+                   </button>
+               </div>
+            )}
+
             {/* Sidebar (Hidden on Mobile) */}
-            <aside className="hidden md:flex relative z-50 flex-col glass-sidebar h-full shrink-0 transition-[width] duration-300 ease-in-out group/sidebar overflow-hidden w-[80px] hover:w-72">
+            <aside className={`hidden md:flex relative z-50 flex-col glass-sidebar h-full shrink-0 transition-[width] duration-300 ease-in-out group/sidebar overflow-hidden w-[80px] hover:w-72 ${showLegacyBanner ? 'border-t border-transparent mt-[36px] h-[calc(100%-36px)]' : ''}`}>
                 <div className="w-72 h-full flex flex-col">
                     {/* Top section - Logo */}
                     <div className="p-6 pb-4 shrink-0">
