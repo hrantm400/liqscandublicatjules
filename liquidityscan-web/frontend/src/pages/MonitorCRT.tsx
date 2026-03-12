@@ -385,6 +385,7 @@ export function MonitorCRT() {
                     strategyType="CRT"
                     activeStatus={statusFilter}
                     onStatusChange={setStatusFilter}
+                    hideArchive={true}
                 />
             </motion.div>
 

@@ -406,6 +406,7 @@ export function MonitorRSI() {
           strategyType="RSI_DIVERGENCE"
           activeStatus={statusFilter}
           onStatusChange={setStatusFilter}
+          hideArchive={true}
         />
       </motion.div>
 

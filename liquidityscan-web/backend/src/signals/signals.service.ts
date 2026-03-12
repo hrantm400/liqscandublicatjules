@@ -373,28 +373,21 @@ export class SignalsService {
         }
       }
 
-      // Archive everything else for this combo (ALL statuses except already ARCHIVED)
-      const result = await (this.prisma as any).superEngulfingSignal.updateMany({
+      // Delete everything else for this combo (ALL older signals)
+      const result = await (this.prisma as any).superEngulfingSignal.deleteMany({
         where: {
           strategyType,
           symbol,
           timeframe,
           id: { not: latest.id },
-          lifecycleStatus: { not: 'ARCHIVED' },
         },
-        data: { lifecycleStatus: 'ARCHIVED', status: 'EXPIRED' },
       });
 
       if (result.count > 0) {
-        // Also update in-memory cache
-        for (const s of this.signals) {
-          if (s.strategyType === strategyType && s.symbol === symbol && s.timeframe === timeframe && s.id !== latest.id) {
-            if (s.lifecycleStatus !== 'ARCHIVED') {
-              s.lifecycleStatus = 'ARCHIVED';
-              s.status = 'EXPIRED';
-            }
-          }
-        }
+        // Also remove from in-memory cache
+        this.signals = this.signals.filter(s =>
+          !(s.strategyType === strategyType && s.symbol === symbol && s.timeframe === timeframe && s.id !== latest.id)
+        );
       }
 
       return result.count;
@@ -404,21 +397,16 @@ export class SignalsService {
     }
   }
 
-  /**
-   * One-time bulk cleanup: archive ALL stale signals across ALL strategies.
-   * For each strategy+symbol+timeframe combo, only the latest stays ACTIVE.
-   */
   async archiveAllStaleSignals(): Promise<number> {
     try {
       this.logger.log('Starting bulk archive cleanup...');
 
-      // Use Prisma groupBy — include ALL statuses, not just ACTIVE/PENDING
+      // Use Prisma groupBy 
       const combos = await (this.prisma as any).superEngulfingSignal.groupBy({
         by: ['strategyType', 'symbol', 'timeframe'],
         where: {
-          lifecycleStatus: { not: 'ARCHIVED' },
           // SE v2 SPEC: Multiple SE signals per symbol+timeframe are allowed.
-          // Do NOT archive SE signals here — they use state='live'/'closed' + hard delete after 48h.
+          // Do NOT touch SE signals here — they use state='live'/'closed' + hard delete after 48h.
           strategyType: { not: 'SUPER_ENGULFING' },
         },
         _count: true,
@@ -426,14 +414,14 @@ export class SignalsService {
 
       this.logger.log(`Found ${combos.length} unique strategy+symbol+timeframe combos to check`);
 
-      let totalArchived = 0;
+      let totalDeleted = 0;
       for (const c of combos) {
-        const archived = await this.archiveOldSignals(c.strategyType, c.symbol, c.timeframe);
-        totalArchived += archived;
+        const deleted = await this.archiveOldSignals(c.strategyType, c.symbol, c.timeframe);
+        totalDeleted += deleted;
       }
 
-      this.logger.log(`Bulk archive completed: ${totalArchived} stale signals archived out of ${combos.length} combos`);
-      return totalArchived;
+      this.logger.log(`Bulk cleanup completed: ${totalDeleted} stale signals deleted out of ${combos.length} combos`);
+      return totalDeleted;
     } catch (err) {
       this.logger.error(`archiveAllStaleSignals failed: ${err}`);
       return 0;

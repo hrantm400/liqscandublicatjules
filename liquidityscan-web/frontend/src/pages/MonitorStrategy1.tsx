@@ -172,7 +172,7 @@ export function MonitorStrategy1() {
 
                     {/* Filters Section */}
                     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                        <StatusTabs strategyType="STRATEGY_1" activeStatus={statusFilter} onStatusChange={(tab) => { setStatusFilter(tab); setCurrentPage(1); }} />
+                        <StatusTabs strategyType="STRATEGY_1" activeStatus={statusFilter} onStatusChange={(tab) => { setStatusFilter(tab); setCurrentPage(1); }} hideArchive={true} />
 
                         <div className="flex items-center gap-3">
                             {/* Direction Filter */}
