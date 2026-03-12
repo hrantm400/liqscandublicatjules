@@ -109,6 +109,13 @@ class ApiClient {
     return this.request<any>('/auth/me');
   }
 
+  async updateProfile(data: { name?: string; avatar?: string; timezone?: string }) {
+    return this.request<any>('/users/me', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   async refreshToken(refreshToken: string) {
     return this.request<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
       method: 'POST',

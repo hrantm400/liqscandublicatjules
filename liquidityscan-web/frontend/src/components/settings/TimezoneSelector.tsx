@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TIMEZONE_OPTIONS, TimezoneOption } from '../../utils/timezone';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
+import { userApi } from '../../services/userApi';
 
 interface TimezoneSelectorProps {
   onSuccess?: () => void;
@@ -21,20 +22,8 @@ export const TimezoneSelector: React.FC<TimezoneSelectorProps> = ({ onSuccess, s
 
     setIsSaving(true);
     try {
-      // Create user api method if not exists, but we can reuse updateProfile logic via authApi/userApi 
-      // The backend /auth/me or /users/me is set to PUT 'me' in UsersController
-      const response = await fetch('/api/users/me', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${useAuthStore.getState().token}`
-        },
-        body: JSON.stringify({ timezone: selectedDz }),
-      });
+      const updatedUser = await userApi.updateProfile({ timezone: selectedDz });
       
-      if (!response.ok) throw new Error('Failed to update timezone');
-      
-      const updatedUser = await response.json();
       setUser(updatedUser);
       toast.success('Timezone updated successfully');
       
