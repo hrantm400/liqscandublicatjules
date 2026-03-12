@@ -8,19 +8,19 @@ export interface CoinMarketData {
 }
 
 /**
- * Fetch top 300 coins market cap data from CoinGecko.
+ * Fetch top 300 coins market cap data from our secure CoinMarketCap backend proxy.
  * Returns a map of symbol (uppercase, e.g., 'BTC') to market cap rank.
- * Cached for 15 minutes to respect rate limits.
  */
 async function fetchMarketCapRanks(): Promise<Map<string, number>> {
     try {
-        const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1');
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://moonscan.ai/api';
+        const res = await fetch(`${apiUrl}/cmc/ranks`);
         if (!res.ok) return new Map();
         const data: CoinMarketData[] = await res.json();
         
         const map = new Map<string, number>();
         for (const coin of data) {
-            // CoinGecko symbols are lowercase ('btc'), we normalize to uppercase to match Binance ('BTCUSDT')
+            // CoinMarketCap returns actual symbols like BTC, ETH, we normalize to uppercase to match Binance ('BTCUSDT')
             map.set(coin.symbol.toUpperCase(), coin.market_cap_rank);
         }
         return map;
