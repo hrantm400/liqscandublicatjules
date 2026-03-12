@@ -5,6 +5,7 @@ import { User, Signal } from '../types';
 import { motion } from 'framer-motion';
 import { ReferralSection } from '../components/ReferralSection';
 import { fetchSignals } from '../services/signalsApi';
+import { TimezoneSelector } from '../components/settings/TimezoneSelector';
 
 export function Profile() {
   const navigate = useNavigate();
@@ -148,6 +149,19 @@ export function Profile() {
                   <div className="text-sm dark:text-white light:text-text-dark mt-1">{new Date(profile.updatedAt).toLocaleDateString()}</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Timezone Settings */}
+        <div className="glass-panel rounded-2xl p-6 border dark:border-white/10 light:border-green-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold dark:text-white light:text-text-dark">Timezone Settings</h2>
+              <p className="text-sm dark:text-gray-400 light:text-text-light-secondary">All signal times will be displayed in this timezone</p>
+            </div>
+            <div className="w-full sm:w-64">
+              <TimezoneSelector />
             </div>
           </div>
         </div>

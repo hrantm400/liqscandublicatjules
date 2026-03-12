@@ -90,7 +90,6 @@ const MainLayout: React.FC = () => {
     };
 
     const displayName = user?.name || user?.email?.split('@')[0] || 'User';
-    const displayEmail = user?.email || '';
 
     // Fetch user subscription
     const { data: mySubscription } = useQuery({
@@ -98,8 +97,6 @@ const MainLayout: React.FC = () => {
         queryFn: () => userApi.getMySubscription(),
         enabled: !!token,
     });
-
-    const subscriptionPlan = mySubscription?.subscription?.name || 'Free Plan';
 
     // Timezone Logic
     const hasTimezone = !!user?.timezone;

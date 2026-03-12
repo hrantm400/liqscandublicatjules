@@ -113,7 +113,6 @@ export function MonitorSuperEngulfing() {
     enabled: isAuthenticated,
   });
   const isFreeForever = mySubscription?.subscription?.tier === 'SCOUT';
-  const allowedPairs: string[] | undefined = mySubscription?.subscription?.limits?.pairs;
 
   // Free Forever: reset Rev+/Run+ to All when plan only allows Standard
   useEffect(() => {
