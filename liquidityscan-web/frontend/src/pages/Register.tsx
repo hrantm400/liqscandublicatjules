@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
-// import { authApi } from '../services/api'; // TODO: Re-enable when API service is recreated
+import { authApi } from '../services/userApi';
 
 export function Register() {
   const navigate = useNavigate();
@@ -73,25 +73,22 @@ export function Register() {
 
     setLoading(true);
 
-    // TODO: Re-enable when API service is recreated
-    // try {
-    //   const data = await authApi.register({ 
-    //     name, 
-    //     email, 
-    //     password,
-    //     referralCode: referralCode || undefined,
-    //   });
-    //   setUser(data.user);
-    //   setToken(data.accessToken);
-    //   setRefreshToken(data.refreshToken);
-    //   navigate('/dashboard');
-    // } catch (err: any) {
-    //   setError(err.message || 'Failed to register');
-    // } finally {
-    //   setLoading(false);
-    // }
-    setError('API service is not available. Please wait for backend integration.');
-    setLoading(false);
+    try {
+      const data = await authApi.register({
+        name,
+        email,
+        password,
+        referralCode: referralCode || undefined,
+      });
+      setUser(data.user);
+      setToken(data.accessToken);
+      setRefreshToken(data.refreshToken);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Failed to register');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
