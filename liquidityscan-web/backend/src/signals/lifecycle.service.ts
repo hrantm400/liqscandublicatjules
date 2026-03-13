@@ -129,60 +129,69 @@ export class LifecycleService implements OnModuleInit {
 
             let biasWin = 0, biasFailed = 0;
 
-            for (const bias of biasSignals) {
-                try {
-                    // Get the latest closed candles for this TF
-                    const tfCandles = await this.candlesService.getKlines(bias.symbol, bias.timeframe, 5);
-                    if (tfCandles.length < 2) continue;
+            const BATCH_SIZE = 10;
+            for (let i = 0; i < biasSignals.length; i += BATCH_SIZE) {
+                const batch = biasSignals.slice(i, i + BATCH_SIZE);
+                const results = await Promise.all(batch.map(async (bias) => {
+                    try {
+                        // Get the latest closed candles for this TF
+                        const tfCandles = await this.candlesService.getKlines(bias.symbol, bias.timeframe, 5);
+                        if (tfCandles.length < 2) return null;
 
-                    // The bias was detected at bias.detectedAt — we need the NEXT closed candle after that
-                    const biasDetectedMs = new Date(bias.detectedAt).getTime();
-                    const tfMs = TF_MS[bias.timeframe] || 14400000;
+                        // The bias was detected at bias.detectedAt — we need the NEXT closed candle after that
+                        const biasDetectedMs = new Date(bias.detectedAt).getTime();
+                        const tfMs = TF_MS[bias.timeframe] || 14400000;
 
-                    // Find the first candle that opened AFTER the bias detection
-                    const nextCandle = tfCandles.find(c => {
-                        const candleOpenMs = new Date(c.openTime).getTime();
-                        return candleOpenMs >= biasDetectedMs;
-                    });
+                        // Find the first candle that opened AFTER the bias detection
+                        const nextCandle = tfCandles.find(c => {
+                            const candleOpenMs = new Date(c.openTime).getTime();
+                            return candleOpenMs >= biasDetectedMs;
+                        });
 
-                    if (!nextCandle) continue; // Next candle hasn't formed yet
+                        if (!nextCandle) return null; // Next candle hasn't formed yet
 
-                    // Check if this candle is CLOSED (its open time + TF duration < now)
-                    const candleCloseMs = new Date(nextCandle.openTime).getTime() + tfMs;
-                    if (candleCloseMs > Date.now()) continue; // Still forming, wait
+                        // Check if this candle is CLOSED (its open time + TF duration < now)
+                        const candleCloseMs = new Date(nextCandle.openTime).getTime() + tfMs;
+                        if (candleCloseMs > Date.now()) return null; // Still forming, wait
 
-                    // BODY CLOSE VALIDATION — ignore wicks!
-                    const nextClose = nextCandle.close;
-                    let result: 'WIN' | 'FAILED';
+                        // BODY CLOSE VALIDATION — ignore wicks!
+                        const nextClose = nextCandle.close;
+                        let result: 'WIN' | 'FAILED';
 
-                    if (bias.bias_direction === 'BULL') {
-                        result = nextClose > bias.bias_level ? 'WIN' : 'FAILED';
-                    } else {
-                        result = nextClose < bias.bias_level ? 'WIN' : 'FAILED';
+                        if (bias.bias_direction === 'BULL') {
+                            result = nextClose > bias.bias_level ? 'WIN' : 'FAILED';
+                        } else {
+                            result = nextClose < bias.bias_level ? 'WIN' : 'FAILED';
+                        }
+
+                        // Update signal
+                        const signalResult = result === 'WIN' ? SignalResult.WIN : SignalResult.LOSS;
+                        await this.stateService.transitionSignal(bias.id, SignalStatus.COMPLETED, {
+                            result: signalResult,
+                            closedPrice: nextClose,
+                            pnlPercent: this.calcPnl(bias.bias_direction === 'BULL', bias.bias_level, nextClose),
+                        });
+
+                        await (this.prisma as any).superEngulfingSignal.update({
+                            where: { id: bias.id },
+                            data: {
+                                bias_result: result,
+                                bias_validated_at: new Date(),
+                                closedAt: new Date(),
+                                se_close_price: nextClose,
+                            },
+                        });
+
+                        return result;
+                    } catch (err) {
+                        this.logger.error(`Bias lifecycle error for ${bias.id}: ${err}`);
+                        return null;
                     }
+                }));
 
-                    // Update signal
-                    const signalResult = result === 'WIN' ? SignalResult.WIN : SignalResult.LOSS;
-                    await this.stateService.transitionSignal(bias.id, SignalStatus.COMPLETED, {
-                        result: signalResult,
-                        closedPrice: nextClose,
-                        pnlPercent: this.calcPnl(bias.bias_direction === 'BULL', bias.bias_level, nextClose),
-                    });
-
-                    await (this.prisma as any).superEngulfingSignal.update({
-                        where: { id: bias.id },
-                        data: {
-                            bias_result: result,
-                            bias_validated_at: new Date(),
-                            closedAt: new Date(),
-                            se_close_price: nextClose,
-                        },
-                    });
-
-                    if (result === 'WIN') biasWin++;
-                    else biasFailed++;
-                } catch (err) {
-                    this.logger.error(`Bias lifecycle error for ${bias.id}: ${err}`);
+                for (const res of results) {
+                    if (res === 'WIN') biasWin++;
+                    else if (res === 'FAILED') biasFailed++;
                 }
             }
 
@@ -283,213 +292,227 @@ export class LifecycleService implements OnModuleInit {
         const now = new Date();
         let tp1Hit = 0, tp2Hit = 0, tp3Hit = 0, slHit = 0, expired = 0, unchanged = 0;
 
-        for (const signal of liveSeSignals) {
-            const currentPrice = priceMap.get(signal.symbol);
-            if (currentPrice === undefined) {
-                unchanged++;
-                continue;
-            }
+        const SE_BATCH_SIZE = 10;
+        for (let i = 0; i < liveSeSignals.length; i += SE_BATCH_SIZE) {
+            const batch = liveSeSignals.slice(i, i + SE_BATCH_SIZE);
+            const batchResults = await Promise.all(batch.map(async (signal) => {
+                const currentPrice = priceMap.get(signal.symbol);
+                if (currentPrice === undefined) {
+                    return { type: 'unchanged' };
+                }
 
-            const triggeredAt = signal.triggered_at ?? signal.detectedAt;
-            const currentCandleCount = signal.candle_count ?? signal.candles_tracked ?? 0;
+                const triggeredAt = signal.triggered_at ?? signal.detectedAt;
+                const currentCandleCount = signal.candle_count ?? signal.candles_tracked ?? 0;
 
-            // Calculate actual candle closes based on timeframe, NOT every 5 minutes
-            const candleInfo = this.calcCandleInfo(
-                new Date(triggeredAt),
-                signal.timeframe,
-                currentCandleCount
-            );
-
-            // Build SeRuntimeSignal from DB row
-            // IMPORTANT: Use the ACTUAL candle count, not the DB value
-            const runtimeSignal: SeRuntimeSignal = {
-                id: signal.id,
-                direction_v2: (signal.direction_v2 || (signal.direction === 'BULL' ? 'bullish' : 'bearish')) as SeDirection,
-                entry_price: signal.entry_price ?? signal.se_entry_zone ?? Number(signal.price),
-                sl_price: signal.sl_price ?? signal.se_sl ?? 0,
-                current_sl_price: signal.current_sl_price ?? signal.se_current_sl ?? signal.sl_price ?? signal.se_sl ?? 0,
-                tp1_price: signal.tp1_price ?? signal.se_tp1 ?? 0,
-                tp2_price: signal.tp2_price ?? signal.se_tp2 ?? 0,
-                tp3_price: signal.tp3_price ?? 0,
-                state: signal.state as 'live' | 'closed',
-                tp1_hit: signal.tp1_hit ?? signal.se_r_ratio_hit ?? false,
-                tp2_hit: signal.tp2_hit ?? false,
-                tp3_hit: signal.tp3_hit ?? false,
-                result_v2: signal.result_v2 ?? null,
-                result_type: signal.result_type ?? null,
-                candle_count: candleInfo.isCandleClose ? candleInfo.actualCandleCount - 1 : candleInfo.actualCandleCount,
-                max_candles: signal.max_candles ?? 10,
-                triggered_at: triggeredAt,
-                closed_at_v2: signal.closed_at_v2 ?? null,
-                delete_at: signal.delete_at ?? null,
-            };
-
-            if (
-                runtimeSignal.sl_price === 0 ||
-                runtimeSignal.tp1_price === 0 ||
-                runtimeSignal.tp2_price === 0 ||
-                runtimeSignal.tp3_price === 0 ||
-                runtimeSignal.entry_price === 0
-            ) {
-                this.logger.warn(
-                    `SE v3 Lifecycle: Skipping signal ${signal.id} — missing price data ` +
-                    `(entry=${runtimeSignal.entry_price}, sl=${runtimeSignal.sl_price}, ` +
-                    `tp1=${runtimeSignal.tp1_price}, tp2=${runtimeSignal.tp2_price}, tp3=${runtimeSignal.tp3_price}). ` +
-                    `Signal may need manual cleanup or re-detection.`
+                // Calculate actual candle closes based on timeframe, NOT every 5 minutes
+                const candleInfo = this.calcCandleInfo(
+                    new Date(triggeredAt),
+                    signal.timeframe,
+                    currentCandleCount
                 );
-                unchanged++;
-                continue;
-            }
 
-            // Determine effective price using 5m candle extremes to catch
-            // SL/TP breaches that occurred between lifecycle checks.
-            const extremes = candleExtremes.get(signal.symbol);
-            let effectivePrice = currentPrice;
+                // Build SeRuntimeSignal from DB row
+                // IMPORTANT: Use the ACTUAL candle count, not the DB value
+                const runtimeSignal: SeRuntimeSignal = {
+                    id: signal.id,
+                    direction_v2: (signal.direction_v2 || (signal.direction === 'BULL' ? 'bullish' : 'bearish')) as SeDirection,
+                    entry_price: signal.entry_price ?? signal.se_entry_zone ?? Number(signal.price),
+                    sl_price: signal.sl_price ?? signal.se_sl ?? 0,
+                    current_sl_price: signal.current_sl_price ?? signal.se_current_sl ?? signal.sl_price ?? signal.se_sl ?? 0,
+                    tp1_price: signal.tp1_price ?? signal.se_tp1 ?? 0,
+                    tp2_price: signal.tp2_price ?? signal.se_tp2 ?? 0,
+                    tp3_price: signal.tp3_price ?? 0,
+                    state: signal.state as 'live' | 'closed',
+                    tp1_hit: signal.tp1_hit ?? signal.se_r_ratio_hit ?? false,
+                    tp2_hit: signal.tp2_hit ?? false,
+                    tp3_hit: signal.tp3_hit ?? false,
+                    result_v2: signal.result_v2 ?? null,
+                    result_type: signal.result_type ?? null,
+                    candle_count: candleInfo.isCandleClose ? candleInfo.actualCandleCount - 1 : candleInfo.actualCandleCount,
+                    max_candles: signal.max_candles ?? 10,
+                    triggered_at: triggeredAt,
+                    closed_at_v2: signal.closed_at_v2 ?? null,
+                    delete_at: signal.delete_at ?? null,
+                };
 
-            if (extremes) {
-                const dir = runtimeSignal.direction_v2;
-                if (dir === 'bullish') {
-                    const bestPrice = Math.max(currentPrice, extremes.high);
-                    const worstPrice = Math.min(currentPrice, extremes.low);
-                    if (!runtimeSignal.tp1_hit && bestPrice >= runtimeSignal.tp1_price) {
-                        effectivePrice = bestPrice;
-                    } else if (runtimeSignal.tp1_hit && !runtimeSignal.tp2_hit && bestPrice >= runtimeSignal.tp2_price) {
-                        effectivePrice = bestPrice;
-                    } else if (runtimeSignal.tp2_hit && !runtimeSignal.tp3_hit && bestPrice >= runtimeSignal.tp3_price) {
-                        effectivePrice = bestPrice;
-                    } else if (worstPrice <= runtimeSignal.current_sl_price) {
-                        effectivePrice = worstPrice;
+                if (
+                    runtimeSignal.sl_price === 0 ||
+                    runtimeSignal.tp1_price === 0 ||
+                    runtimeSignal.tp2_price === 0 ||
+                    runtimeSignal.tp3_price === 0 ||
+                    runtimeSignal.entry_price === 0
+                ) {
+                    this.logger.warn(
+                        `SE v3 Lifecycle: Skipping signal ${signal.id} — missing price data ` +
+                        `(entry=${runtimeSignal.entry_price}, sl=${runtimeSignal.sl_price}, ` +
+                        `tp1=${runtimeSignal.tp1_price}, tp2=${runtimeSignal.tp2_price}, tp3=${runtimeSignal.tp3_price}). ` +
+                        `Signal may need manual cleanup or re-detection.`
+                    );
+                    return { type: 'unchanged' };
+                }
+
+                // Determine effective price using 5m candle extremes to catch
+                // SL/TP breaches that occurred between lifecycle checks.
+                const extremes = candleExtremes.get(signal.symbol);
+                let effectivePrice = currentPrice;
+
+                if (extremes) {
+                    const dir = runtimeSignal.direction_v2;
+                    if (dir === 'bullish') {
+                        const bestPrice = Math.max(currentPrice, extremes.high);
+                        const worstPrice = Math.min(currentPrice, extremes.low);
+                        if (!runtimeSignal.tp1_hit && bestPrice >= runtimeSignal.tp1_price) {
+                            effectivePrice = bestPrice;
+                        } else if (runtimeSignal.tp1_hit && !runtimeSignal.tp2_hit && bestPrice >= runtimeSignal.tp2_price) {
+                            effectivePrice = bestPrice;
+                        } else if (runtimeSignal.tp2_hit && !runtimeSignal.tp3_hit && bestPrice >= runtimeSignal.tp3_price) {
+                            effectivePrice = bestPrice;
+                        } else if (worstPrice <= runtimeSignal.current_sl_price) {
+                            effectivePrice = worstPrice;
+                        }
+                    } else {
+                        const bestPrice = Math.min(currentPrice, extremes.low);
+                        const worstPrice = Math.max(currentPrice, extremes.high);
+                        if (!runtimeSignal.tp1_hit && bestPrice <= runtimeSignal.tp1_price) {
+                            effectivePrice = bestPrice;
+                        } else if (runtimeSignal.tp1_hit && !runtimeSignal.tp2_hit && bestPrice <= runtimeSignal.tp2_price) {
+                            effectivePrice = bestPrice;
+                        } else if (runtimeSignal.tp2_hit && !runtimeSignal.tp3_hit && bestPrice <= runtimeSignal.tp3_price) {
+                            effectivePrice = bestPrice;
+                        } else if (worstPrice >= runtimeSignal.current_sl_price) {
+                            effectivePrice = worstPrice;
+                        }
                     }
-                } else {
-                    const bestPrice = Math.min(currentPrice, extremes.low);
-                    const worstPrice = Math.max(currentPrice, extremes.high);
-                    if (!runtimeSignal.tp1_hit && bestPrice <= runtimeSignal.tp1_price) {
-                        effectivePrice = bestPrice;
-                    } else if (runtimeSignal.tp1_hit && !runtimeSignal.tp2_hit && bestPrice <= runtimeSignal.tp2_price) {
-                        effectivePrice = bestPrice;
-                    } else if (runtimeSignal.tp2_hit && !runtimeSignal.tp3_hit && bestPrice <= runtimeSignal.tp3_price) {
-                        effectivePrice = bestPrice;
-                    } else if (worstPrice >= runtimeSignal.current_sl_price) {
-                        effectivePrice = worstPrice;
+                }
+
+                const result = processSeSignal(runtimeSignal, {
+                    currentPrice: effectivePrice,
+                    isCandleClose: candleInfo.isCandleClose,
+                    now,
+                });
+
+                if (!result.changed) {
+                    // Even if processSeSignal didn't change anything, sync candle_count if needed
+                    if (candleInfo.actualCandleCount !== currentCandleCount) {
+                        await (this.prisma as any).superEngulfingSignal.update({
+                            where: { id: signal.id },
+                            data: {
+                                candle_count: candleInfo.actualCandleCount,
+                                candles_tracked: candleInfo.actualCandleCount,
+                            },
+                        });
                     }
+                    return { type: 'unchanged' };
                 }
-            }
 
-            const result = processSeSignal(runtimeSignal, {
-                currentPrice: effectivePrice,
-                isCandleClose: candleInfo.isCandleClose,
-                now,
-            });
+                // Prepare update data
+                const updateData: any = {};
 
-            if (!result.changed) {
-                // Even if processSeSignal didn't change anything, sync candle_count if needed
-                if (candleInfo.actualCandleCount !== currentCandleCount) {
-                    await (this.prisma as any).superEngulfingSignal.update({
-                        where: { id: signal.id },
-                        data: {
-                            candle_count: candleInfo.actualCandleCount,
-                            candles_tracked: candleInfo.actualCandleCount,
-                        },
-                    });
-                }
-                unchanged++;
-                continue;
-            }
-
-            // Prepare update data
-            const updateData: any = {};
-
-            // V2 fields
-            if (result.state !== undefined) updateData.state = result.state;
-            if (result.tp1_hit !== undefined) updateData.tp1_hit = result.tp1_hit;
-            if (result.tp2_hit !== undefined) updateData.tp2_hit = result.tp2_hit;
-            if (result.tp3_hit !== undefined) updateData.tp3_hit = result.tp3_hit;
-            if (result.current_sl_price !== undefined) updateData.current_sl_price = result.current_sl_price;
-            if (result.result_v2 !== undefined) updateData.result_v2 = result.result_v2;
-            if (result.result_type !== undefined) updateData.result_type = result.result_type;
-            if (result.candle_count !== undefined) {
-                updateData.candle_count = result.candle_count;
-            } else {
-                updateData.candle_count = candleInfo.actualCandleCount;
-            }
-            if (result.closed_at_v2 !== undefined) updateData.closed_at_v2 = result.closed_at_v2;
-            if (result.delete_at !== undefined) updateData.delete_at = result.delete_at;
-
-            // Also update legacy fields for backward compat
-            if (result.tp1_hit !== undefined) {
-                updateData.se_r_ratio_hit = result.tp1_hit;
-            }
-            if (result.current_sl_price !== undefined) {
-                updateData.se_current_sl = result.current_sl_price;
-            }
-            updateData.candles_tracked = updateData.candle_count;
-
-            // If signal closed, update legacy lifecycle fields
-            if (result.state === 'closed') {
-                const legacyResult = mapResultToLegacy(result.result_v2 ?? null);
-                const legacyStatus = mapStateToLegacyStatus(result.state, result.result_v2 ?? null);
-
-                updateData.lifecycleStatus = legacyStatus;
-                if (legacyResult) {
-                    updateData.result = legacyResult;
-                }
-                updateData.closedAt = result.closed_at_v2;
-
-                if (result.result_type === 'sl') {
-                    updateData.se_close_price = runtimeSignal.current_sl_price;
-                } else if (result.result_type === 'tp1') {
-                    updateData.se_close_price = runtimeSignal.tp1_price;
-                } else if (result.result_type === 'tp2') {
-                    updateData.se_close_price = runtimeSignal.tp2_price;
-                } else if (result.result_type === 'tp3_full') {
-                    updateData.se_close_price = runtimeSignal.tp3_price;
+                // V2 fields
+                if (result.state !== undefined) updateData.state = result.state;
+                if (result.tp1_hit !== undefined) updateData.tp1_hit = result.tp1_hit;
+                if (result.tp2_hit !== undefined) updateData.tp2_hit = result.tp2_hit;
+                if (result.tp3_hit !== undefined) updateData.tp3_hit = result.tp3_hit;
+                if (result.current_sl_price !== undefined) updateData.current_sl_price = result.current_sl_price;
+                if (result.result_v2 !== undefined) updateData.result_v2 = result.result_v2;
+                if (result.result_type !== undefined) updateData.result_type = result.result_type;
+                if (result.candle_count !== undefined) {
+                    updateData.candle_count = result.candle_count;
                 } else {
-                    // candle_expiry — only case where actual market price matters
-                    updateData.se_close_price = currentPrice;
+                    updateData.candle_count = candleInfo.actualCandleCount;
+                }
+                if (result.closed_at_v2 !== undefined) updateData.closed_at_v2 = result.closed_at_v2;
+                if (result.delete_at !== undefined) updateData.delete_at = result.delete_at;
+
+                // Also update legacy fields for backward compat
+                if (result.tp1_hit !== undefined) {
+                    updateData.se_r_ratio_hit = result.tp1_hit;
+                }
+                if (result.current_sl_price !== undefined) {
+                    updateData.se_current_sl = result.current_sl_price;
+                }
+                updateData.candles_tracked = updateData.candle_count;
+
+                // If signal closed, update legacy lifecycle fields
+                if (result.state === 'closed') {
+                    const legacyResult = mapResultToLegacy(result.result_v2 ?? null);
+                    const legacyStatus = mapStateToLegacyStatus(result.state, result.result_v2 ?? null);
+
+                    updateData.lifecycleStatus = legacyStatus;
+                    if (legacyResult) {
+                        updateData.result = legacyResult;
+                    }
+                    updateData.closedAt = result.closed_at_v2;
+
+                    if (result.result_type === 'sl') {
+                        updateData.se_close_price = runtimeSignal.current_sl_price;
+                    } else if (result.result_type === 'tp1') {
+                        updateData.se_close_price = runtimeSignal.tp1_price;
+                    } else if (result.result_type === 'tp2') {
+                        updateData.se_close_price = runtimeSignal.tp2_price;
+                    } else if (result.result_type === 'tp3_full') {
+                        updateData.se_close_price = runtimeSignal.tp3_price;
+                    } else {
+                        // candle_expiry — only case where actual market price matters
+                        updateData.se_close_price = currentPrice;
+                    }
+
+                    const closePrice = updateData.se_close_price;
+                    updateData.close_price = closePrice; // v3 spec field
+
+                    // Map result_type to legacy se_close_reason
+                    if (result.result_type === 'tp3_full') {
+                        updateData.se_close_reason = 'TP3';
+                    } else if (result.result_type === 'tp2') {
+                        updateData.se_close_reason = 'TP2';
+                    } else if (result.result_type === 'tp1') {
+                        updateData.se_close_reason = 'TP1';
+                    } else if (result.result_type === 'sl') {
+                        updateData.se_close_reason = 'SL';
+                    } else if (result.result_type === 'candle_expiry') {
+                        updateData.se_close_reason = 'EXPIRED';
+                    }
+
+                    // Legacy status/outcome fields
+                    updateData.status = legacyResult === 'WIN' ? 'HIT_TP' : legacyResult === 'LOSS' ? 'HIT_SL' : 'EXPIRED';
+                    updateData.outcome = updateData.status;
+
+                    // Also update legacy se_r_ratio_hit for tp2/tp3 cases
+                    if (result.tp2_hit !== undefined) updateData.se_r_ratio_hit = true;
+
+                    const isBull = runtimeSignal.direction_v2 === 'bullish';
+                    updateData.pnlPercent = this.calcPnl(isBull, runtimeSignal.entry_price, closePrice);
                 }
 
-                const closePrice = updateData.se_close_price;
-                updateData.close_price = closePrice; // v3 spec field
+                // Persist to DB
+                await (this.prisma as any).superEngulfingSignal.update({
+                    where: { id: signal.id },
+                    data: updateData,
+                });
 
-                // Map result_type to legacy se_close_reason
-                if (result.result_type === 'tp3_full') {
-                    updateData.se_close_reason = 'TP3';
-                } else if (result.result_type === 'tp2') {
-                    updateData.se_close_reason = 'TP2';
-                } else if (result.result_type === 'tp1') {
-                    updateData.se_close_reason = 'TP1';
-                } else if (result.result_type === 'sl') {
-                    updateData.se_close_reason = 'SL';
-                } else if (result.result_type === 'candle_expiry') {
-                    updateData.se_close_reason = 'EXPIRED';
+                return {
+                    type: 'changed',
+                    state: result.state,
+                    result_type: result.result_type,
+                    tp1_hit_now: result.tp1_hit && !signal.tp1_hit
+                };
+            }));
+
+            // Track stats from batch
+            for (const res of batchResults) {
+                if (res.type === 'unchanged') {
+                    unchanged++;
+                    continue;
                 }
-
-                // Legacy status/outcome fields
-                updateData.status = legacyResult === 'WIN' ? 'HIT_TP' : legacyResult === 'LOSS' ? 'HIT_SL' : 'EXPIRED';
-                updateData.outcome = updateData.status;
-
-                // Also update legacy se_r_ratio_hit for tp2/tp3 cases
-                if (result.tp2_hit !== undefined) updateData.se_r_ratio_hit = true;
-
-                const isBull = runtimeSignal.direction_v2 === 'bullish';
-                updateData.pnlPercent = this.calcPnl(isBull, runtimeSignal.entry_price, closePrice);
-            }
-
-            // Persist to DB
-            await (this.prisma as any).superEngulfingSignal.update({
-                where: { id: signal.id },
-                data: updateData,
-            });
-
-            // Track stats
-            if (result.state === 'closed') {
-                if (result.result_type === 'tp3_full') tp3Hit++;
-                else if (result.result_type === 'tp2') tp2Hit++;
-                else if (result.result_type === 'tp1') tp1Hit++;
-                else if (result.result_type === 'sl') slHit++;
-                else if (result.result_type === 'candle_expiry') expired++;
-            } else if (result.tp1_hit && !signal.tp1_hit) {
-                tp1Hit++; // Partial - TP1 hit but not closed
+                if (res.state === 'closed') {
+                    if (res.result_type === 'tp3_full') tp3Hit++;
+                    else if (res.result_type === 'tp2') tp2Hit++;
+                    else if (res.result_type === 'tp1') tp1Hit++;
+                    else if (res.result_type === 'sl') slHit++;
+                    else if (res.result_type === 'candle_expiry') expired++;
+                } else if (res.tp1_hit_now) {
+                    tp1Hit++;
+                }
             }
         }
 
