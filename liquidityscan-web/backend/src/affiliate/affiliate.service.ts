@@ -171,6 +171,39 @@ export class AffiliateService {
     }
 
     /**
+     * Get referral info for the profile page
+     */
+    async getReferralInfo(userId: string): Promise<any> {
+        const affiliate = await this.prisma.affiliate.findUnique({
+            where: { userId },
+        });
+
+        if (!affiliate) return null;
+
+        const totalReferrals = await this.prisma.affiliateReferral.count({
+            where: { affiliateId: affiliate.id },
+        });
+
+        const aggregatePayouts = await this.prisma.affiliatePayout.aggregate({
+            where: { affiliateId: affiliate.id, status: 'PROCESSED' },
+            _sum: { amount: true },
+        });
+
+        const paidEarned = Number(aggregatePayouts._sum.amount || 0);
+        const pendingEarned = Math.max(0, affiliate.totalEarned - paidEarned);
+
+        return {
+            referralCode: affiliate.code,
+            referralLink: `https://liquidityscan.com/?ref=${affiliate.code}`,
+            stats: {
+                referredCount: totalReferrals,
+                pendingEarned: pendingEarned.toString(),
+                paidEarned: paidEarned.toString(),
+            }
+        };
+    }
+
+    /**
      * Get affiliate by code (for validating ref links)
      */
     async getByCode(code: string): Promise<any> {

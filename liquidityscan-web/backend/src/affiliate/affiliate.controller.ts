@@ -25,6 +25,15 @@ export class AffiliateController {
     }
 
     /**
+     * GET /affiliate/me - Get referral info for the current user (for Profile page)
+     */
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    async getReferralInfo(@Req() req: any) {
+        return this.affiliateService.getReferralInfo(req.user.userId);
+    }
+
+    /**
      * GET /affiliate/validate/:code - Validate a referral code (public)
      */
     @Get('validate/:code')
