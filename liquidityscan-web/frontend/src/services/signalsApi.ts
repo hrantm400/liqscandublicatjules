@@ -121,3 +121,22 @@ export async function scanSuperEngulfing(_timeframe?: string): Promise<{ totalSi
   }
 }
 
+
+
+/**
+ * Fetch ICT bias for specific recent candles.
+ */
+export async function detectICTBias(candles: any[]): Promise<{ bias: string; message: string } | null> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/signals/ict-bias`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(candles),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}

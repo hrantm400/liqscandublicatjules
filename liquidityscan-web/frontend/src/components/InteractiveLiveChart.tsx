@@ -4,6 +4,7 @@ import { createChart, ColorType, Time } from 'lightweight-charts';
 // import { wsService } from '../services/websocket'; // TODO: Re-enable when WebSocket service is recreated
 import { useTheme } from '../contexts/ThemeContext';
 import { TradingViewWidget } from './TradingViewWidget';
+import { detectICTBias } from '../services/signalsApi';
 // import { api } from '../services/api'; // TODO: Re-enable when API service is recreated
 
 // Type definitions for lightweight-charts
@@ -249,25 +250,24 @@ export function InteractiveLiveChart({
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch ICT Bias
-  // TODO: Re-enable when API service is recreated
-  // useEffect(() => {
-  //   if (!candles || candles.length < 3) return;
+  useEffect(() => {
+    if (!candles || candles.length < 3) return;
 
-  //   const fetchBias = async () => {
-  //     try {
-  //       // Send last 10 candles to optimize payload
-  //       const recentCandles = candles.slice(-10);
-  //       const result = await api.post<any>('/strategies/ict-bias', recentCandles);
-  //       setIctBias(result);
-  //     } catch (error) {
-  //       console.error('Error fetching ICT bias:', error);
-  //     }
-  //   };
+    const fetchBias = async () => {
+      try {
+        // Send last 10 candles to optimize payload
+        const recentCandles = candles.slice(-10);
+        const result = await detectICTBias(recentCandles);
+        setIctBias(result);
+      } catch (error) {
+        console.error('Error fetching ICT bias:', error);
+      }
+    };
 
-  //   // Debounce fetch
-  //   const timeout = setTimeout(fetchBias, 2000);
-  //   return () => clearTimeout(timeout);
-  // }, [candles.length, symbol, timeframe]); // Only re-fetch when candle count changes (new candle) or context changes
+    // Debounce fetch
+    const timeout = setTimeout(fetchBias, 2000);
+    return () => clearTimeout(timeout);
+  }, [candles.length, symbol, timeframe]); // Only re-fetch when candle count changes (new candle) or context changes
 
   // Initialize chart
   useEffect(() => {
