@@ -415,9 +415,13 @@ export class SignalsService {
       this.logger.log(`Found ${combos.length} unique strategy+symbol+timeframe combos to check`);
 
       let totalDeleted = 0;
-      for (const c of combos) {
-        const deleted = await this.archiveOldSignals(c.strategyType, c.symbol, c.timeframe);
-        totalDeleted += deleted;
+      const CHUNK_SIZE = 20;
+      for (let i = 0; i < combos.length; i += CHUNK_SIZE) {
+        const chunk = combos.slice(i, i + CHUNK_SIZE);
+        const results = await Promise.all(
+          chunk.map((c) => this.archiveOldSignals(c.strategyType, c.symbol, c.timeframe))
+        );
+        totalDeleted += results.reduce((acc, count) => acc + count, 0);
       }
 
       this.logger.log(`Bulk cleanup completed: ${totalDeleted} stale signals deleted out of ${combos.length} combos`);
