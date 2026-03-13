@@ -485,9 +485,9 @@ function detectICTBias(candles) {
 }
 
 // ============================================================
-// EXPORT (global for browser use)
+// EXPORT (global for browser use or CommonJS for testing)
 // ============================================================
-window.Indicators = {
+const exportsObj = {
     calculateRSI,
     calculateMA,
     findPivotLows,
@@ -496,3 +496,10 @@ window.Indicators = {
     detectSuperEngulfing,
     detectICTBias
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = exportsObj;
+}
+if (typeof window !== 'undefined') {
+    window.Indicators = exportsObj;
+}
