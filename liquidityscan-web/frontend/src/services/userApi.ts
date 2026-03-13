@@ -413,6 +413,10 @@ class ApiClient {
   async validateAffiliateCode(code: string) {
     return this.request<any>(`/affiliate/validate/${code}`);
   }
+
+  async getReferralInfo() {
+    return this.request<any>('/affiliate/me');
+  }
 }
 
 export const userApi = new ApiClient(API_BASE_URL);
