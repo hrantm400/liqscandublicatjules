@@ -410,14 +410,24 @@ export class ScannerService implements OnModuleInit {
         // Save signals from the most recently confirmed pivot window.
         const latestPivotIndex = closedCandles.length - 1 - lbR;
 
-        let added = 0;
+        const inputs = [];
         for (const sig of signals) {
             // Save signals where the pivot is at the latest confirmable position
             if (sig.barIndex >= latestPivotIndex) {
                 const signalType = sig.type.includes('bullish') ? 'BUY' : 'SELL';
-                await this.saveSignal(
-                    'RSI_DIVERGENCE', symbol, timeframe, signalType, sig.price, sig.time,
-                    {
+                const id = `RSI_DIVERGENCE-${symbol}-${timeframe}-${sig.time}`;
+
+                inputs.push({
+                    id,
+                    strategyType: 'RSI_DIVERGENCE',
+                    symbol,
+                    timeframe,
+                    signalType, // BUY / SELL
+                    price: sig.price,
+                    detectedAt: new Date(sig.time).toISOString(),
+                    lifecycleStatus: 'PENDING',
+                    status: 'PENDING', // deprecated, kept for safety
+                    metadata: {
                         divergenceType: sig.type,
                         rsiValue: sig.rsiValue,
                         // Pivot coordinates for drawing divergence lines on chart
@@ -429,8 +439,16 @@ export class ScannerService implements OnModuleInit {
                         prevPivotRsiValue: sig.prevRsiValue,
                         prevPivotTime: closedCandles[sig.prevBarIndex]?.openTime,
                     }
-                );
-                added++;
+                });
+            }
+        }
+
+        let added = 0;
+        if (inputs.length > 0) {
+            added = await this.signalsService.addSignals(inputs);
+            if (added > 0) {
+                this.signalsService.archiveOldSignals('RSI_DIVERGENCE', symbol, timeframe)
+                    .catch(() => { }); // fire-and-forget, don't block scanning
             }
         }
         return added;
