@@ -63,9 +63,14 @@
 
     <!-- CHART AREA -->
     <div class="chart-area">
-        <div id="main-chart"></div>
-        <span class="rsi-label">RSI (14)</span>
-        <div id="rsi-chart"></div>
+        <div class="charts-toolbar" style="display: flex; gap: 8px; padding: 8px 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+            <button id="add-chart-btn" class="interval-btn" style="background: var(--accent-blue); color: white; border-color: var(--accent-blue);">+ Add Chart</button>
+            <button id="grid-view-btn" class="interval-btn active">Grid</button>
+            <button id="single-view-btn" class="interval-btn">Single</button>
+        </div>
+        <div id="charts-container" class="grid-view">
+            <!-- Dynamic chart wrappers will be injected here by app.js -->
+        </div>
     </div>
 
     <!-- SIDEBAR -->
