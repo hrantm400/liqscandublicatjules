@@ -180,58 +180,17 @@ function findPivotHighs(data, lbL = 5, lbR = 5) {
 // ============================================================
 
 /**
- * Detect RSI Divergences
- * @param {Object[]} candles - Array of {time, open, high, low, close}
- * @param {Object} config - Configuration
- * @returns {Object} { rsi, rsiMA, signals }
+ * Check bullish divergences (pivot lows)
  */
-function detectRSIDivergence(candles, config = {}) {
+function checkBullishDivergences(candles, rsi, lows, pivotLowPositions, config, signals) {
     const {
-        rsiLength = 14,
-        maLength = 14,
-        maType = 'SMA',
-        lbL = 5,
-        lbR = 5,
         rangeLower = 5,
         rangeUpper = 60,
-        limitUpper = 70,
         limitLower = 30,
         plotBull = true,
-        plotBear = true,
-        plotHiddenBull = false,
-        plotHiddenBear = false
+        plotHiddenBull = false
     } = config;
 
-    const closes = candles.map(c => c.close);
-    const highs = candles.map(c => c.high);
-    const lows = candles.map(c => c.low);
-
-    const rsi = calculateRSI(closes, rsiLength);
-    const rsiMA = calculateMA(rsi, maLength, maType);
-
-    // Find pivots on RSI
-    const pivotLows = findPivotLows(rsi, lbL, lbR);
-    const pivotHighs = findPivotHighs(rsi, lbL, lbR);
-
-    const signals = [];
-
-    // Track previous pivot positions for divergence comparison
-    // In Pine Script, pivots are confirmed at bar_index - lbR when looking from bar_index
-    // But since we detect them directly at the pivot bar, we just iterate
-
-    // Collect all pivot low positions
-    const pivotLowPositions = [];
-    for (let i = 0; i < pivotLows.length; i++) {
-        if (pivotLows[i]) pivotLowPositions.push(i);
-    }
-
-    // Collect all pivot high positions
-    const pivotHighPositions = [];
-    for (let i = 0; i < pivotHighs.length; i++) {
-        if (pivotHighs[i]) pivotHighPositions.push(i);
-    }
-
-    // Check bullish divergences (pivot lows)
     for (let k = 1; k < pivotLowPositions.length; k++) {
         const curr = pivotLowPositions[k];
         const prev = pivotLowPositions[k - 1];
@@ -285,8 +244,20 @@ function detectRSIDivergence(candles, config = {}) {
             });
         }
     }
+}
 
-    // Check bearish divergences (pivot highs)
+/**
+ * Check bearish divergences (pivot highs)
+ */
+function checkBearishDivergences(candles, rsi, highs, pivotHighPositions, config, signals) {
+    const {
+        rangeLower = 5,
+        rangeUpper = 60,
+        limitUpper = 70,
+        plotBear = true,
+        plotHiddenBear = false
+    } = config;
+
     for (let k = 1; k < pivotHighPositions.length; k++) {
         const curr = pivotHighPositions[k];
         const prev = pivotHighPositions[k - 1];
@@ -339,6 +310,55 @@ function detectRSIDivergence(candles, config = {}) {
             });
         }
     }
+}
+
+/**
+ * Detect RSI Divergences
+ * @param {Object[]} candles - Array of {time, open, high, low, close}
+ * @param {Object} config - Configuration
+ * @returns {Object} { rsi, rsiMA, signals }
+ */
+function detectRSIDivergence(candles, config = {}) {
+    const {
+        rsiLength = 14,
+        maLength = 14,
+        maType = 'SMA',
+        lbL = 5,
+        lbR = 5
+    } = config;
+
+    const closes = candles.map(c => c.close);
+    const highs = candles.map(c => c.high);
+    const lows = candles.map(c => c.low);
+
+    const rsi = calculateRSI(closes, rsiLength);
+    const rsiMA = calculateMA(rsi, maLength, maType);
+
+    // Find pivots on RSI
+    const pivotLows = findPivotLows(rsi, lbL, lbR);
+    const pivotHighs = findPivotHighs(rsi, lbL, lbR);
+
+    const signals = [];
+
+    // Track previous pivot positions for divergence comparison
+    // In Pine Script, pivots are confirmed at bar_index - lbR when looking from bar_index
+    // But since we detect them directly at the pivot bar, we just iterate
+
+    // Collect all pivot low positions
+    const pivotLowPositions = [];
+    for (let i = 0; i < pivotLows.length; i++) {
+        if (pivotLows[i]) pivotLowPositions.push(i);
+    }
+
+    // Collect all pivot high positions
+    const pivotHighPositions = [];
+    for (let i = 0; i < pivotHighs.length; i++) {
+        if (pivotHighs[i]) pivotHighPositions.push(i);
+    }
+
+    checkBullishDivergences(candles, rsi, lows, pivotLowPositions, config, signals);
+
+    checkBearishDivergences(candles, rsi, highs, pivotHighPositions, config, signals);
 
     return { rsi, rsiMA, signals };
 }
