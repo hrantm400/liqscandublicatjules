@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Headers, UnauthorizedException, Query, Param, NotFoundException, Logger } from '@nestjs/common';
 import { SignalsService } from './signals.service';
 import { ScannerService } from './scanner.service';
+import { detectICTBias } from './indicators';
 
 const WEBHOOK_SECRET_HEADER = 'x-webhook-secret';
 
@@ -19,6 +20,18 @@ export class SignalsController {
     // Run scan in background or await it? Awaiting is better for response
     await this.scannerService.scanBasicStrategies();
     return { status: 'Scan completed' };
+  }
+
+
+
+  @Post('ict-bias')
+  async getIctBias(@Body() candles: any[]) {
+    const result = detectICTBias(candles);
+    if (!result) return { bias: 'RANGING', message: 'Not enough data' };
+    return {
+      bias: result.bias,
+      message: `ICT Bias: ${result.bias} (${result.direction})`
+    };
   }
 
   @Get('live-bias')
