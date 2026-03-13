@@ -353,13 +353,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
             let msgsSent = 0;
             let skipped = 0;
-            for (const sub of subs) {
+
+            const alertPromises = subs.map(async (sub) => {
                 // --- Apply rich filters ---
                 // 1. Timeframe filter
                 if (sub.timeframes && Array.isArray(sub.timeframes)) {
                     if (!(sub.timeframes as string[]).includes(timeframe)) {
                         skipped++;
-                        continue;
+                        return;
                     }
                 }
 
@@ -367,7 +368,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
                 if (sub.directions && Array.isArray(sub.directions)) {
                     if (!(sub.directions as string[]).includes(directionKey)) {
                         skipped++;
-                        continue;
+                        return;
                     }
                 }
 
@@ -396,7 +397,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
                         this.logger.error(`Failed to send telegram alert to ${sub.user.telegramId}: ${e.message}`, e.stack);
                     }
                 }
-            }
+            });
+
+            await Promise.allSettled(alertPromises);
 
             this.logger.log(`Sent ${msgsSent} Telegram alerts for ${symbol} via ${strategyType} (skipped ${skipped} by filters)`);
         } catch (err) {
