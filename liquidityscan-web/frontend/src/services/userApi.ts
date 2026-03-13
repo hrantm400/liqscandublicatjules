@@ -90,6 +90,10 @@ class ApiClient {
     return response.json();
   }
 
+  async get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'GET' });
+  }
+
   // Auth
   async register(data: { email: string; password: string; name?: string }) {
     return this.request<{ user: any; accessToken: string; refreshToken: string }>('/auth/register', {

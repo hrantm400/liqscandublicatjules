@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Copy, Share2, Check, Users, DollarSign, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
-// import { authApi } from '../services/api'; // TODO: Re-enable when API service is recreated
+import { authApi } from '../services/userApi';
 
 interface ReferralInfo {
   referralCode: string;
@@ -19,20 +19,18 @@ export function ReferralSection() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // TODO: Re-enable when API service is recreated
-    // const fetchReferralInfo = async () => {
-    //   try {
-    //     const response = await authApi.get('/referrals/me');
-    //     setReferralInfo(response);
-    //   } catch (error) {
-    //     console.error('Failed to fetch referral info:', error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
+    const fetchReferralInfo = async () => {
+      try {
+        const response = await authApi.get('/referrals/me');
+        setReferralInfo(response);
+      } catch (error) {
+        console.error('Failed to fetch referral info:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // fetchReferralInfo();
-    setLoading(false);
+    fetchReferralInfo();
   }, []);
 
   const copyToClipboard = async (text: string) => {
