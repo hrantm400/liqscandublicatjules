@@ -132,4 +132,9 @@ const BinanceAPI = (() => {
     };
 })();
 
-window.BinanceAPI = BinanceAPI;
+if (typeof window !== 'undefined') {
+    window.BinanceAPI = BinanceAPI;
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = BinanceAPI;
+}
