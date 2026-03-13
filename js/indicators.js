@@ -348,6 +348,78 @@ function detectRSIDivergence(candles, config = {}) {
 // ============================================================
 
 /**
+ * Helper to check for RUN (Continuation) pattern
+ */
+function checkRunPattern(curr, prev, i, currBull, currBear, prevBull, prevBear, plusBullCond, plusBearCond) {
+    const signals = [];
+    // Bullish RUN: Green → Green
+    if (currBull && prevBull && curr.low < prev.low && curr.close > prev.close) {
+        const isPlus = plusBullCond;
+        signals.push({
+            type: isPlus ? 'run_bull_plus' : 'run_bull',
+            label: isPlus ? 'RUN+' : 'RUN',
+            barIndex: i,
+            time: curr.time,
+            price: curr.low,
+            position: 'belowBar',
+            color: isPlus ? '#00E676' : 'rgba(76,175,80,0.6)',
+            shape: 'arrowUp'
+        });
+    }
+    // Bearish RUN: Red → Red
+    if (currBear && prevBear && curr.high > prev.high && curr.close < prev.close) {
+        const isPlus = plusBearCond;
+        signals.push({
+            type: isPlus ? 'run_bear_plus' : 'run_bear',
+            label: isPlus ? 'RUN+' : 'RUN',
+            barIndex: i,
+            time: curr.time,
+            price: curr.high,
+            position: 'aboveBar',
+            color: isPlus ? '#FF1744' : 'rgba(244,67,54,0.6)',
+            shape: 'arrowDown'
+        });
+    }
+    return signals;
+}
+
+/**
+ * Helper to check for REV (Reversal) pattern
+ */
+function checkRevPattern(curr, prev, i, currBull, currBear, prevBull, prevBear, plusBullCond, plusBearCond) {
+    const signals = [];
+    // Bullish REV: Red → Green
+    if (currBull && prevBear && curr.low < prev.low && curr.close > prev.open) {
+        const isPlus = plusBullCond;
+        signals.push({
+            type: isPlus ? 'rev_bull_plus' : 'rev_bull',
+            label: isPlus ? 'REV+' : 'REV',
+            barIndex: i,
+            time: curr.time,
+            price: curr.low,
+            position: 'belowBar',
+            color: isPlus ? '#00FF00' : 'rgba(0,255,0,0.7)',
+            shape: 'arrowUp'
+        });
+    }
+    // Bearish REV: Green → Red
+    if (currBear && prevBull && curr.high > prev.high && curr.close < prev.open) {
+        const isPlus = plusBearCond;
+        signals.push({
+            type: isPlus ? 'rev_bear_plus' : 'rev_bear',
+            label: isPlus ? 'REV+' : 'REV',
+            barIndex: i,
+            time: curr.time,
+            price: curr.high,
+            position: 'aboveBar',
+            color: isPlus ? '#FF0000' : 'rgba(255,0,0,0.7)',
+            shape: 'arrowDown'
+        });
+    }
+    return signals;
+}
+
+/**
  * Detect SuperEngulfing patterns
  * @param {Object[]} candles - Array of {time, open, high, low, close}
  * @param {Object} config
@@ -372,66 +444,12 @@ function detectSuperEngulfing(candles, config = {}) {
 
         // --- RUN (Continuation) ---
         if (showRun) {
-            // Bullish RUN: Green → Green
-            if (currBull && prevBull && curr.low < prev.low && curr.close > prev.close) {
-                const isPlus = plusBullCond;
-                signals.push({
-                    type: isPlus ? 'run_bull_plus' : 'run_bull',
-                    label: isPlus ? 'RUN+' : 'RUN',
-                    barIndex: i,
-                    time: curr.time,
-                    price: curr.low,
-                    position: 'belowBar',
-                    color: isPlus ? '#00E676' : 'rgba(76,175,80,0.6)',
-                    shape: 'arrowUp'
-                });
-            }
-            // Bearish RUN: Red → Red
-            if (currBear && prevBear && curr.high > prev.high && curr.close < prev.close) {
-                const isPlus = plusBearCond;
-                signals.push({
-                    type: isPlus ? 'run_bear_plus' : 'run_bear',
-                    label: isPlus ? 'RUN+' : 'RUN',
-                    barIndex: i,
-                    time: curr.time,
-                    price: curr.high,
-                    position: 'aboveBar',
-                    color: isPlus ? '#FF1744' : 'rgba(244,67,54,0.6)',
-                    shape: 'arrowDown'
-                });
-            }
+            signals.push(...checkRunPattern(curr, prev, i, currBull, currBear, prevBull, prevBear, plusBullCond, plusBearCond));
         }
 
         // --- REV (Reversal) ---
         if (showRev) {
-            // Bullish REV: Red → Green
-            if (currBull && prevBear && curr.low < prev.low && curr.close > prev.open) {
-                const isPlus = plusBullCond;
-                signals.push({
-                    type: isPlus ? 'rev_bull_plus' : 'rev_bull',
-                    label: isPlus ? 'REV+' : 'REV',
-                    barIndex: i,
-                    time: curr.time,
-                    price: curr.low,
-                    position: 'belowBar',
-                    color: isPlus ? '#00FF00' : 'rgba(0,255,0,0.7)',
-                    shape: 'arrowUp'
-                });
-            }
-            // Bearish REV: Green → Red
-            if (currBear && prevBull && curr.high > prev.high && curr.close < prev.open) {
-                const isPlus = plusBearCond;
-                signals.push({
-                    type: isPlus ? 'rev_bear_plus' : 'rev_bear',
-                    label: isPlus ? 'REV+' : 'REV',
-                    barIndex: i,
-                    time: curr.time,
-                    price: curr.high,
-                    position: 'aboveBar',
-                    color: isPlus ? '#FF0000' : 'rgba(255,0,0,0.7)',
-                    shape: 'arrowDown'
-                });
-            }
+            signals.push(...checkRevPattern(curr, prev, i, currBull, currBear, prevBull, prevBear, plusBullCond, plusBearCond));
         }
     }
 

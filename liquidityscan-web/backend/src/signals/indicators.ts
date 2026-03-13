@@ -342,63 +342,11 @@ export function calculateATR(candles: CandleData[], period = 14): number {
 }
 
 /**
- * Detect SuperEngulfing patterns on the last N candles.
- * Only returns signals for the most recent candle pair.
- * 
- * SE SCANNER V3 SPEC - SL/TP Calculation:
- * - entry_price = se_candle.close
- * - candle_range = se_candle.high - se_candle.low (FULL range including wicks)
- * - buffer = candle_range * 0.1 (fixed 10%)
- * - Bullish: sl_price = se_candle.low - buffer
- * - Bearish: sl_price = se_candle.high + buffer
- * - risk = ABS(entry_price - sl_price)
- * - tp1_price = entry ± (risk * 1.5)  // 1:1.5 RR — close 50%
- * - tp2_price = entry ± (risk * 2)    // 1:2 RR   — close 25%
- * - tp3_price = entry ± (risk * 3)    // 1:3 RR   — close 25%
+ * Helper to check for RUN (Continuation) pattern in backend
  */
-export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSignal[] {
+function checkRunPatternTS(curr: CandleData, prev: CandleData, i: number, currBull: boolean, currBear: boolean, prevBull: boolean, prevBear: boolean, plusBullCond: boolean, plusBearCond: boolean, getBullTargetsV2: () => any, getBearTargetsV2: () => any, entry: number): SuperEngulfingSignal[] {
     const signals: SuperEngulfingSignal[] = [];
-    if (candles.length < 2) return signals;
 
-    // Only check the last candle pair (just-closed candle vs previous)
-    const i = candles.length - 1;
-    const curr = candles[i];  // This is the SE candle that completes the pattern
-    const prev = candles[i - 1];
-
-    const currBull = curr.close > curr.open;
-    const currBear = curr.close < curr.open;
-    const prevBull = prev.close > prev.open;
-    const prevBear = prev.close < prev.open;
-
-    const plusBullCond = curr.close > prev.high;
-    const plusBearCond = curr.close < prev.low;
-
-    const entry = curr.close;
-
-    // SE SCANNER V2 SPEC: Use SE candle's own range for buffer calculation
-    const candle_range = curr.high - curr.low;
-    const buffer = candle_range * 0.1;
-
-    // Helper to calculate targets per spec v3 (using SE candle's high/low, NOT min/max of both candles)
-    const getBullTargetsV2 = () => {
-        const sl = curr.low - buffer;       // Spec: sl_price = se_candle.low - buffer
-        const risk = entry - sl;             // Spec: risk = ABS(entry_price - sl_price)
-        const tp1 = entry + (risk * 1.5);    // Spec v3: 1:1.5 RR — close 50%
-        const tp2 = entry + (risk * 2);      // Spec v3: 1:2 RR   — close 25%
-        const tp3 = entry + (risk * 3);      // Spec v3: 1:3 RR   — close 25%
-        return { entry, sl, tp1, tp2, tp3 };
-    };
-
-    const getBearTargetsV2 = () => {
-        const sl = curr.high + buffer;       // Spec: sl_price = se_candle.high + buffer
-        const risk = sl - entry;             // Spec: risk = ABS(entry_price - sl_price)
-        const tp1 = entry - (risk * 1.5);    // Spec v3: 1:1.5 RR — close 50%
-        const tp2 = entry - (risk * 2);      // Spec v3: 1:2 RR   — close 25%
-        const tp3 = entry - (risk * 3);      // Spec v3: 1:3 RR   — close 25%
-        return { entry, sl, tp1, tp2, tp3 };
-    };
-
-    // --- RUN (Continuation): same color ---
     // Bullish RUN: Green → Green, wick below prev low, close above prev close
     if (currBull && prevBull && curr.low < prev.low && curr.close > prev.close) {
         const isPlus = plusBullCond;
@@ -456,8 +404,15 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             candle_low: curr.low,
         });
     }
+    return signals;
+}
 
-    // --- REV (Reversal): opposite color ---
+/**
+ * Helper to check for REV (Reversal) pattern in backend
+ */
+function checkRevPatternTS(curr: CandleData, prev: CandleData, i: number, currBull: boolean, currBear: boolean, prevBull: boolean, prevBear: boolean, plusBullCond: boolean, plusBearCond: boolean, getBullTargetsV2: () => any, getBearTargetsV2: () => any, entry: number): SuperEngulfingSignal[] {
+    const signals: SuperEngulfingSignal[] = [];
+
     // Bullish REV: Red → Green, wick below prev low, close above prev open
     if (currBull && prevBear && curr.low < prev.low && curr.close > prev.open) {
         const isPlus = plusBullCond;
@@ -515,6 +470,71 @@ export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSigna
             candle_low: curr.low,
         });
     }
+    return signals;
+}
+
+/**
+ * Detect SuperEngulfing patterns on the last N candles.
+ * Only returns signals for the most recent candle pair.
+ *
+ * SE SCANNER V3 SPEC - SL/TP Calculation:
+ * - entry_price = se_candle.close
+ * - candle_range = se_candle.high - se_candle.low (FULL range including wicks)
+ * - buffer = candle_range * 0.1 (fixed 10%)
+ * - Bullish: sl_price = se_candle.low - buffer
+ * - Bearish: sl_price = se_candle.high + buffer
+ * - risk = ABS(entry_price - sl_price)
+ * - tp1_price = entry ± (risk * 1.5)  // 1:1.5 RR — close 50%
+ * - tp2_price = entry ± (risk * 2)    // 1:2 RR   — close 25%
+ * - tp3_price = entry ± (risk * 3)    // 1:3 RR   — close 25%
+ */
+export function detectSuperEngulfing(candles: CandleData[]): SuperEngulfingSignal[] {
+    const signals: SuperEngulfingSignal[] = [];
+    if (candles.length < 2) return signals;
+
+    // Only check the last candle pair (just-closed candle vs previous)
+    const i = candles.length - 1;
+    const curr = candles[i];  // This is the SE candle that completes the pattern
+    const prev = candles[i - 1];
+
+    const currBull = curr.close > curr.open;
+    const currBear = curr.close < curr.open;
+    const prevBull = prev.close > prev.open;
+    const prevBear = prev.close < prev.open;
+
+    const plusBullCond = curr.close > prev.high;
+    const plusBearCond = curr.close < prev.low;
+
+    const entry = curr.close;
+
+    // SE SCANNER V2 SPEC: Use SE candle's own range for buffer calculation
+    const candle_range = curr.high - curr.low;
+    const buffer = candle_range * 0.1;
+
+    // Helper to calculate targets per spec v3 (using SE candle's high/low, NOT min/max of both candles)
+    const getBullTargetsV2 = () => {
+        const sl = curr.low - buffer;       // Spec: sl_price = se_candle.low - buffer
+        const risk = entry - sl;             // Spec: risk = ABS(entry_price - sl_price)
+        const tp1 = entry + (risk * 1.5);    // Spec v3: 1:1.5 RR — close 50%
+        const tp2 = entry + (risk * 2);      // Spec v3: 1:2 RR   — close 25%
+        const tp3 = entry + (risk * 3);      // Spec v3: 1:3 RR   — close 25%
+        return { entry, sl, tp1, tp2, tp3 };
+    };
+
+    const getBearTargetsV2 = () => {
+        const sl = curr.high + buffer;       // Spec: sl_price = se_candle.high + buffer
+        const risk = sl - entry;             // Spec: risk = ABS(entry_price - sl_price)
+        const tp1 = entry - (risk * 1.5);    // Spec v3: 1:1.5 RR — close 50%
+        const tp2 = entry - (risk * 2);      // Spec v3: 1:2 RR   — close 25%
+        const tp3 = entry - (risk * 3);      // Spec v3: 1:3 RR   — close 25%
+        return { entry, sl, tp1, tp2, tp3 };
+    };
+
+    // --- RUN (Continuation): same color ---
+    signals.push(...checkRunPatternTS(curr, prev, i, currBull, currBear, prevBull, prevBear, plusBullCond, plusBearCond, getBullTargetsV2, getBearTargetsV2, entry));
+
+    // --- REV (Reversal): opposite color ---
+    signals.push(...checkRevPatternTS(curr, prev, i, currBull, currBear, prevBull, prevBear, plusBullCond, plusBearCond, getBullTargetsV2, getBearTargetsV2, entry));
 
     return signals;
 }
