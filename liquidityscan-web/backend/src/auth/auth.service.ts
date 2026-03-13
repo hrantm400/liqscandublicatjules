@@ -1,10 +1,15 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcryptjs";
+import * as crypto from "crypto";
+import { PrismaService } from "../prisma/prisma.service";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
 
 @Injectable()
 export class AuthService {
@@ -12,13 +17,13 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   private isAdminEmail(email: string): boolean {
-    const adminEmails = this.configService.get<string>('ADMIN_EMAILS', '');
+    const adminEmails = this.configService.get<string>("ADMIN_EMAILS", "");
     if (!adminEmails) return false;
 
-    const emailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
+    const emailList = adminEmails.split(",").map((e) => e.trim().toLowerCase());
     return emailList.includes(email.toLowerCase());
   }
 
@@ -29,7 +34,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException("User with this email already exists");
     }
 
     // Hash password
@@ -74,14 +79,14 @@ export class AuthService {
     });
 
     if (!user || !user.password) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     // Check if email is in admin list and update isAdmin if needed
@@ -234,7 +239,7 @@ export class AuthService {
     });
 
     if (!token || token.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException("Invalid or expired refresh token");
     }
 
     // Generate new tokens
@@ -250,14 +255,19 @@ export class AuthService {
 
   async fastLogin() {
     // Only allow when ENABLE_DEV_LOGIN is set or in development mode
-    const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
-    const enableDevLogin = this.configService.get<string>('ENABLE_DEV_LOGIN', 'false');
-    if (nodeEnv === 'production' && enableDevLogin !== 'true') {
-      throw new UnauthorizedException('Fast login is only available in development mode');
+    const nodeEnv = this.configService.get<string>("NODE_ENV", "development");
+    const enableDevLogin = this.configService.get<string>(
+      "ENABLE_DEV_LOGIN",
+      "false",
+    );
+    if (nodeEnv === "production" && enableDevLogin !== "true") {
+      throw new UnauthorizedException(
+        "Fast login is only available in development mode",
+      );
     }
 
     // Find or create dev user
-    const devEmail = 'dev@liquidityscan.local';
+    const devEmail = "dev@liquidityscan.local";
     const dbUser = await this.prisma.user.findUnique({
       where: { email: devEmail },
     });
@@ -281,8 +291,11 @@ export class AuthService {
       const createdUser = await this.prisma.user.create({
         data: {
           email: devEmail,
-          name: 'Dev User',
-          password: await bcrypt.hash('dev-password', 10), // Set a password but not required for fast login
+          name: "Dev User",
+          password: await bcrypt.hash(
+            crypto.randomBytes(32).toString("hex"),
+            10,
+          ), // Set a password but not required for fast login
           isAdmin,
         },
       });
@@ -345,8 +358,11 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'refresh-secret',
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '30d',
+      secret:
+        this.configService.get<string>("JWT_REFRESH_SECRET") ||
+        "refresh-secret",
+      expiresIn:
+        this.configService.get<string>("JWT_REFRESH_EXPIRES_IN") || "30d",
     });
 
     // Save refresh token
