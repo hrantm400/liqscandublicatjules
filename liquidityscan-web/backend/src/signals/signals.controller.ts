@@ -88,4 +88,14 @@ export class SignalsController {
       return list;
     });
   }
+
+  @Post('client')
+  async receiveClientSignal(@Body() body: any) {
+      // Client endpoint to receive signals without a webhook secret
+      // In production, this should be rate-limited or secured by user auth.
+      this.logger.log('Received signal from client dashboard');
+      const arr = this.signalsService.normalizeWebhookBody(body);
+      const received = await this.signalsService.addSignals(arr);
+      return { received };
+  }
 }
