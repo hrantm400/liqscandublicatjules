@@ -11,6 +11,7 @@ export class CandlesService {
   private binanceProvider = new BinanceProvider();
 
   private cache = new Map<string, { timestamp: number, data: CandleDto[] }>();
+  private inFlightRequests = new Map<string, Promise<CandleDto[]>>();
 
   private readonly CACHE_TTL_BY_INTERVAL: Record<string, number> = {
     '5m': 15_000,
@@ -47,16 +48,28 @@ export class CandlesService {
       return cached.data;
     }
 
-    try {
-      const provider = await this.getProvider();
-      const out = await provider.getKlines(sym, interval, limitParam);
-      this.cache.set(cacheKey, { timestamp: Date.now(), data: out });
-      return out;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Provider fetch error for ${sym} ${interval}: ${msg}`);
-      return [];
+    // Request coalescing for in-flight requests
+    if (this.inFlightRequests.has(cacheKey)) {
+      return this.inFlightRequests.get(cacheKey)!;
     }
+
+    const fetchPromise = (async () => {
+      try {
+        const provider = await this.getProvider();
+        const out = await provider.getKlines(sym, interval, limitParam);
+        this.cache.set(cacheKey, { timestamp: Date.now(), data: out });
+        return out;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Provider fetch error for ${sym} ${interval}: ${msg}`);
+        return [];
+      } finally {
+        this.inFlightRequests.delete(cacheKey);
+      }
+    })();
+
+    this.inFlightRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   async fetchSymbols(): Promise<string[]> {

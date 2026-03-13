@@ -177,26 +177,30 @@ export class ScannerService implements OnModuleInit {
     private async scanSymbol(symbol: string): Promise<number> {
         let count = 0;
         try {
+            const promises: Promise<number>[] = [];
+
             // 1. Super Engulfing (4h, 1d, 1w)
             for (const tf of ['4h', '1d', '1w']) {
-                count += await this.checkSuperEngulfing(symbol, tf);
+                promises.push(this.checkSuperEngulfing(symbol, tf));
             }
 
             // 2. ICT Bias (4h, 1d, 1w)
             for (const tf of ['4h', '1d', '1w']) {
-                count += await this.checkICTBias(symbol, tf);
+                promises.push(this.checkICTBias(symbol, tf));
             }
 
             // 3. RSI Divergence (1h, 4h, 1d)
             for (const tf of ['1h', '4h', '1d']) {
-                count += await this.checkRSIDivergence(symbol, tf);
+                promises.push(this.checkRSIDivergence(symbol, tf));
             }
 
             // 4. CRT (4h, 1d, 1w)
             for (const tf of ['4h', '1d', '1w']) {
-                count += await this.checkCRT(symbol, tf);
+                promises.push(this.checkCRT(symbol, tf));
             }
 
+            const results = await Promise.all(promises);
+            count = results.reduce((a, b) => a + b, 0);
 
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
