@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { createChart, ColorType, Time } from 'lightweight-charts';
-// import { wsService } from '../services/websocket'; // TODO: Re-enable when WebSocket service is recreated
+import { wsService } from '../services/websocket';
 import { useTheme } from '../contexts/ThemeContext';
 import { TradingViewWidget } from './TradingViewWidget';
 import { detectICTBias } from '../services/signalsApi';
@@ -1319,22 +1319,21 @@ export function InteractiveLiveChart({
   }, [symbol, timeframe, onCandleUpdate, signal]);
 
   // Subscribe to WebSocket updates
-  // TODO: Re-enable when WebSocket service is recreated
-  // useEffect(() => {
-  //   if (!symbol || !timeframe) return;
+  useEffect(() => {
+    if (!symbol || !timeframe) return;
 
-  //   // Subscribe to symbol updates
-  //   wsService.subscribeToSymbol(symbol, timeframe);
-  //   wsService.on('candle:update', handleCandleUpdate);
+    // Subscribe to symbol updates
+    wsService.subscribeToSymbol(symbol, timeframe);
+    wsService.on('candle:update', handleCandleUpdate);
 
-  //   return () => {
-  //     wsService.off('candle:update', handleCandleUpdate);
-  //     wsService.unsubscribeFromSymbol(symbol, timeframe);
-  //     if (updateTimeoutRef.current) {
-  //       clearTimeout(updateTimeoutRef.current);
-  //     }
-  //   };
-  // }, [symbol, timeframe, handleCandleUpdate]);
+    return () => {
+      wsService.off('candle:update', handleCandleUpdate);
+      wsService.unsubscribeFromSymbol(symbol, timeframe);
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, [symbol, timeframe, handleCandleUpdate]);
 
   // Chart toolbar functions
   const handleZoomIn = useCallback(() => {
