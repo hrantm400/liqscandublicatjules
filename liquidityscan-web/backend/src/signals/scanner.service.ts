@@ -314,12 +314,13 @@ export class ScannerService implements OnModuleInit {
         const now = new Date();
 
         let added = 0;
+        const inputs = [];
         for (const sig of confirmedSignals) {
             // SE v2: Include pattern in ID to allow multiple signals per symbol+timeframe
             // Format: SUPER_ENGULFING-BTCUSDT-4h-RUN_BULLISH-1678901234000
             const id = `SUPER_ENGULFING-${symbol}-${timeframe}-${sig.pattern_v2}-${sig.time}`;
 
-            const input = {
+            inputs.push({
                 id,
                 strategyType: 'SUPER_ENGULFING',
                 symbol,
@@ -353,13 +354,15 @@ export class ScannerService implements OnModuleInit {
                     candle_high: sig.candle_high,
                     candle_low: sig.candle_low,
                 },
-            };
-
-            const addedCount = await this.signalsService.addSignals([input]);
-            added += addedCount;
+            });
 
             // SE v2: Do NOT call archiveOldSignals - multiple signals per symbol+timeframe are allowed
         }
+
+        if (inputs.length > 0) {
+            added = await this.signalsService.addSignals(inputs);
+        }
+
         return added;
     }
 
