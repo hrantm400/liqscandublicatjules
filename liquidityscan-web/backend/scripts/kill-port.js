@@ -9,6 +9,12 @@
 const { exec } = require('child_process');
 const port = process.argv[2] || '3000';
 
+// Validate port input to prevent command injection
+if (!/^\d+$/.test(port) || parseInt(port, 10) < 1 || parseInt(port, 10) > 65535) {
+  console.error(`❌ Ошибка: Некорректный порт '${port}'. Порт должен быть числом от 1 до 65535.`);
+  process.exit(1);
+}
+
 console.log(`🔍 Поиск процессов на порту ${port}...\n`);
 
 // Для Windows используем netstat
