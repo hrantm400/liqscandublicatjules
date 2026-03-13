@@ -7,7 +7,6 @@ const App = (() => {
     let candles = [];
     let currentSymbol = 'BTCUSDT';
     let currentInterval = '1h';
-    let isConnected = false;
 
     // Popular symbols list (quick access)
     const POPULAR_SYMBOLS = [
@@ -322,7 +321,6 @@ const App = (() => {
     }
 
     function setConnectionStatus(connected) {
-        isConnected = connected;
         const dot = document.getElementById('connection-dot');
         const text = document.getElementById('connection-text');
         dot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
