@@ -487,12 +487,24 @@ function detectICTBias(candles) {
 // ============================================================
 // EXPORT (global for browser use)
 // ============================================================
-window.Indicators = {
-    calculateRSI,
-    calculateMA,
-    findPivotLows,
-    findPivotHighs,
-    detectRSIDivergence,
-    detectSuperEngulfing,
-    detectICTBias
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+            calculateRSI,
+            calculateMA,
+            findPivotLows,
+            findPivotHighs,
+            detectRSIDivergence,
+            detectSuperEngulfing,
+            detectICTBias
+    };
+} else {
+    window.Indicators = {
+        calculateRSI,
+        calculateMA,
+        findPivotLows,
+        findPivotHighs,
+        detectRSIDivergence,
+        detectSuperEngulfing,
+        detectICTBias
 };
+}
